@@ -1,6 +1,6 @@
 import { readExchangeIntent, exchangePath } from "@/lib/exchange-intent";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useRef, type FormEvent } from "react";
+import { useEffect, useState, useRef, useCallback, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import {
   ArrowLeft,
@@ -35,6 +35,7 @@ const money = (n: number, c: string) =>
 function TransferPortal() {
   const formRef = useRef<HTMLFormElement>(null);
   const [step, setStep] = useState(0);
+  const [saveGuestAccess, setSaveGuestAccess] = useState(false);
   const [reviewData, setReviewData] = useState<ReturnType<
     typeof recipientDetailsInput.parse
   > | null>(null);
@@ -94,6 +95,10 @@ function TransferPortal() {
     [busy, setBusy] = useState(false),
     [register, setRegister] = useState(false),
     [admin, setAdmin] = useState(false);
+  const sessionUserId = session?.user.id;
+  const sessionEmail = session?.user.email;
+  const sessionAnonymous = session?.user.is_anonymous;
+  const guest = sessionAnonymous === true;
   useEffect(() => {
     if (newOperation) {
       const element = document.getElementById(`operacion-${newOperation}`);
@@ -120,8 +125,12 @@ function TransferPortal() {
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => data.subscription.unsubscribe();
   }, []);
-  async function load() {
+  const load = useCallback(async () => {
     if (!supabase) return;
+    if (sessionUserId && !sessionAnonymous && sessionEmail) {
+      const { error } = await supabase.rpc("verify_transfer_contact");
+      if (error) throw error;
+    }
     const operation = window.location.hash.match(/^#operacion-([0-9a-f-]{36})$/i)?.[1];
     let transferQuery = supabase
       .from("transfers")
@@ -162,11 +171,11 @@ function TransferPortal() {
     setEvents(e.data ?? []);
     setStaff(Boolean(s.data?.length));
     if (operation && s.data?.length) setAdmin(true);
-  }
+  }, [sessionUserId, sessionAnonymous, sessionEmail]);
   useEffect(() => {
     setStep(0);
     setReviewData(null);
-    if (session) {
+    if (sessionUserId) {
       setInitialReceipt(null);
       setProofFiles({});
       setTransfers([]);
@@ -175,7 +184,6 @@ function TransferPortal() {
       setStaff(false);
       setAdmin(false);
       setSelected("");
-      void load().catch((e) => setMessage(e.message));
     } else {
       setInitialReceipt(null);
       setProofFiles({});
@@ -183,7 +191,34 @@ function TransferPortal() {
       setStaff(false);
       setAdmin(false);
     }
-  }, [session]);
+  }, [sessionUserId]);
+  useEffect(() => {
+    if (sessionUserId) void load().catch((e) => setMessage(e.message));
+  }, [load, sessionUserId]);
+
+  async function startGuest() {
+    await run(async () => {
+      const { data, error } = await supabase!.auth.signInAnonymously();
+      if (error) throw new Error("No se pudo abrir el acceso de invitado. " + error.message);
+      if (!data.session) throw new Error("No se pudo abrir el acceso de invitado.");
+      setSession(data.session);
+    });
+  }
+  async function saveAccess(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fields = new FormData(e.currentTarget);
+    await run(async () => {
+      const { error } = await supabase!.auth.updateUser(
+        { email: String(fields.get("email")) },
+        { emailRedirectTo: window.location.origin + "/transferencias" },
+      );
+      if (error) throw error;
+      setSaveGuestAccess(false);
+      setMessage(
+        "Revisa tu correo y confirma el enlace para guardar el acceso a estas operaciones. Conserva este navegador hasta confirmarlo.",
+      );
+    });
+  }
   async function run(action: () => Promise<void>) {
     setBusy(true);
     setMessage("");
@@ -194,6 +229,23 @@ function TransferPortal() {
     } finally {
       setBusy(false);
     }
+  }
+  async function emailLogin(form: HTMLFormElement) {
+    const emailInput = form.elements.namedItem("email") as HTMLInputElement;
+    if (!emailInput.reportValidity()) return;
+    await run(async () => {
+      const { error } = await supabase!.auth.signInWithOtp({
+        email: emailInput.value,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: window.location.origin + "/transferencias",
+        },
+      });
+      if (error) throw error;
+      setMessage(
+        "Si tienes una cuenta con este correo, recibirás un enlace para ingresar sin contraseña.",
+      );
+    });
   }
   async function auth(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -235,23 +287,30 @@ function TransferPortal() {
       const v = recipientDetailsInput.parse({ rateId: rate.id, amount, ...Object.fromEntries(d) });
       const file = initialReceipt;
       if (file) validateProof(file);
-      const { data: id, error } = await supabase.rpc("create_transfer_details", {
-        p_rate_id: v.rateId,
-        p_amount: v.amount,
-        p_customer_name: v.customerName,
-        p_customer_document: v.customerDocument,
-        p_recipient_name: v.recipientName,
-        p_recipient_document: v.recipientDocument,
-        p_recipient_bank: v.recipientBank,
-        p_recipient_account: v.recipientAccount,
-        p_recipient_account_type: v.recipientAccountType,
-        p_recipient_account_holder: v.recipientAccountHolder,
-        p_recipient_account_holder_document: v.recipientAccountHolderDocument,
-        p_recipient_bank_branch: v.recipientBankBranch,
-        p_customer_phone: v.customerPhone,
-        p_recipient_phone: v.recipientPhone,
-        p_transfer_note: v.transferNote,
-      });
+      const guestEmail = guest ? String(d.get("customerEmail") || "").trim() : "";
+      if (guest && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail))
+        throw new Error("Completa tu correo de contacto.");
+      const { data: id, error } = await supabase.rpc(
+        guest ? "create_guest_transfer_details" : "create_transfer_details",
+        {
+          ...(guest ? { p_contact_email: guestEmail } : {}),
+          p_rate_id: v.rateId,
+          p_amount: v.amount,
+          p_customer_name: v.customerName,
+          p_customer_document: v.customerDocument,
+          p_recipient_name: v.recipientName,
+          p_recipient_document: v.recipientDocument,
+          p_recipient_bank: v.recipientBank,
+          p_recipient_account: v.recipientAccount,
+          p_recipient_account_type: v.recipientAccountType,
+          p_recipient_account_holder: v.recipientAccountHolder,
+          p_recipient_account_holder_document: v.recipientAccountHolderDocument,
+          p_recipient_bank_branch: v.recipientBankBranch,
+          p_customer_phone: v.customerPhone,
+          p_recipient_phone: v.recipientPhone,
+          p_transfer_note: v.transferNote,
+        },
+      );
       if (error) throw error;
       form.reset();
       setStep(0);
@@ -372,7 +431,7 @@ function TransferPortal() {
             Dashboard <ArrowRight size={16} />
           </a>
         )}
-        {session && (
+        {session && !guest && (
           <Button
             variant="outline"
             disabled={busy}
@@ -421,36 +480,54 @@ function TransferPortal() {
           <p>Cargando…</p>
         ) : !session ? (
           <section className="portal-card auth-card">
-            <h2>{register ? "Crea tu cuenta" : "Accede a tus operaciones"}</h2>
-            <p>Tu correo te permitirá consultar el avance y recibir tu comprobante.</p>
-            <form onSubmit={auth} className="portal-form">
-              <label>
-                Correo
-                <input name="email" type="email" required autoComplete="email" />
-              </label>
-              <label>
-                Contraseña
-                <input
-                  name="password"
-                  type="password"
-                  required
-                  minLength={8}
-                  autoComplete={register ? "new-password" : "current-password"}
-                />
-              </label>
-              <Button variant="brand" disabled={busy}>
-                {register ? "Crear cuenta" : "Ingresar"}
-                <ArrowRight size={16} />
-              </Button>
-            </form>
-            <button className="portal-text-button" onClick={() => setRegister(!register)}>
-              {register ? "Ya tengo una cuenta" : "Quiero crear una cuenta"}
-            </button>
+            <h2>Inicia tu cambio sin registrarte</h2>
+            <p>No necesitas crear una cuenta ni elegir una contraseña para registrar el cambio.</p>
+            <Button variant="brand" disabled={busy} onClick={() => void startGuest()}>
+              Continuar sin cuenta <ArrowRight size={16} />
+            </Button>
+            <details className="optional-account">
+              <summary>Prefiero usar una cuenta</summary>
+              <h3>{register ? "Crea tu cuenta" : "Accede a tus operaciones"}</h3>
+              <p>Una cuenta permite consultar tus operaciones desde otros dispositivos.</p>
+              <form onSubmit={auth} className="portal-form">
+                <label>
+                  Correo
+                  <input name="email" type="email" required autoComplete="email" />
+                </label>
+                <label>
+                  Contraseña
+                  <input
+                    name="password"
+                    type="password"
+                    required
+                    minLength={8}
+                    autoComplete={register ? "new-password" : "current-password"}
+                  />
+                </label>
+                <Button variant="brand" disabled={busy}>
+                  {register ? "Crear cuenta" : "Ingresar"}
+                  <ArrowRight size={16} />
+                </Button>
+                {!register && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={(e) => void emailLogin(e.currentTarget.form!)}
+                  >
+                    Recibir enlace de acceso por correo
+                  </Button>
+                )}
+              </form>
+              <button className="portal-text-button" onClick={() => setRegister(!register)}>
+                {register ? "Ya tengo una cuenta" : "Quiero crear una cuenta"}
+              </button>
+            </details>
           </section>
         ) : (
           <>
             <div className="portal-toolbar">
-              <span>{session.user.email}</span>
+              <span>{guest ? "Acceso de invitado · sin registro" : session.user.email}</span>
               <div>
                 {staff && (
                   <Button variant="outline" onClick={() => setAdmin(!admin)}>
@@ -462,6 +539,34 @@ function TransferPortal() {
                 </Button>
               </div>
             </div>
+            {guest && (
+              <section className="portal-card guest-access">
+                <h2>Tu cambio queda disponible en este navegador</h2>
+                <p>
+                  Conserva esta sesión para consultar el estado y subir el comprobante. Si borras
+                  los datos del navegador o usas otro dispositivo, necesitarás ayuda del equipo.
+                  Guarda la referencia de tu operación.
+                </p>
+                <button
+                  type="button"
+                  className="portal-text-button"
+                  onClick={() => setSaveGuestAccess(!saveGuestAccess)}
+                >
+                  Guardar acceso con una cuenta (opcional)
+                </button>
+                {saveGuestAccess && (
+                  <form className="portal-form" onSubmit={saveAccess}>
+                    <label>
+                      Correo para guardar tu acceso
+                      <input name="email" type="email" required autoComplete="email" />
+                    </label>
+                    <Button variant="outline" disabled={busy}>
+                      Enviar enlace de confirmación
+                    </Button>
+                  </form>
+                )}
+              </section>
+            )}
             {!admin && (
               <section className="portal-card">
                 <div className="portal-section-title">
@@ -578,7 +683,11 @@ function TransferPortal() {
                         <span>02</span>
                         <div>
                           <h3 tabIndex={-1}>Tus datos de contacto</h3>
-                          <p>El comprobante se enviará a {session.user.email}.</p>
+                          <p>
+                            {guest
+                              ? "Déjanos tu contacto para gestionar el cambio. Podrás consultar el comprobante en esta sesión."
+                              : `El comprobante se enviará a ${session.user.email}.`}
+                          </p>
                         </div>
                       </div>
                       {[
@@ -590,6 +699,18 @@ function TransferPortal() {
                           <input name={name} required minLength={2} maxLength={200} />
                         </label>
                       ))}
+                      {guest && (
+                        <label>
+                          Tu correo de contacto
+                          <input
+                            name="customerEmail"
+                            type="email"
+                            required
+                            maxLength={320}
+                            autoComplete="email"
+                          />
+                        </label>
+                      )}
                       <label>
                         Tu teléfono con código de país
                         <input

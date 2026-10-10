@@ -14,7 +14,10 @@ export function TransferDetails({ transfer: t }: { transfer: Transfer }) {
         </div>
         <div>
           <dt>Correo</dt>
-          <dd>{t.customer_email}</dd>
+          <dd>
+            {t.customer_email}
+            {t.customer_email_verified === false && <small> · Contacto sin verificar</small>}
+          </dd>
         </div>
         <div>
           <dt>Teléfono</dt>

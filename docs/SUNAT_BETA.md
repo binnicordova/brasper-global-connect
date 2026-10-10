@@ -6,7 +6,7 @@ La clave `BETA_API_KEY` existente fue reutilizada, con autorización del usuario
 
 ## Activación en Lovable
 
-1. Integra los archivos de la rama `codex/transfer-workflow` y aplica las cuatro migraciones en orden, incluyendo `202610100004_sunat_beta.sql` una sola vez.
+1. Integra los archivos de la rama `codex/transfer-workflow` y aplica las cinco migraciones en orden, incluyendo `202610100004_sunat_beta.sql` y `202610100005_guest_exchange.sql` una sola vez.
 2. Configura el backend **de Brasper**, Auth, Storage, equipo, tasas y cuentas siguiendo `TRANSFER_WORKFLOW.md`.
 3. En los secretos privados del servidor web configura `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BILLING_BETA_ENABLED=true` y `BILLING_GATEWAY_TOKEN`. Para el token reutiliza el valor del archivo local privado; no lo pegues en chat, código, variables VITE ni SQL público.
 4. En los secretos de la Edge Function configura `BILLING_ENVIRONMENT=beta`, `BILLING_GATEWAY_URL=https://DOMINIO/api/billing-beta`, `BILLING_GATEWAY_TOKEN` y `BILLING_WORKER_SECRET`, reutilizando los valores privados autorizados. Supabase proporciona sus credenciales internas a la función. No conectes el proyecto Supabase del hotel.
