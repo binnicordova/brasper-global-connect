@@ -18,6 +18,7 @@ import {
   validateProof,
   statusLabels,
   invoiceLabels,
+  firstInvoice,
   type Rate,
   type Transfer,
 } from "@/lib/transfers";
