@@ -343,10 +343,10 @@ function Dashboard() {
                             </span>
                           </td>
                           <td>
-                            {t.invoices[0]
-                              ? invoiceLabels[t.invoices[0].status]
+                            {firstInvoice(t.invoices)
+                              ? invoiceLabels[firstInvoice(t.invoices)!.status]
                               : "Aún no solicitado"}
-                            {t.invoices[0]?.environment === "beta" && (
+                            {firstInvoice(t.invoices)?.environment === "beta" && (
                               <small>Ensayo sin validez tributaria</small>
                             )}
                           </td>
