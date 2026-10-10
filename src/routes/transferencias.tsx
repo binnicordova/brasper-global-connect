@@ -63,17 +63,20 @@ function TransferPortal() {
   }, []);
   async function load() {
     if (!supabase) return;
+    const operation = window.location.hash.match(/^#operacion-([0-9a-f-]{36})$/i)?.[1];
+    let transferQuery = supabase
+      .from("transfers")
+      .select("*, invoices(*)")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (operation) transferQuery = transferQuery.eq("id", operation);
     const [r, t, e, s] = await Promise.all([
       supabase
         .from("fx_rates")
         .select("*")
         .eq("active", true)
         .gt("valid_until", new Date().toISOString()),
-      supabase
-        .from("transfers")
-        .select("*, invoices(*)")
-        .order("created_at", { ascending: false })
-        .limit(100),
+      transferQuery,
       supabase
         .from("transfer_events")
         .select("*")
@@ -87,6 +90,7 @@ function TransferPortal() {
     setTransfers(t.data ?? []);
     setEvents(e.data ?? []);
     setStaff(Boolean(s.data?.length));
+    if (operation && s.data?.length) setAdmin(true);
   }
   useEffect(() => {
     if (session) {
@@ -238,6 +242,11 @@ function TransferPortal() {
         <a href="/" className="portal-back">
           <ArrowLeft size={16} /> Volver al inicio
         </a>
+        {staff && (
+          <a href="/dashboard" className="portal-back">
+            Dashboard <ArrowRight size={16} />
+          </a>
+        )}
         {session && (
           <Button
             variant="outline"
@@ -411,6 +420,9 @@ function TransferPortal() {
             )}
             <section className="portal-operations">
               <h2>{admin ? "Bandeja de revisión" : "Historial de operaciones"}</h2>
+              <a href="/transferencias" className="portal-start-link">
+                Ver todo el historial <ArrowRight size={14} />
+              </a>
               {!transfers.length && (
                 <div className="portal-card">
                   <p>Aún no hay operaciones registradas.</p>
@@ -419,7 +431,11 @@ function TransferPortal() {
               {transfers.map((t) => {
                 const invoice = t.invoices?.[0];
                 return (
-                  <article className="portal-card operation-card" key={t.id}>
+                  <article
+                    className="portal-card operation-card"
+                    key={t.id}
+                    id={`operacion-${t.id}`}
+                  >
                     <div className="operation-top">
                       <div>
                         <span className="operation-id">

@@ -9,11 +9,22 @@ Activa el flujo de transferencias de Brasper usando el código existente. Conser
 **Archivos existentes que debes usar:**
 
 - `supabase/migrations/202610100001_transfer_workflow.sql`: tablas, RLS, Storage privado y funciones PostgreSQL.
+- `supabase/migrations/202610100002_staff_dashboard.sql`: resumen global protegido para el equipo.
 - `supabase/functions/process-invoices/index.ts`: worker de facturación y correo.
 - `supabase/config.toml`: configuración del worker.
 - `supabase/manual-setup.example.sql`: plantilla comentada para configurar manualmente equipo, cuentas bancarias y tasas.
 - `src/lib/supabase.ts`, `src/lib/transfers.ts` y `src/routes/transferencias.tsx`: conexión, validaciones y portal.
 - `.env.example`: variables públicas del frontend.
+- `src/routes/index.tsx`: página principal, seguimiento y preguntas frecuentes.
+- `src/routes/dashboard.tsx` y `MASTER_PLAN.json`: dashboard interno y plan de activación.
+
+**Primero la página principal y el dashboard:**
+
+Conserva la página principal en `/` y su diseño. El botón principal lleva a `/transferencias`; WhatsApp queda disponible para atención. Explica cotización, carga de prueba, revisión de ingreso, envío y comprobante. Mantén el cálculo público como ilustrativo y las preguntas frecuentes desplegables. No añadas cifras comerciales, alianzas bancarias ni tiempos garantizados sin evidencia oficial.
+
+Activa `/dashboard` para cuentas presentes en `staff_members`: pagos por revisar, listas para enviar, envíos registrados y facturación bloqueada o por conciliar. Los totales deben venir del RPC `staff_dashboard_summary`, sobre todo el historial; no derivarlos solo de la página de 50 filas. Separa los importes por moneda y aclara que no son saldos bancarios. Mantén filtros por estado y cliente, paginación y enlaces a la operación exacta en la bandeja de revisión. Ningún cliente debe poder consultar agregados globales ni datos ajenos, incluso invocando el RPC directamente.
+
+La sección «Puesta en marcha» muestra fases, objetivos y módulos de `MASTER_PLAN.json`. Actualiza los hitos solo después de verificar su activación; el avance técnico del repositorio no acredita que el entorno de producción esté configurado. Sin backend conectado, muestra el estado pendiente de conexión y no inventes métricas.
 
 **Backend y autenticación:**
 

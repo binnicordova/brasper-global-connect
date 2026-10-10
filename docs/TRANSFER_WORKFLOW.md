@@ -5,13 +5,15 @@ El desarrollo añade `/transferencias`: autenticación por correo, cotización b
 ## Configuración de Supabase
 
 1. Crear o elegir el proyecto de Brasper. Copiar `.env.example` a `.env.local` y configurar URL y clave pública/anon. No colocar service_role ni claves fiscales en VITE_*.
-2. Aplicar `supabase/migrations/202610100001_transfer_workflow.sql` con SQL Editor o `supabase db push`. La migración crea permisos RLS y buckets privados.
+2. Aplicar las migraciones en orden: `202610100001_transfer_workflow.sql` y `202610100002_staff_dashboard.sql`, con SQL Editor o `supabase db push`. Crean permisos RLS, buckets privados y el resumen global del dashboard. No repetir migraciones ya aplicadas.
 3. Configurar Auth: Site URL y redirect permitido `https://DOMINIO/transferencias`; confirmación de correo habilitada y SMTP oficial. Los usuarios crean su cuenta; un administrador añade los UUID autorizados a `public.staff_members` desde SQL Editor. Los usuarios no pueden darse ese rol.
 4. Registrar cuentas oficiales de ingreso en `deposit_accounts`: moneda, banco, titular, número e instrucciones. Las instrucciones se copian a cada solicitud para conservarlas si luego cambia la cuenta.
 5. Registrar tasas aprobadas en `fx_rates`: monedas origen/destino, tasa, comisión porcentual, rango de montos y vencimiento. No hay tasas ni cuentas ficticias precargadas. La base calcula la comisión y recepción; el cliente no puede sobrescribir esos valores.
 6. Definir política de privacidad y retención aplicable antes de operar con personas reales. Los archivos son privados; acceso temporal firmado de 60 segundos. Limpiar mediante un procedimiento de administración los archivos huérfanos de cargas fallidas, conservando los usados por operaciones.
 
 ## Operación manual
+
+El dashboard `/dashboard` está reservado a cuentas del equipo. Muestra totales del historial con `staff_dashboard_summary`, filtros, paginación de 50 filas y enlaces a la operación exacta en `/transferencias`. Los importes de solicitudes se agrupan por moneda, sin representar saldos bancarios. Su sección «Puesta en marcha» refleja `MASTER_PLAN.json`: actualizar ese documento tras verificar cada hito, sin confundir desarrollo disponible con despliegue real.
 
 Cliente: crea solicitud → paga a la cuenta indicada → sube PDF/JPG/PNG (máximo 5 MB). Subir evidencia no confirma ingreso.
 

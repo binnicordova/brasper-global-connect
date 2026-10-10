@@ -22,6 +22,7 @@ beforeAll(async () => {
     `create role anon; create role authenticated; create role service_role;create schema auth;create schema storage;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('test.uid',true),'')::uuid $$;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;create function storage.foldername(text) returns text[] language sql immutable as $$select string_to_array($1,'/')$$;grant usage on schema public,auth,storage to authenticated,anon,service_role;grant execute on function auth.uid(),storage.foldername(text) to authenticated;grant select,insert on storage.objects to authenticated;`,
   );
   await db.exec(readFileSync("supabase/migrations/202610100001_transfer_workflow.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/202610100002_staff_dashboard.sql", "utf8"));
   await db.exec(
     `insert into auth.users values('${owner}','owner@example.test',now()),('${other}','other@example.test',now()),('${staff}','staff@example.test',now());insert into staff_members(user_id) values('${staff}');insert into fx_rates(id,from_currency,to_currency,rate,commission_percent,valid_until) values('${rate}','PEN','BRL',1.475,5,now()+interval '1 day');insert into deposit_accounts(currency,bank,holder,account_number) values('PEN','Test bank','Brasper test','1234');`,
   );
@@ -129,6 +130,17 @@ describe("Database authorization and workflow", () => {
     await db.exec(`select complete_invoice_delivery('${invoice.id}')`);
     expect((await db.query("select status from transfers")).rows[0]).toMatchObject({
       status: "completed",
+    });
+  });
+  it("restricts dashboard aggregates to staff and separates currencies", async () => {
+    await expect(act(owner, "select staff_dashboard_summary()")).rejects.toThrow(/autorizado/);
+    const result = await act(staff, "select staff_dashboard_summary() as summary");
+    expect(result.rows[0]).toMatchObject({
+      summary: {
+        statuses: { completed: 1 },
+        invoices: { delivered: 1 },
+        amounts: [{ currency: "PEN", amount: 300, operations: 1 }],
+      },
     });
   });
 });

@@ -30,7 +30,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Transferencias internacionales seguras en minutos. Cotiza tu envío entre Perú, Brasil y Estados Unidos y recibe atención en español y portugués.",
+          "Cotiza tu transferencia internacional, adjunta tu prueba de pago y sigue el envío con atención en español y portugués.",
       },
       { property: "og:title", content: "Brasper | Tu dinero, sin fronteras" },
       {
@@ -55,8 +55,8 @@ function Brand() {
 const features = [
   {
     icon: Send,
-    title: "+50 mil envíos realizados",
-    text: "Miles de personas ya nos eligen para conectar su dinero con lo que más importa.",
+    title: "Sigue tu envío",
+    text: "Consulta tu solicitud, la revisión del pago y la constancia de envío desde tu cuenta.",
   },
   {
     icon: ShieldCheck,
@@ -70,8 +70,8 @@ const features = [
   },
   {
     icon: TrendingUp,
-    title: "La mejor tasa para ti",
-    text: "Una tasa competitiva para que tu dinero llegue más lejos. Cotiza antes de enviar.",
+    title: "Cotiza antes de pagar",
+    text: "Revisa la tasa, la comisión y el monto que recibirá tu destinatario antes de continuar.",
   },
 ];
 const money = (value: number) =>
@@ -118,8 +118,8 @@ function Index() {
             <a href="#beneficios" onClick={closeMenu}>
               Por qué Brasper
             </a>
-            <a href="#bancos" onClick={closeMenu}>
-              Nuestros aliados
+            <a href="#seguimiento" onClick={closeMenu}>
+              Seguimiento
             </a>
             <a href="/transferencias" onClick={closeMenu}>
               Mis transferencias
@@ -167,23 +167,28 @@ function Index() {
                 <br />
                 Acerca distancias.
                 <br />
-                <span>En minutos.</span>
+                <span>Con claridad.</span>
               </h1>
               <p>
-                De Perú a Brasil, de Brasil a Estados Unidos.
+                Conectamos Perú, Brasil y Estados Unidos.
                 <br />
-                Transferencias seguras, una gran tasa y personas que te acompañan de verdad.
+                Cotiza, comparte tu prueba de pago y sigue cada paso de tu envío.
               </p>
-              <Button variant="brand" size="lg" className="hero-cta" onClick={() => openContact()}>
-                <MessageCircle /> Enviar con Brasper <ArrowUpRight />
+              <Button variant="brand" size="lg" className="hero-cta" asChild>
+                <a href="/transferencias">
+                  Iniciar mi transferencia <ArrowRight />
+                </a>
               </Button>
+              <button className="hero-help" onClick={() => openContact()}>
+                <MessageCircle size={16} /> Prefiero hablar con el equipo
+              </button>
               <div className="hero-trust">
                 <div className="flag-stack">
                   <span className="country-flag flag-pe" aria-label="Perú" />
                   <span className="country-flag flag-br" aria-label="Brasil" />
                   <span className="country-flag flag-us" aria-label="Estados Unidos" />
                 </div>
-                <span>Tres países. Miles de historias conectadas.</span>
+                <span>Atención en español y portugués.</span>
               </div>
             </div>
             <div className="calculator" id="cotizar">
@@ -320,19 +325,51 @@ function Index() {
             ))}
           </div>
         </section>
-        <section className="banks" id="bancos">
-          <div className="wrap">
-            <p>Conectados con los bancos que ya conoces</p>
-            <div className="bank-grid" aria-label="Bancos asociados">
-              <span className="bank-name italic">❯ BCP</span>
-              <span className="bank-name bank-bb">
-                <span className="bb-symbol">▱</span> BANCO DO BRASIL
-              </span>
-              <span className="bank-name bank-nu">nu</span>
-              <span className="bank-name bank-c6">
-                C6 <small>BANK</small>
-              </span>
+        <section className="tracking-section" id="seguimiento">
+          <div className="wrap tracking-inner">
+            <div>
+              <span className="section-kicker">Cada paso, a tu alcance</span>
+              <h2>Tu envío tiene una historia. Puedes seguirla.</h2>
+              <p>
+                Tu cuenta reúne la cotización, la prueba de pago, el estado del envío y tu
+                comprobante cuando esté disponible.
+              </p>
+              <Button variant="brand" asChild>
+                <a href="/transferencias">
+                  Ver mis transferencias <ArrowRight />
+                </a>
+              </Button>
             </div>
+            <ol className="tracking-steps" aria-label="Etapas de una transferencia">
+              <li>
+                <span>01</span>
+                <div>
+                  <strong>Solicitud registrada</strong>
+                  <p>Revisa los datos y las instrucciones de pago.</p>
+                </div>
+              </li>
+              <li>
+                <span>02</span>
+                <div>
+                  <strong>Pago en revisión</strong>
+                  <p>El equipo comprueba el ingreso real en banco.</p>
+                </div>
+              </li>
+              <li>
+                <span>03</span>
+                <div>
+                  <strong>Dinero enviado</strong>
+                  <p>Consulta el estado y la constancia del envío.</p>
+                </div>
+              </li>
+              <li>
+                <span>04</span>
+                <div>
+                  <strong>Comprobante disponible</strong>
+                  <p>Recíbelo por correo y descárgalo desde tu cuenta.</p>
+                </div>
+              </li>
+            </ol>
           </div>
         </section>
         <section className="wrap how-section" id="como-funciona">
@@ -344,18 +381,18 @@ function Index() {
             {[
               [
                 "01",
-                "Cuéntanos a dónde",
-                "Elige las monedas, calcula tu envío y habla con nuestro equipo por WhatsApp.",
+                "Cotiza y registra",
+                "Entra a tu cuenta, elige una cotización vigente y registra los datos de tu destinatario.",
               ],
               [
                 "02",
-                "Confirma tu transferencia",
-                "Recibe tu cotización y las instrucciones. Revisa los datos y confirma tu envío.",
+                "Paga y adjunta tu prueba",
+                "Deposita a la cuenta indicada y sube tu constancia. El equipo verificará el ingreso.",
               ],
               [
                 "03",
-                "Conecta con los tuyos",
-                "Te acompañamos hasta que tu dinero llegue a su destino. Tú sigues con tus planes.",
+                "Sigue tu envío",
+                "Consulta el avance desde tu cuenta y recibe el comprobante después del envío y la emisión.",
               ],
             ].map(([n, title, text]) => (
               <article key={n}>
@@ -368,6 +405,38 @@ function Index() {
               </article>
             ))}
           </div>
+        </section>
+        <section className="wrap landing-faq" id="preguntas">
+          <div className="section-heading">
+            <span className="section-kicker">Antes de empezar</span>
+            <h2>Lo que necesitas saber.</h2>
+          </div>
+          {[
+            [
+              "¿La calculadora muestra la tasa de mi operación?",
+              "La calculadora de esta página es ilustrativa. En tu cuenta verás las cotizaciones habilitadas con su tasa, comisión y vencimiento antes de registrar la operación.",
+            ],
+            [
+              "¿Subir mi prueba confirma que ya pagué?",
+              "La prueba se envía a revisión. El equipo confirma el ingreso consultando el banco; solo entonces continúa con el envío.",
+            ],
+            [
+              "¿Qué archivo puedo adjuntar?",
+              "Una imagen JPG o PNG, o un PDF de hasta 5 MB. Tus archivos se guardan de forma privada y se consultan desde tu operación.",
+            ],
+            [
+              "¿Cuándo recibo mi comprobante?",
+              "Después de registrar el envío y completar la emisión fiscal. Podrás descargarlo desde tu cuenta y recibirlo por correo cuando el servicio esté habilitado.",
+            ],
+          ].map(([question, answer]) => (
+            <details key={question}>
+              <summary>
+                {question}
+                <ChevronDown size={18} />
+              </summary>
+              <p>{answer}</p>
+            </details>
+          ))}
         </section>
         <section className="contact-section" id="contacto">
           <div className="wrap contact-inner">

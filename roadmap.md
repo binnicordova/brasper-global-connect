@@ -5,6 +5,8 @@
 - [x] Migración PostgreSQL, RLS y archivos privados.
 - [x] Revisión manual de ingreso y registro de envío con constancia.
 - [x] Cola fiscal con prevención de duplicados y worker de integración.
+- [x] Página principal con recorrido de la operación y preguntas frecuentes.
+- [x] Dashboard protegido del equipo con agregados globales, filtros y paginación.
 - [ ] Aplicar migración y habilitar credenciales Supabase en el entorno real.
 - [ ] Configurar tasas aprobadas, cuentas bancarias y usuarios del equipo.
 - [ ] Implementar adaptador con contrato real del proveedor SUNAT/Keyfacil.
