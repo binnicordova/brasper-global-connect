@@ -21,6 +21,8 @@ El correo escrito por un invitado no acredita identidad. Se muestra como contact
 
 ## Operación manual
 
+La revisión segura y su migración incremental están en [FIX_REVIEW_LOVABLE.md](FIX_REVIEW_LOVABLE.md). Después de confirmar ingreso, el formulario empieza vacío; cancelar exige una confirmación separada. El equipo puede restaurar una cancelación accidental posterior a la verificación mediante una acción auditada si no hay envío ni factura.
+
 El dashboard `/dashboard` está reservado a cuentas del equipo. Muestra totales del historial con `staff_dashboard_summary`, filtros, paginación de 50 filas y enlaces a la operación exacta en `/transferencias`. Los importes de solicitudes se agrupan por moneda, sin representar saldos bancarios. Su sección «Puesta en marcha» refleja `MASTER_PLAN.json`: actualizar ese documento tras verificar cada hito, sin confundir desarrollo disponible con despliegue real.
 
 Cliente: crea solicitud → paga a la cuenta indicada → sube PDF/JPG/PNG (máximo 5 MB). Subir evidencia no confirma ingreso.

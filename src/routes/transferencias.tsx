@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ReceiptUpload } from "@/components/receipt-upload";
 import { EvidenceDetails } from "@/components/evidence-preview";
+import { TransferReview, type ReviewSubmission } from "@/components/transfer-review";
 import { TransferDetails } from "@/components/transfer-details";
 import { recipientDetailsInput } from "@/lib/transfers";
 export const Route = createFileRoute("/transferencias")({
@@ -220,14 +221,20 @@ function TransferPortal() {
       );
     });
   }
-  async function run(action: () => Promise<void>) {
+  const actionInProgress = useRef(false);
+  async function run(action: () => Promise<void>): Promise<boolean> {
+    if (actionInProgress.current) return false;
+    actionInProgress.current = true;
     setBusy(true);
     setMessage("");
     try {
       await action();
+      return true;
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "No pudimos completar la operación.");
+      return false;
     } finally {
+      actionInProgress.current = false;
       setBusy(false);
     }
   }
@@ -375,31 +382,49 @@ function TransferPortal() {
       setMessage("Prueba recibida. Nuestro equipo verificará el ingreso en la cuenta bancaria.");
     });
   }
-  async function review(t: Transfer, e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const d = new FormData(e.currentTarget);
-    await run(async () => {
-      const action = String(d.get("action"));
+  async function review(t: Transfer, data: ReviewSubmission) {
+    return run(async () => {
+      const { action, note } = data;
       let path: string | null = null;
       if (action === "payout") {
-        const file = d.get("payout");
-        if (!(file instanceof File) || !file.size)
-          throw new Error("Adjunta la constancia de envío");
-        path = await upload(t, file, "payout");
+        if (!data.payout) throw new Error("Adjunta la constancia de envío");
+        path = await upload(t, data.payout, "payout");
       }
-      const { error } = await supabase!.rpc("review_transfer", {
-        p_transfer_id: t.id,
-        p_action: action,
-        p_note: String(d.get("note")),
-        p_reference: String(d.get("reference") || ""),
-        p_payout_path: path,
-      });
-      if (error) throw error;
-      await load();
+      const result =
+        action === "cancel"
+          ? await supabase!.rpc("cancel_transfer", {
+              p_transfer_id: t.id,
+              p_expected_status: t.status,
+              p_note: note,
+            })
+          : action === "restore"
+            ? await supabase!.rpc("restore_verified_transfer", {
+                p_transfer_id: t.id,
+                p_note: note,
+              })
+            : await supabase!.rpc("review_transfer", {
+                p_transfer_id: t.id,
+                p_action: action,
+                p_note: note,
+                p_reference: data.reference || "",
+                p_payout_path: path,
+              });
+      if (result.error) throw result.error;
+      // A successful mutation must reset the form even if refreshing fails.
+      let refreshError = "";
+      try {
+        await load();
+      } catch {
+        refreshError = " Actualiza para ver el estado guardado.";
+      }
       setMessage(
-        action === "payout"
+        (action === "payout"
           ? "Envío registrado. Se creó la solicitud de facturación."
-          : "Revisión registrada.",
+          : action === "cancel"
+            ? "Operación cancelada con confirmación explícita."
+            : action === "restore"
+              ? "Ingreso confirmado restaurado. Puedes registrar el envío."
+              : "Revisión registrada.") + refreshError,
       );
     });
   }
@@ -1118,56 +1143,16 @@ function TransferPortal() {
                           </p>
                           {t.payout_reference && <p>Referencia de envío: {t.payout_reference}</p>}
                         </details>
-                        {["proof_submitted", "verified", "awaiting_payment"].includes(t.status) && (
-                          <form
-                            className="portal-form review-form"
-                            onSubmit={(e) => void review(t, e)}
-                          >
-                            <label>
-                              Acción
-                              <select name="action">
-                                {t.status === "proof_submitted" && (
-                                  <>
-                                    <option value="verify">Confirmar ingreso bancario</option>
-                                    <option value="request_proof">Solicitar otra prueba</option>
-                                  </>
-                                )}
-                                {t.status === "verified" && (
-                                  <option value="payout">Registrar dinero enviado</option>
-                                )}
-                                <option value="cancel">Cancelar operación</option>
-                              </select>
-                            </label>
-                            <label>
-                              Observación
-                              <input
-                                name="note"
-                                required
-                                minLength={3}
-                                maxLength={1000}
-                                placeholder="Resultado de la verificación"
-                              />
-                            </label>
-                            {t.status === "verified" && (
-                              <>
-                                <label>
-                                  Referencia bancaria del envío
-                                  <input name="reference" maxLength={200} />
-                                </label>
-                                <label>
-                                  Constancia de envío
-                                  <input
-                                    name="payout"
-                                    type="file"
-                                    accept="application/pdf,image/jpeg,image/png"
-                                  />
-                                </label>
-                              </>
-                            )}
-                            <Button variant="brand" disabled={busy}>
-                              Guardar revisión
-                            </Button>
-                          </form>
+                        {["proof_submitted", "verified", "awaiting_payment", "cancelled"].includes(
+                          t.status,
+                        ) && (
+                          <TransferReview
+                            key={`${t.id}:${t.status}`}
+                            id={t.id}
+                            status={t.status}
+                            busy={busy}
+                            onReview={(data) => review(t, data)}
+                          />
                         )}
                       </>
                     )}
@@ -1189,6 +1174,7 @@ function TransferPortal() {
                               request_proof: "Nueva prueba solicitada",
                               cancel: "Operación cancelada",
                               payout: "Envío registrado",
+                              restore_verified: "Ingreso confirmado restaurado",
                             }[e.action] || e.action}
                             {e.note && ` — ${e.note}`}
                           </p>

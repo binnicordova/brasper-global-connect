@@ -30,6 +30,7 @@ beforeAll(async () => {
   );
   await db.exec("alter table auth.users add column is_anonymous boolean not null default false");
   await db.exec(readFileSync("supabase/migrations/202610100005_guest_exchange.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/202610100006_safe_transfer_review.sql", "utf8"));
 }, 20000);
 afterAll(async () => {
   await db.close();
@@ -329,5 +330,98 @@ describe("Database authorization and workflow", () => {
       /Límite/,
     );
     expect((await act(guest, "select id from transfers")).rows).toHaveLength(10);
+  });
+
+  it("rejects legacy cancellation, stale cancellation and non-staff actions", async () => {
+    const result = await act(
+      owner,
+      `select create_transfer('${rate}',300,'Owner','123','Recipient','456','Bank','1111') as id`,
+    );
+    const id = String((result.rows[0] as { id: string }).id);
+    await expect(
+      act(owner, `select cancel_transfer('${id}','awaiting_payment','Cancel requested')`),
+    ).rejects.toThrow(/autorizado/);
+    await expect(act(staff, `select review_transfer('${id}','cancel','tofo bin')`)).rejects.toThrow(
+      /confirmación dedicada/,
+    );
+    expect((await db.query(`select status from transfers where id='${id}'`)).rows[0]).toMatchObject(
+      { status: "awaiting_payment" },
+    );
+    const path = `${owner}/${id}/deposit/photo.jpg`;
+    await act(
+      owner,
+      `insert into storage.objects(bucket_id,name) values('transfer-proofs','${path}')`,
+    );
+    await act(owner, `select submit_proof('${id}','${path}')`);
+    await act(staff, `select review_transfer('${id}','verify','Bank statement checked')`);
+    await expect(
+      act(staff, `select cancel_transfer('${id}','proof_submitted','Stale screen')`),
+    ).rejects.toThrow(/estado cambió/);
+    await expect(act(staff, `select cancel_transfer('${id}',null,'Stale screen')`)).rejects.toThrow(
+      /estado cambió/,
+    );
+    expect((await db.query(`select status from transfers where id='${id}'`)).rows[0]).toMatchObject(
+      { status: "verified" },
+    );
+    await act(staff, `select cancel_transfer('${id}','verified','Explicit cancellation')`);
+    await expect(act(staff, `select cancel_transfer('${id}','verified','Repeat')`)).rejects.toThrow(
+      /estado cambió/,
+    );
+    await expect(
+      act(owner, `select restore_verified_transfer('${id}','Accidental cancellation')`),
+    ).rejects.toThrow(/autorizado/);
+    await act(
+      staff,
+      `select restore_verified_transfer('${id}','Accidental cancellation correction')`,
+    );
+    expect((await db.query(`select status from transfers where id='${id}'`)).rows[0]).toMatchObject(
+      { status: "verified" },
+    );
+    const events = await db.query(
+      `select action from transfer_events where transfer_id='${id}' order by id desc limit 2`,
+    );
+    expect(events.rows).toEqual([{ action: "restore_verified" }, { action: "cancel" }]);
+    expect((await db.query(`select id from invoices where transfer_id='${id}'`)).rows).toHaveLength(
+      0,
+    );
+    await expect(act(staff, `select restore_verified_transfer('${id}','Repeat')`)).rejects.toThrow(
+      /Solo se puede restaurar/,
+    );
+  });
+
+  it("cannot restore unverified cancellations or operations with payout/billing", async () => {
+    const result = await act(
+      owner,
+      `select create_transfer('${rate}',300,'Owner','123','Recipient','456','Bank','1111') as id`,
+    );
+    const id = String((result.rows[0] as { id: string }).id);
+    await act(staff, `select cancel_transfer('${id}','awaiting_payment','Requested by client')`);
+    await expect(
+      act(staff, `select restore_verified_transfer('${id}','Correction')`),
+    ).rejects.toThrow(/Solo se puede restaurar/);
+    // Even a matching last pair of events cannot bypass existing payout/invoice checks.
+    await db.exec(
+      `update transfers set verified_at=now(),payout_at=now() where id='${id}'; insert into transfer_events(transfer_id,action) values('${id}','verify'),('${id}','cancel')`,
+    );
+    await expect(
+      act(staff, `select restore_verified_transfer('${id}','Correction')`),
+    ).rejects.toThrow(/Solo se puede restaurar/);
+    await db.exec(
+      `update transfers set payout_at=null where id='${id}'; insert into invoices(transfer_id) values('${id}')`,
+    );
+    await expect(
+      act(staff, `select restore_verified_transfer('${id}','Correction')`),
+    ).rejects.toThrow(/Solo se puede restaurar/);
+    await db.exec("set role anon");
+    try {
+      await expect(
+        db.query(`select cancel_transfer('${id}','cancelled','Attempt')`),
+      ).rejects.toThrow(/permission denied/);
+      await expect(db.query(`select restore_verified_transfer('${id}','Attempt')`)).rejects.toThrow(
+        /permission denied/,
+      );
+    } finally {
+      await db.exec("reset role");
+    }
   });
 });

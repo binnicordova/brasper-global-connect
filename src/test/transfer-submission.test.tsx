@@ -7,6 +7,7 @@ const mock = vi.hoisted(() => ({
   upload: vi.fn(),
   guest: false,
   signedIn: true,
+  staff: false,
   startGuest: vi.fn(),
   saveAccess: vi.fn(),
   emailLogin: vi.fn(),
@@ -56,7 +57,9 @@ vi.mock("@/lib/supabase", () => ({
               ]
             : table === "transfers"
               ? mock.rows
-              : [],
+              : table === "staff_members" && mock.staff
+                ? [{ user_id: user }]
+                : [],
       });
       const q = {
         select: () => q,
@@ -77,6 +80,7 @@ beforeEach(() => {
   mock.rows = [];
   mock.guest = false;
   mock.signedIn = true;
+  mock.staff = false;
   mock.startGuest.mockImplementation(async () => ({
     data: { session: { user: { id: user, is_anonymous: true } } },
     error: null,
@@ -126,6 +130,76 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+});
+
+describe("Staff review integration", () => {
+  it("verification cannot silently turn into cancellation after reloading", async () => {
+    mock.staff = true;
+    window.history.replaceState(null, "", `/transferencias#operacion-${operation}`);
+    mock.rows = [
+      {
+        id: operation,
+        status: "proof_submitted",
+        amount: 300,
+        from_currency: "PEN",
+        to_currency: "BRL",
+        rate: 1.5,
+        commission: 0,
+        recipient_amount: 450,
+        customer_name: "Test",
+        customer_document: "123",
+        recipient_name: "Recipient",
+        recipient_bank: "Bank",
+        recipient_account: "111",
+        customer_email: "test@example.test",
+        recipient_document: "456",
+        invoices: [],
+        created_at: "2026-10-10T00:00:00Z",
+        deposit_instructions: [],
+      },
+    ];
+    mock.rpc.mockImplementation(async (name: string, p: Record<string, unknown>) => {
+      if (name === "review_transfer")
+        mock.rows = mock.rows.map((r) => ({ ...r, status: "verified" }));
+      if (name === "cancel_transfer")
+        mock.rows = mock.rows.map((r) => ({ ...r, status: "cancelled" }));
+      if (name === "restore_verified_transfer")
+        mock.rows = mock.rows.map((r) => ({ ...r, status: "verified" }));
+      return { error: null, data: [] };
+    });
+    render(<Portal />);
+    fireEvent.change(await screen.findByLabelText("Acción"), { target: { value: "verify" } });
+    fireEvent.change(screen.getByLabelText("Observación"), { target: { value: "tofo bin" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar revisión" }));
+    await screen.findByText("Ingreso confirmado");
+    expect(screen.getByLabelText("Acción")).toHaveValue("");
+    expect(screen.getByLabelText("Observación")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Guardar revisión" })).toBeDisabled();
+    fireEvent.submit(screen.getByLabelText("Acción").closest("form")!);
+    expect(mock.rpc.mock.calls.filter(([name]) => name === "review_transfer")).toHaveLength(1);
+    expect(mock.rpc.mock.calls.some(([name]) => name === "cancel_transfer")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar operación…" }));
+    fireEvent.change(screen.getByLabelText("Motivo de cancelación"), {
+      target: { value: "Explicit test cancellation" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sí, cancelar esta operación" }));
+    await screen.findByText("Cancelada");
+    expect(mock.rpc).toHaveBeenCalledWith("cancel_transfer", {
+      p_transfer_id: operation,
+      p_expected_status: "verified",
+      p_note: "Explicit test cancellation",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Restaurar ingreso confirmado" }));
+    fireEvent.change(screen.getByLabelText("Motivo de restauración"), {
+      target: { value: "Accidental cancellation correction" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar restauración" }));
+    await screen.findByText("Ingreso confirmado");
+    expect(mock.rpc).toHaveBeenCalledWith("restore_verified_transfer", {
+      p_transfer_id: operation,
+      p_note: "Accidental cancellation correction",
+    });
+  });
 });
 async function fillAndAttach(submit = true, attach = true) {
   const rendered = render(<Portal />);

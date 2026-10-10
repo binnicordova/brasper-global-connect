@@ -8,6 +8,13 @@
       "when": 1791666687369,
       "tag": "0000_brasper_transfer_workflow",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791680000000,
+      "tag": "0001_safe_transfer_review",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,7 @@
 # Prompt para activar el flujo en Lovable
 
+Para proyectos ya activados, aplica además la migración de revisión segura y sigue [FIX_REVIEW_LOVABLE.md](FIX_REVIEW_LOVABLE.md). Cancelar requiere `cancel_transfer`, fuera del desplegable de revisión, con confirmación explícita y estado esperado. `review_transfer` rechaza cancelaciones de pantallas antiguas.
+
 Copia el siguiente texto en el proyecto Lovable conectado a `jordyalania/brasper-global-connect`. Los archivos están en la rama `codex/transfer-workflow`, PR #1. Primero integra esos cambios en la rama que Lovable sincroniza o importa los archivos; no asumas que Lovable ya ve el PR.
 
 ---
