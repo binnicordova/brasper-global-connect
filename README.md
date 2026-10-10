@@ -36,3 +36,5 @@ npm run dev
 ## Transferencias y revisión interna
 
 El portal `/transferencias` incorpora solicitudes, carga privada de pruebas de pago, revisión de ingreso, registro manual de envío y cola de facturación. Sigue [la guía de activación](docs/TRANSFER_WORKFLOW.md) para configurar Supabase, tasas, cuentas, roles y proveedor fiscal. Sin esas credenciales el portal informa que está en preparación; no simula pagos ni emisión SUNAT.
+
+Para configurar desde Lovable, usa el [prompt de activación](docs/PROMPT_LOVABLE.md). La [plantilla SQL comentada](supabase/manual-setup.example.sql) describe los datos oficiales que debe cargar el administrador.
