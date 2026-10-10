@@ -1,5 +1,6 @@
+import { readExchangeIntent, exchangePath } from "@/lib/exchange-intent";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useRef, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import {
   ArrowLeft,
@@ -32,6 +33,49 @@ export const Route = createFileRoute("/transferencias")({
 const money = (n: number, c: string) =>
   `${Number(n).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${c}`;
 function TransferPortal() {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [step, setStep] = useState(0);
+  const [reviewData, setReviewData] = useState<ReturnType<
+    typeof recipientDetailsInput.parse
+  > | null>(null);
+  const [intent, setIntent] = useState<ReturnType<typeof readExchangeIntent>>(null);
+  useEffect(() => {
+    const requested = readExchangeIntent(window.location.search);
+    setIntent(requested);
+    if (requested) setAmount(requested.amount);
+  }, []);
+  useEffect(() => {
+    formRef.current?.querySelector<HTMLHeadingElement>(`fieldset[data-step="${step}"] h3`)?.focus();
+  }, [step]);
+  function validStep(index: number) {
+    const fields = formRef.current?.querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >(
+      `fieldset[data-step="${index}"] input,fieldset[data-step="${index}"] select,fieldset[data-step="${index}"] textarea`,
+    );
+    return Array.from(fields ?? []).every((field) => field.reportValidity());
+  }
+  function nextStep() {
+    if (!validStep(step)) return;
+    if (!rate || new Date(rate.valid_until).getTime() <= Date.now()) {
+      setMessage("La cotización venció. Actualiza para obtener una tasa vigente.");
+      return;
+    }
+    if (step === 2) {
+      const result = recipientDetailsInput.safeParse({
+        rateId: rate.id,
+        amount,
+        ...Object.fromEntries(new FormData(formRef.current!)),
+      });
+      if (!result.success) {
+        setMessage(result.error.issues[0]?.message || "Revisa los datos.");
+        return;
+      }
+      setReviewData(result.data);
+    }
+    setMessage("");
+    setStep((old) => Math.min(old + 1, 3));
+  }
   const [initialReceipt, setInitialReceipt] = useState<File | null>(null);
   const [accountType, setAccountType] = useState("bank_account");
   const [proofFiles, setProofFiles] = useState<Record<string, File | null>>({});
@@ -101,13 +145,27 @@ function TransferPortal() {
     ]);
     for (const result of [r, t, e, s]) if (result.error) throw result.error;
     setRates(r.data ?? []);
-    setSelected((old) => (r.data?.some((item) => item.id === old) ? old : r.data?.[0]?.id || ""));
+    const requested = readExchangeIntent(window.location.search);
+    const matching = r.data?.find(
+      (item) => item.from_currency === requested?.from && item.to_currency === requested?.to,
+    );
+    setSelected((old) =>
+      r.data?.some((item) => item.id === old)
+        ? old
+        : matching?.id || (requested ? "" : r.data?.[0]?.id) || "",
+    );
+    if (requested && !matching && r.data?.length)
+      setMessage(
+        "La ruta elegida no tiene una cotización vigente. Elige una de las rutas disponibles para continuar.",
+      );
     setTransfers(t.data ?? []);
     setEvents(e.data ?? []);
     setStaff(Boolean(s.data?.length));
     if (operation && s.data?.length) setAdmin(true);
   }
   useEffect(() => {
+    setStep(0);
+    setReviewData(null);
     if (session) {
       setInitialReceipt(null);
       setProofFiles({});
@@ -146,7 +204,11 @@ function TransferPortal() {
       const result = register
         ? await supabase.auth.signUp({
             ...credentials,
-            options: { emailRedirectTo: window.location.origin + "/transferencias" },
+            options: {
+              emailRedirectTo:
+                window.location.origin +
+                (intent ? exchangePath(intent.from, intent.to, intent.amount) : "/transferencias"),
+            },
           })
         : await supabase.auth.signInWithPassword(credentials);
       if (result.error) throw result.error;
@@ -155,6 +217,17 @@ function TransferPortal() {
   }
   async function create(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (busy) return;
+    if (step < 3) {
+      nextStep();
+      return;
+    }
+    for (let index = 0; index < 4; index++) {
+      if (!validStep(index)) {
+        setStep(index);
+        return;
+      }
+    }
     const form = e.currentTarget,
       d = new FormData(form);
     await run(async () => {
@@ -181,6 +254,9 @@ function TransferPortal() {
       });
       if (error) throw error;
       form.reset();
+      setStep(0);
+      setReviewData(null);
+      setIntent(null);
       setInitialReceipt(null);
       let receiptError = "";
       if (file) {
@@ -315,7 +391,13 @@ function TransferPortal() {
         <div className="portal-heading">
           <span className="section-kicker">Tu dinero, paso a paso</span>
           <h1>{admin ? "Operaciones de Brasper" : "Tus transferencias, en un solo lugar"}</h1>
-          <p>Cotiza, adjunta tu prueba de pago y sigue el envío hasta recibir tu comprobante.</p>
+          <p>Solicita tu cambio, registra la cuenta de destino y sigue cada paso desde la web.</p>
+          {intent && (
+            <div className="exchange-intent">
+              Quieres cambiar <strong>{money(Number(intent.amount), intent.from)}</strong> a{" "}
+              <strong>{intent.to}</strong>. La tasa vigente se confirma en el primer paso.
+            </div>
+          )}
         </div>
         {message && (
           <div className="portal-notice" role="status">
@@ -385,7 +467,7 @@ function TransferPortal() {
                 <div className="portal-section-title">
                   <ArrowLeftRight />
                   <div>
-                    <h2>Realiza tu transferencia desde aquí</h2>
+                    <h2>Realiza tu cambio desde aquí</h2>
                     <p>Completa los datos, registra el pago y sigue la revisión del equipo.</p>
                   </div>
                 </div>
@@ -395,195 +477,327 @@ function TransferPortal() {
                     recibir nuevas solicitudes.
                   </p>
                 ) : (
-                  <form className="portal-form transfer-form" onSubmit={create}>
-                    <div className="transfer-step-heading wide">
-                      <span>01</span>
-                      <div>
-                        <h3>Cotiza tu envío</h3>
-                        <p>Revisa cuánto pagas y cuánto recibe el destinatario.</p>
+                  <form
+                    ref={formRef}
+                    className="portal-form transfer-form"
+                    onSubmit={create}
+                    noValidate
+                    aria-label="Solicitud de cambio"
+                  >
+                    <ol className="exchange-progress wide" aria-label="Pasos de tu cambio">
+                      {["Cotización", "Tus datos", "Cuenta de destino", "Revisión y pago"].map(
+                        (label, index) => (
+                          <li
+                            key={label}
+                            aria-current={step === index ? "step" : undefined}
+                            className={step >= index ? "active" : ""}
+                          >
+                            <span>{index + 1}</span>
+                            {label}
+                          </li>
+                        ),
+                      )}
+                    </ol>
+                    <fieldset
+                      className="exchange-fieldset wide"
+                      data-step="0"
+                      hidden={step !== 0}
+                      disabled={busy}
+                    >
+                      <legend className="sr-only">Cotización</legend>
+                      <div className="transfer-step-heading wide">
+                        <span>01</span>
+                        <div>
+                          <h3 tabIndex={-1}>Cotiza tu envío</h3>
+                          <p>Revisa cuánto pagas y cuánto recibe el destinatario.</p>
+                        </div>
                       </div>
-                    </div>
-                    <label>
-                      Ruta
-                      <select
-                        value={selected}
-                        onChange={(e) => {
-                          setSelected(e.target.value);
-                          setAccountType("bank_account");
-                        }}
-                      >
-                        {rates.map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {r.from_currency} → {r.to_currency}
+                      <label>
+                        Ruta
+                        <select
+                          value={selected}
+                          required
+                          onChange={(e) => {
+                            setSelected(e.target.value);
+                            setAccountType("bank_account");
+                          }}
+                        >
+                          <option value="" disabled>
+                            Elige una ruta disponible
                           </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Monto que pagas ({rate?.from_currency})
-                      <input
-                        type="number"
-                        min={rate?.min_amount}
-                        max={rate?.max_amount}
-                        step="0.01"
-                        required
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                      />
-                    </label>
-                    {rate && amounts && (
-                      <div className="quote-summary wide">
-                        <div>
-                          <span>Comisión</span>
-                          <strong>{money(amounts.commission, rate.from_currency)}</strong>
-                        </div>
-                        <div>
-                          <span>Neto a convertir</span>
-                          <strong>
-                            {money(Number(amount) - amounts.commission, rate.from_currency)}
-                          </strong>
-                        </div>
-                        <div>
-                          <span>El destinatario recibe</span>
-                          <strong>{money(amounts.received, rate.to_currency)}</strong>
-                        </div>
-                        <p>
-                          Tasa: {rate.rate} · Cotización disponible hasta{" "}
-                          {new Date(rate.valid_until).toLocaleString("es-PE")}
-                        </p>
-                      </div>
-                    )}
-                    <div className="transfer-step-heading wide">
-                      <span>02</span>
-                      <div>
-                        <h3>Tus datos de contacto</h3>
-                        <p>El comprobante se enviará a {session.user.email}.</p>
-                      </div>
-                    </div>
-                    {[
-                      ["customerName", "Tu nombre completo"],
-                      ["customerDocument", "Tu DNI, RUC o documento"],
-                    ].map(([name, label]) => (
-                      <label key={name}>
-                        {label}
-                        <input name={name} required minLength={2} maxLength={200} />
+                          {rates.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.from_currency} → {r.to_currency}
+                            </option>
+                          ))}
+                        </select>
                       </label>
-                    ))}
-                    <label>
-                      Tu teléfono con código de país
-                      <input
-                        name="customerPhone"
-                        type="tel"
-                        required
-                        minLength={6}
-                        maxLength={40}
-                        autoComplete="tel"
-                        placeholder="Ej. +51 …"
-                      />
-                    </label>
-                    <div className="transfer-step-heading wide">
-                      <span>03</span>
-                      <div>
-                        <h3>Destinatario y cuenta a recibir</h3>
-                        <p>
-                          Copia los datos tal como aparecen en el banco. Destino:{" "}
-                          {rate?.to_currency}.
-                        </p>
-                      </div>
-                    </div>
-                    {[
-                      ["recipientName", "Nombre completo del destinatario"],
-                      ["recipientDocument", "Documento del destinatario"],
-                      ["recipientAccountHolder", "Titular de la cuenta receptora"],
-                      [
-                        "recipientAccountHolderDocument",
-                        "Documento del titular (DNI / CPF / CNPJ u otro)",
-                      ],
-                      ["recipientBank", "Banco de la cuenta receptora"],
-                    ].map(([name, label]) => (
-                      <label key={name}>
-                        {label}
-                        <input name={name} required minLength={2} maxLength={200} />
+                      <label>
+                        Monto que pagas ({rate?.from_currency})
+                        <input
+                          type="number"
+                          min={rate?.min_amount}
+                          max={rate?.max_amount}
+                          step="0.01"
+                          required
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                        />
                       </label>
-                    ))}
-                    <label>
-                      Tipo de cuenta o clave
-                      <select
-                        name="recipientAccountType"
-                        value={accountType}
-                        onChange={(e) => setAccountType(e.target.value)}
-                      >
-                        <option value="bank_account">Cuenta bancaria</option>
-                        {rate?.to_currency === "PEN" && (
-                          <option value="cci">CCI (20 dígitos)</option>
-                        )}
-                        {rate?.to_currency === "BRL" && <option value="pix">Clave PIX</option>}
-                      </select>
-                    </label>
-                    <label>
-                      {accountType === "pix"
-                        ? "Clave PIX del titular"
-                        : accountType === "cci"
-                          ? "CCI de la cuenta"
-                          : "Número de cuenta receptora"}
-                      <input
-                        name="recipientAccount"
-                        required
-                        minLength={accountType === "cci" ? 20 : 2}
-                        maxLength={accountType === "cci" ? 20 : 200}
-                        inputMode={accountType === "cci" ? "numeric" : "text"}
-                        pattern={accountType === "cci" ? "[0-9]{20}" : undefined}
-                        placeholder={
-                          accountType === "pix"
-                            ? "CPF, CNPJ, correo, teléfono o clave aleatoria"
-                            : "Sin abreviar"
-                        }
-                      />
-                    </label>
-                    <label>
-                      Agencia / sucursal (si corresponde)
-                      <input name="recipientBankBranch" maxLength={50} />
-                    </label>
-                    <label>
-                      Teléfono del destinatario (opcional)
-                      <input name="recipientPhone" type="tel" maxLength={40} />
-                    </label>
-                    <label className="wide">
-                      Información adicional (opcional)
-                      <textarea
-                        name="transferNote"
-                        maxLength={500}
-                        placeholder="Indicaciones que deba revisar el equipo"
-                      />
-                    </label>
-                    <div className="transfer-step-heading wide">
-                      <span>04</span>
-                      <div>
-                        <h3>Prueba del pago a Brasper</h3>
-                        <p>
-                          Si ya realizaste el ingreso, adjunta la foto ahora. Si aún no pagaste,
-                          registra los datos y recibirás las instrucciones para continuar.
-                        </p>
+                      {rate && amounts && (
+                        <div className="quote-summary wide">
+                          <div>
+                            <span>Comisión</span>
+                            <strong>{money(amounts.commission, rate.from_currency)}</strong>
+                          </div>
+                          <div>
+                            <span>Neto a convertir</span>
+                            <strong>
+                              {money(Number(amount) - amounts.commission, rate.from_currency)}
+                            </strong>
+                          </div>
+                          <div>
+                            <span>El destinatario recibe</span>
+                            <strong>{money(amounts.received, rate.to_currency)}</strong>
+                          </div>
+                          <p>
+                            Tasa: {rate.rate} · Cotización disponible hasta{" "}
+                            {new Date(rate.valid_until).toLocaleString("es-PE")}
+                          </p>
+                        </div>
+                      )}
+                    </fieldset>
+                    <fieldset
+                      className="exchange-fieldset wide"
+                      data-step="1"
+                      hidden={step !== 1}
+                      disabled={busy}
+                    >
+                      <legend className="sr-only">Tus datos</legend>
+                      <div className="transfer-step-heading wide">
+                        <span>02</span>
+                        <div>
+                          <h3 tabIndex={-1}>Tus datos de contacto</h3>
+                          <p>El comprobante se enviará a {session.user.email}.</p>
+                        </div>
                       </div>
+                      {[
+                        ["customerName", "Tu nombre completo"],
+                        ["customerDocument", "Tu DNI, RUC o documento"],
+                      ].map(([name, label]) => (
+                        <label key={name}>
+                          {label}
+                          <input name={name} required minLength={2} maxLength={200} />
+                        </label>
+                      ))}
+                      <label>
+                        Tu teléfono con código de país
+                        <input
+                          name="customerPhone"
+                          type="tel"
+                          required
+                          minLength={6}
+                          maxLength={40}
+                          autoComplete="tel"
+                          placeholder="Ej. +51 …"
+                        />
+                      </label>
+                    </fieldset>
+                    <fieldset
+                      className="exchange-fieldset wide"
+                      data-step="2"
+                      hidden={step !== 2}
+                      disabled={busy}
+                    >
+                      <legend className="sr-only">Cuenta de destino</legend>
+                      <div className="transfer-step-heading wide">
+                        <span>03</span>
+                        <div>
+                          <h3 tabIndex={-1}>Destinatario y cuenta a recibir</h3>
+                          <p>
+                            Copia los datos tal como aparecen en el banco. Destino:{" "}
+                            {rate?.to_currency}.
+                          </p>
+                        </div>
+                      </div>
+                      {[
+                        ["recipientName", "Nombre completo del destinatario"],
+                        ["recipientDocument", "Documento del destinatario"],
+                        ["recipientAccountHolder", "Titular de la cuenta receptora"],
+                        [
+                          "recipientAccountHolderDocument",
+                          "Documento del titular (DNI / CPF / CNPJ u otro)",
+                        ],
+                        ["recipientBank", "Banco de la cuenta receptora"],
+                      ].map(([name, label]) => (
+                        <label key={name}>
+                          {label}
+                          <input name={name} required minLength={2} maxLength={200} />
+                        </label>
+                      ))}
+                      <label>
+                        Tipo de cuenta o clave
+                        <select
+                          name="recipientAccountType"
+                          value={accountType}
+                          onChange={(e) => setAccountType(e.target.value)}
+                        >
+                          <option value="bank_account">Cuenta bancaria</option>
+                          {rate?.to_currency === "PEN" && (
+                            <option value="cci">CCI (20 dígitos)</option>
+                          )}
+                          {rate?.to_currency === "BRL" && <option value="pix">Clave PIX</option>}
+                        </select>
+                      </label>
+                      <label>
+                        {accountType === "pix"
+                          ? "Clave PIX del titular"
+                          : accountType === "cci"
+                            ? "CCI de la cuenta"
+                            : "Número de cuenta receptora"}
+                        <input
+                          name="recipientAccount"
+                          required
+                          minLength={accountType === "cci" ? 20 : 2}
+                          maxLength={accountType === "cci" ? 20 : 200}
+                          inputMode={accountType === "cci" ? "numeric" : "text"}
+                          pattern={accountType === "cci" ? "[0-9]{20}" : undefined}
+                          placeholder={
+                            accountType === "pix"
+                              ? "CPF, CNPJ, correo, teléfono o clave aleatoria"
+                              : "Sin abreviar"
+                          }
+                        />
+                      </label>
+                      <label>
+                        Agencia / sucursal (si corresponde)
+                        <input name="recipientBankBranch" maxLength={50} />
+                      </label>
+                      <label>
+                        Teléfono del destinatario (opcional)
+                        <input name="recipientPhone" type="tel" maxLength={40} />
+                      </label>
+                      <label className="wide">
+                        Información adicional (opcional)
+                        <textarea
+                          name="transferNote"
+                          maxLength={500}
+                          placeholder="Indicaciones que deba revisar el equipo"
+                        />
+                      </label>
+                    </fieldset>
+                    <fieldset
+                      className="exchange-fieldset wide"
+                      data-step="3"
+                      hidden={step !== 3}
+                      disabled={busy}
+                    >
+                      <legend className="sr-only">Revisión y pago</legend>
+                      <div className="transfer-step-heading wide">
+                        <span>04</span>
+                        <div>
+                          <h3 tabIndex={-1}>Revisa tu cambio y continúa al pago</h3>
+                          <p>
+                            Si ya realizaste el ingreso, adjunta la foto ahora. Si aún no pagaste,
+                            registra los datos y recibirás las instrucciones para continuar.
+                          </p>
+                        </div>
+                      </div>
+                      {reviewData && rate && amounts && (
+                        <div className="exchange-review wide">
+                          <h4>Resumen de tu solicitud</h4>
+                          <dl>
+                            <div>
+                              <dt>Pagas a Brasper</dt>
+                              <dd>{money(Number(amount), rate.from_currency)}</dd>
+                            </div>
+                            <div>
+                              <dt>Comisión incluida</dt>
+                              <dd>{money(amounts.commission, rate.from_currency)}</dd>
+                            </div>
+                            <div>
+                              <dt>Recibe el destinatario</dt>
+                              <dd>{money(amounts.received, rate.to_currency)}</dd>
+                            </div>
+                            <div>
+                              <dt>Remitente</dt>
+                              <dd>
+                                {reviewData.customerName} · {reviewData.customerDocument}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>Destinatario</dt>
+                              <dd>
+                                {reviewData.recipientName} · {reviewData.recipientDocument}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>Cuenta receptora</dt>
+                              <dd>
+                                {reviewData.recipientBank} · {reviewData.recipientAccount}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>Titular</dt>
+                              <dd>
+                                {reviewData.recipientAccountHolder} ·{" "}
+                                {reviewData.recipientAccountHolderDocument}
+                              </dd>
+                            </div>
+                          </dl>
+                          <p>
+                            Revisa el número de cuenta antes de confirmar. Podrás volver para
+                            corregirlo.
+                          </p>
+                        </div>
+                      )}
+                      <div className="wide">
+                        <ReceiptUpload
+                          file={initialReceipt}
+                          onChange={setInitialReceipt}
+                          disabled={busy}
+                        />
+                      </div>
+                      <label className="wide portal-consent">
+                        <input type="checkbox" required /> Confirmo los datos del destinatario y
+                        autorizo su uso para gestionar este envío y el comprobante.
+                      </label>
+                    </fieldset>
+                    <div className="exchange-navigation wide">
+                      {step > 0 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={busy}
+                          onClick={() => setStep((old) => old - 1)}
+                        >
+                          <ArrowLeft size={16} /> Volver
+                        </Button>
+                      )}
+                      {step < 3 && (
+                        <Button
+                          type="button"
+                          variant="brand"
+                          disabled={busy || !rate}
+                          onClick={nextStep}
+                        >
+                          Continuar <ArrowRight size={16} />
+                        </Button>
+                      )}
                     </div>
-                    <div className="wide">
-                      <ReceiptUpload
-                        file={initialReceipt}
-                        onChange={setInitialReceipt}
-                        disabled={busy}
-                      />
-                    </div>
-                    <label className="wide portal-consent">
-                      <input type="checkbox" required /> Confirmo los datos del destinatario y
-                      autorizo su uso para gestionar este envío y el comprobante.
-                    </label>
-                    <Button variant="brand" className="wide" disabled={busy}>
+                    <Button
+                      type="submit"
+                      variant="brand"
+                      className="wide"
+                      hidden={step !== 3}
+                      disabled={busy || !rate}
+                    >
                       {initialReceipt
                         ? "Enviar solicitud y comprobante a revisión"
                         : "Guardar datos y continuar al pago"}{" "}
                       <ArrowRight size={16} />
                     </Button>
-                    <p className="wide">
+                    <p className="wide" hidden={step !== 3}>
                       La prueba de pago será revisada por el equipo antes de enviar el dinero.
                     </p>
                   </form>

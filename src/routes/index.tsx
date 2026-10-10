@@ -1,3 +1,4 @@
+import { exchangePath } from "@/lib/exchange-intent";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import {
@@ -271,17 +272,14 @@ function Index() {
                   </strong>
                 </div>
               </div>
-              <Button
-                variant="brand"
-                className="send-button"
-                onClick={quote}
-                disabled={!amount || Number(amount) <= 0}
-              >
-                <MessageCircle /> Cotizar por WhatsApp <ArrowRight />
+              <Button variant="brand" className="send-button" asChild>
+                <a href={exchangePath(from, to, amount)}>
+                  <ArrowLeftRight /> Hacer mi cambio desde la web <ArrowRight />
+                </a>
               </Button>
-              <a href="/transferencias" className="portal-start-link">
-                Crear una transferencia y subir mi comprobante <ArrowRight size={14} />
-              </a>
+              <button type="button" onClick={quote} className="portal-start-link">
+                Prefiero atención por WhatsApp <MessageCircle size={14} />
+              </button>
               <p className="estimate-note">
                 Cálculo ilustrativo, no es una cotización. La tasa y el tiempo de entrega se
                 confirman antes de enviar.

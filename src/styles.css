@@ -951,6 +951,98 @@ footer {
 .review-form {
   grid-template-columns: 1fr 1fr;
 }
+.exchange-fieldset {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.transfer-form [hidden] {
+  display: none;
+}
+.exchange-progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+.exchange-progress li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--color-border);
+}
+.exchange-progress li.active {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.exchange-progress span {
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.exchange-navigation {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.exchange-review,
+.exchange-intent {
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--color-muted);
+}
+.exchange-intent {
+  margin-top: 20px;
+  font-size: 14px;
+}
+.exchange-review h4 {
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.exchange-review dl {
+  display: grid;
+  gap: 12px;
+}
+.exchange-review dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 14px;
+}
+.exchange-review dt {
+  color: var(--color-muted-foreground);
+}
+.exchange-review dd {
+  text-align: right;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .exchange-fieldset {
+    grid-template-columns: 1fr;
+  }
+  .exchange-progress {
+    grid-template-columns: 1fr 1fr;
+  }
+  .exchange-review dl > div {
+    flex-direction: column;
+    gap: 3px;
+  }
+  .exchange-review dd {
+    text-align: left;
+  }
+}
 .portal-form label {
   display: flex;
   flex-direction: column;
