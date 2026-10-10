@@ -9,10 +9,15 @@ import {
   RefreshCw,
   ShieldCheck,
   Image,
+  FileText,
+  Search,
+  Download,
+  Landmark,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { EvidencePreview } from "@/components/evidence-preview";
+import { OperationOverview } from "@/components/operation-overview";
 import { TransferDetails } from "@/components/transfer-details";
 import { supabase } from "@/lib/supabase";
 import { statusLabels, invoiceLabels, firstInvoice, type Transfer } from "@/lib/transfers";
@@ -30,6 +35,36 @@ type Summary = {
 const money = (amount: number, currency: string) =>
   `${Number(amount).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
 function Dashboard() {
+  const [detailTab, setDetailTab] = useState("summary");
+  const [currency, setCurrency] = useState("");
+  const [fileBusy, setFileBusy] = useState(false);
+  const [fileError, setFileError] = useState("");
+  function openOperation(transfer: Transfer) {
+    setDetailTab("summary");
+    setFileError("");
+    setOpened(transfer);
+  }
+  async function openFiscalFile(path: string) {
+    if (!supabase || fileBusy) return;
+    const popup = window.open("about:blank", "_blank");
+    if (popup) popup.opener = null;
+    setFileBusy(true);
+    setFileError("");
+    try {
+      const { data, error } = await supabase.storage
+        .from("invoice-documents")
+        .createSignedUrl(path, 60);
+      if (error || !data?.signedUrl) throw new Error("No se pudo abrir el documento privado.");
+      if (popup) popup.location.href = data.signedUrl;
+      else setFileError("Permite abrir ventanas para consultar el documento.");
+    } catch {
+      popup?.close();
+      setFileError("No se pudo abrir el documento. Revisa tus permisos e intenta otra vez.");
+    } finally {
+      setFileBusy(false);
+    }
+  }
+
   const [opened, setOpened] = useState<Transfer | null>(null);
   const [access, setAccess] = useState<"loading" | "staff" | "denied">("loading");
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -42,7 +77,7 @@ function Dashboard() {
   const [updated, setUpdated] = useState("");
   const [page, setPage] = useState(0);
   const [count, setCount] = useState(0);
-  const [query, setQuery] = useState({ status: "proof_submitted", search: "" });
+  const [query, setQuery] = useState({ status: "proof_submitted", search: "", currency: "" });
   useEffect(() => {
     if (access !== "staff" || !supabase) return;
     let timer: number | undefined;
@@ -117,7 +152,12 @@ function Dashboard() {
       ]);
     else if (query.status === "sent") request = request.in("status", ["paid_out", "completed"]);
     else if (query.status) request = request.eq("status", query.status);
-    if (query.search) request = request.ilike("customer_name", `%${query.search}%`);
+    if (query.currency) request = request.eq("from_currency", query.currency);
+    if (query.search)
+      request = request.ilike(
+        /^[0-9]+$/.test(query.search) ? "customer_document" : "customer_name",
+        `%${query.search}%`,
+      );
     void Promise.all([supabase.rpc("staff_dashboard_summary"), request])
       .then(([s, t]) => {
         if (!active) return;
@@ -148,8 +188,9 @@ function Dashboard() {
   function filter(e: FormEvent) {
     e.preventDefault();
     setPage(0);
-    setQuery({ status, search: search.trim() });
+    setQuery({ status, search: search.trim(), currency });
   }
+  const openedInvoice = opened ? firstInvoice(opened.invoices) : null;
   const statuses = summary?.statuses ?? {},
     invoices = summary?.invoices ?? {};
   return (
@@ -158,9 +199,32 @@ function Dashboard() {
         <a className="brand" href="/">
           brasper<span className="text-primary">.</span>
         </a>
-        <span className="ops-caption">CENTRO DE OPERACIONES</span>
-        <button aria-pressed={tab === "operations"} onClick={() => setTab("operations")}>
+        <span className="ops-caption">BACKOFFICE · BRASPER</span>
+        <button
+          aria-pressed={tab === "operations"}
+          onClick={() => {
+            setTab("operations");
+            setStatus("proof_submitted");
+            setPage(0);
+            setQuery({ status: "proof_submitted", search: "", currency: "" });
+            setSearch("");
+            setCurrency("");
+          }}
+        >
           <LayoutDashboard size={18} /> Operaciones
+        </button>
+        <button
+          aria-pressed={tab === "billing"}
+          onClick={() => {
+            setTab("billing");
+            setStatus("invoice_attention");
+            setSearch("");
+            setCurrency("");
+            setPage(0);
+            setQuery({ status: "invoice_attention", search: "", currency: "" });
+          }}
+        >
+          <FileText size={18} /> Comprobantes
         </button>
         <button aria-pressed={tab === "launch"} onClick={() => setTab("launch")}>
           <ShieldCheck size={18} /> Puesta en marcha
@@ -175,17 +239,35 @@ function Dashboard() {
       </aside>
       <main className="ops-main">
         <header className="ops-top">
-          <span>Brasper / Equipo</span>
+          <span className="ops-breadcrumb">
+            Brasper <span>/</span>{" "}
+            {tab === "launch"
+              ? "Puesta en marcha"
+              : tab === "billing"
+                ? "Comprobantes"
+                : "Operaciones y transferencias"}
+          </span>
           <a href="/transferencias">
-            Mi cuenta <ArrowRight size={15} />
+            <span className="ops-avatar" aria-hidden="true">
+              BR
+            </span>{" "}
+            Equipo de operaciones <ArrowRight size={15} />
           </a>
         </header>
         <div className="ops-heading">
           <div>
-            <span className="section-kicker">Una operación, cada paso</span>
-            <h1>{tab === "operations" ? "Tu centro de operaciones." : "Preparar el servicio."}</h1>
+            <span className="ops-eyebrow">
+              <span /> Centro de operaciones
+            </span>
+            <h1>
+              {tab === "launch"
+                ? "Preparar el servicio."
+                : tab === "billing"
+                  ? "Facturación y documentos"
+                  : "Operaciones y transferencias"}
+            </h1>
             <p>
-              {tab === "operations"
+              {tab !== "launch"
                 ? "Prioriza la revisión de ingresos, los envíos y los comprobantes pendientes."
                 : "Avance técnico según el plan del repositorio. No acredita activación en producción."}
             </p>
@@ -220,7 +302,7 @@ function Dashboard() {
               </a>
             </Button>
           </section>
-        ) : tab === "operations" ? (
+        ) : tab !== "launch" ? (
           <>
             <section className="ops-metrics" aria-label="Resumen de todo el historial">
               {[
@@ -262,7 +344,8 @@ function Dashboard() {
                     setStatus(m.target);
                     setSearch("");
                     setPage(0);
-                    setQuery({ status: m.target, search: "" });
+                    setCurrency("");
+                    setQuery({ status: m.target, search: "", currency: "" });
                   }}
                 >
                   <span>{m.label}</span>
@@ -272,14 +355,18 @@ function Dashboard() {
                 </button>
               ))}
             </section>
-            <div className="ops-grid">
+            <div className="ops-grid ops-operations-grid">
               <section className="ops-card ops-worklist">
                 <div className="ops-card-heading">
                   <div>
-                    <h2>Cola de operaciones</h2>
+                    <h2>
+                      {tab === "billing"
+                        ? "Comprobantes y estado fiscal"
+                        : "Bandeja de operaciones"}
+                    </h2>
                     <p>Abre una operación para verificar el pago o registrar el envío.</p>
                   </div>
-                  <span>{count} resultados</span>
+                  <span className="ops-count">{count} resultados</span>
                 </div>
                 <form className="ops-filters" onSubmit={filter}>
                   <label>
@@ -296,27 +383,38 @@ function Dashboard() {
                     </select>
                   </label>
                   <label>
-                    Cliente
+                    Cliente o documento
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Buscar por nombre"
+                      placeholder="Nombre o número de documento"
                       maxLength={200}
                     />
                   </label>
+                  <label>
+                    Moneda de origen
+                    <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                      <option value="">Todas las monedas</option>
+                      <option value="PEN">PEN · Soles</option>
+                      <option value="BRL">BRL · Reales</option>
+                      <option value="USD">USD · Dólares</option>
+                    </select>
+                  </label>
                   <Button type="submit" variant="outline" disabled={busy}>
-                    Filtrar
+                    <Search size={14} /> Filtrar
                   </Button>
                 </form>
                 <div className="ops-table-wrap">
-                  <table>
+                  <table aria-label="Operaciones de cambio">
                     <thead>
                       <tr>
                         <th>Cliente / operación</th>
+                        <th>Ruta / destino</th>
                         <th>Importes</th>
+                        <th>Comisión / tasa</th>
                         <th>Estado</th>
                         <th>Comprobante</th>
-                        <th>Prueba de pago</th>
+                        <th>Archivos y detalle</th>
                         <th>
                           <span className="sr-only">Acción</span>
                         </th>
@@ -330,14 +428,35 @@ function Dashboard() {
                             <td>
                               <strong>{t.customer_name}</strong>
                               <small>
-                                {t.id.slice(0, 8)} ·{" "}
+                                {t.demo_meta?.code || t.id.slice(0, 8)} ·{" "}
                                 {new Date(t.created_at).toLocaleDateString("es-PE")}
                               </small>
+                              <small>{t.customer_document || "Documento no registrado"}</small>
+                            </td>
+                            <td>
+                              <span className="ops-route">
+                                <span>{t.from_currency}</span>
+                                <ArrowRight size={12} />
+                                <span>{t.to_currency}</span>
+                              </span>
+                              <small>{t.recipient_bank}</small>
                               <small>Para {t.recipient_name}</small>
                             </td>
                             <td>
                               <strong>{money(t.amount, t.from_currency)}</strong>
                               <small>Recibe {money(t.recipient_amount, t.to_currency)}</small>
+                            </td>
+                            <td>
+                              <strong>
+                                {Number.isFinite(Number(t.commission))
+                                  ? money(t.commission, t.from_currency)
+                                  : "No registrada"}
+                              </strong>
+                              <small>
+                                {Number.isFinite(Number(t.rate))
+                                  ? `TC ${Number(t.rate).toLocaleString("es-PE", { maximumFractionDigits: 6 })}`
+                                  : "Tasa no registrada"}
+                              </small>
                             </td>
                             <td>
                               <span className={`ops-status state-${t.status}`}>
@@ -347,23 +466,39 @@ function Dashboard() {
                             <td>
                               <strong>{t.billing_type === "boleta" ? "Boleta" : "Factura"}</strong>
                               <small>{t.billing_email || t.customer_email}</small>
-                              {invoice ? invoiceLabels[invoice.status] : "Aún no solicitado"}
-                              {invoice?.environment === "beta" && (
-                                <small>Ensayo sin validez tributaria</small>
-                              )}
+                              <span className={`ops-fiscal state-${invoice?.status || "none"}`}>
+                                {invoice
+                                  ? invoiceLabels[invoice.status] || invoice.status
+                                  : "Aún no solicitado"}
+                              </span>
+                              {invoice?.number && <small>{invoice.number}</small>}
+                              {invoice?.environment === "beta" && <small>Entorno de prueba</small>}
                             </td>
                             <td>
                               <button
                                 type="button"
                                 className="ops-receipt-button"
-                                onClick={() => setOpened(t)}
+                                onClick={() => openOperation(t)}
                               >
                                 <Image size={16} />
                                 {t.proof_path ? "Ver imagen / datos" : "Ver datos"}
                               </button>
                               <small>
-                                {t.proof_path ? "Archivo privado adjunto" : "Sin prueba adjunta"}
+                                {t.proof_path ? "Ingreso adjunto" : "Sin ingreso"} ·{" "}
+                                {t.payout_path ? "Envío adjunto" : "Sin envío"}
                               </small>
+                              {invoice?.pdf_path && (
+                                <button
+                                  type="button"
+                                  className="ops-document-link"
+                                  onClick={() => {
+                                    openOperation(t);
+                                    setDetailTab("documents");
+                                  }}
+                                >
+                                  <FileText size={13} /> Comprobante PDF
+                                </button>
+                              )}
                             </td>
                             <td>
                               <a className="ops-open" href={`/transferencias#operacion-${t.id}`}>
@@ -403,7 +538,7 @@ function Dashboard() {
                   </Button>
                 </div>
               </section>
-              <aside className="ops-support">
+              <aside className="ops-support" aria-label="Resumen financiero y facturación">
                 <section className="ops-card">
                   <h2>Importes solicitados</h2>
                   <p>
@@ -514,36 +649,156 @@ function Dashboard() {
               if (!open) setOpened(null);
             }}
           >
-            <DialogContent className="operation-dialog">
-              <DialogTitle>Operación {opened?.id.slice(0, 8).toUpperCase()}</DialogTitle>
+            <DialogContent className="operation-dialog ops-operation-dialog">
+              <DialogTitle>
+                Detalle de la operación{" "}
+                <span className="ops-operation-code">
+                  {opened?.demo_meta?.code || opened?.id.slice(0, 8).toUpperCase()}
+                </span>
+              </DialogTitle>
               <DialogDescription>
                 Datos enviados por el cliente y sus archivos privados. Comprueba el ingreso en banco
                 antes de confirmar.
               </DialogDescription>
               {opened && (
                 <>
-                  <div className="operation-dialog-summary">
-                    <strong>
-                      {money(opened.amount, opened.from_currency)} →{" "}
-                      {money(opened.recipient_amount, opened.to_currency)}
-                    </strong>
-                    <span>{statusLabels[opened.status]}</span>
+                  <div className="ops-operation-meta">
+                    <span className={`ops-status state-${opened.status}`}>
+                      {statusLabels[opened.status]}
+                    </span>
+                    <span>
+                      <ShieldCheck size={14} />{" "}
+                      {opened.verified_at ||
+                      ["verified", "paid_out", "completed"].includes(opened.status)
+                        ? "Ingreso confirmado"
+                        : "Ingreso sin confirmar"}
+                    </span>
+                    <span className="ops-route">
+                      {opened.from_currency}
+                      <ArrowRight size={12} />
+                      {opened.to_currency}
+                    </span>
                   </div>
-                  <TransferDetails transfer={opened} />
-                  {opened.proof_path ? (
-                    <EvidencePreview
-                      path={opened.proof_path}
-                      label="Comprobante de pago enviado por el cliente"
-                    />
-                  ) : (
-                    <p>El cliente todavía no adjuntó su prueba de pago.</p>
-                  )}
-                  {opened.payout_path && (
-                    <EvidencePreview
-                      path={opened.payout_path}
-                      label="Constancia del envío al destinatario"
-                    />
-                  )}
+                  <div
+                    className="ops-detail-tabs"
+                    role="tablist"
+                    aria-label="Secciones de la operación"
+                  >
+                    {[
+                      { id: "summary", label: "Resumen" },
+                      { id: "data", label: "Datos y fondos" },
+                      { id: "documents", label: "Archivos" },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        id={`operation-tab-${item.id}`}
+                        role="tab"
+                        type="button"
+                        aria-selected={detailTab === item.id}
+                        tabIndex={detailTab === item.id ? 0 : -1}
+                        onKeyDown={(e) => {
+                          const ids = ["summary", "data", "documents"];
+                          let next: string | undefined;
+                          if (e.key === "ArrowRight")
+                            next = ids[(ids.indexOf(item.id) + 1) % ids.length];
+                          if (e.key === "ArrowLeft")
+                            next = ids[(ids.indexOf(item.id) + ids.length - 1) % ids.length];
+                          if (e.key === "Home") next = ids[0];
+                          if (e.key === "End") next = ids[ids.length - 1];
+                          if (next) {
+                            e.preventDefault();
+                            setDetailTab(next);
+                            document.getElementById(`operation-tab-${next}`)?.focus();
+                          }
+                        }}
+                        aria-controls="operation-panel"
+                        onClick={() => setDetailTab(item.id)}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div
+                    id="operation-panel"
+                    role="tabpanel"
+                    aria-labelledby={`operation-tab-${detailTab}`}
+                  >
+                    {detailTab === "summary" && <OperationOverview transfer={opened} />}
+                    {detailTab === "data" && <TransferDetails transfer={opened} />}
+                    {detailTab === "documents" && (
+                      <div className="ops-files-grid">
+                        <section className="ops-detail-card">
+                          <h3>
+                            <Image size={16} /> Prueba de ingreso
+                          </h3>
+                          {opened.proof_path ? (
+                            <EvidencePreview
+                              path={opened.proof_path}
+                              label="Comprobante de pago enviado por el cliente"
+                            />
+                          ) : (
+                            <p>El cliente todavía no adjuntó su prueba de pago.</p>
+                          )}
+                        </section>
+                        <section className="ops-detail-card">
+                          <h3>
+                            <Landmark size={16} /> Constancia de envío
+                          </h3>
+                          {opened.payout_path ? (
+                            <EvidencePreview
+                              path={opened.payout_path}
+                              label="Constancia del envío al destinatario"
+                            />
+                          ) : (
+                            <p>El envío todavía no tiene constancia registrada.</p>
+                          )}
+                        </section>
+                        <section className="ops-detail-card ops-fiscal-documents">
+                          <h3>
+                            <FileText size={16} /> Comprobante fiscal
+                          </h3>
+                          <p>
+                            {openedInvoice
+                              ? invoiceLabels[openedInvoice.status] || openedInvoice.status
+                              : "Aún no solicitado"}
+                          </p>
+                          {openedInvoice?.number && <strong>{openedInvoice.number}</strong>}
+                          {openedInvoice?.demo_email && (
+                            <p>
+                              Correo automático simulado para{" "}
+                              <strong>{openedInvoice.demo_email}</strong>
+                              {openedInvoice.demo_delivered_at &&
+                                ` · ${new Date(openedInvoice.demo_delivered_at).toLocaleString("es-PE")}`}
+                              . No se envía a un servicio de correo real.
+                            </p>
+                          )}
+                          {openedInvoice?.environment === "beta" && <p>Entorno de prueba</p>}
+                          {openedInvoice?.error && (
+                            <p className="ops-alert">{openedInvoice.error}</p>
+                          )}
+                          <div className="ops-document-actions">
+                            {[
+                              { label: "PDF", path: openedInvoice?.pdf_path },
+                              { label: "XML", path: openedInvoice?.xml_path },
+                              { label: "CDR", path: openedInvoice?.cdr_path },
+                            ]
+                              .filter((file) => file.path)
+                              .map((file) => (
+                                <Button
+                                  key={file.label}
+                                  variant="outline"
+                                  disabled={fileBusy}
+                                  onClick={() => void openFiscalFile(file.path!)}
+                                >
+                                  <Download size={14} /> Abrir {file.label}
+                                </Button>
+                              ))}
+                          </div>
+                          {fileError && <p role="alert">{fileError}</p>}
+                        </section>
+                      </div>
+                    )}
+                  </div>
                   <Button asChild variant="brand">
                     <a href={`/transferencias#operacion-${opened.id}`}>
                       Revisar esta operación <ArrowRight size={16} />

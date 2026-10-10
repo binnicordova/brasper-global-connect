@@ -163,6 +163,7 @@ export const statusLabels: Record<string, string> = {
   cancelled: "Cancelada",
 };
 export const invoiceLabels: Record<string, string> = {
+  demo_delivered: "Demo · comprobante y correo simulados",
   queued: "Facturación pendiente",
   processing: "Procesando comprobante",
   sending: "Enviando comprobante",
@@ -198,6 +199,7 @@ export type Rate = {
   valid_until: string;
 };
 export type Transfer = {
+  demo_meta?: { code: string; advisor: string; issuer: string };
   id: string;
   amount: number;
   from_currency: string;
@@ -246,7 +248,12 @@ export type Transfer = {
   payout_path: string | null;
   payout_reference: string | null;
   created_at: string;
+  updated_at?: string;
+  verified_at?: string | null;
+  payout_at?: string | null;
   invoices: {
+    demo_email?: string;
+    demo_delivered_at?: string;
     environment?: string;
     document_type?: string;
     status: string;

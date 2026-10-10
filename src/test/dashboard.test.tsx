@@ -137,6 +137,7 @@ describe("Staff dashboard", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Ver imagen / datos" }));
     expect(await screen.findByText("Titular de prueba")).toBeInTheDocument();
     expect(screen.getByText("123456789")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Archivos" }));
     const image = await screen.findByRole("img", {
       name: "Comprobante de pago enviado por el cliente",
     });
