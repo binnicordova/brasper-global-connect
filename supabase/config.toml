@@ -2,3 +2,9 @@
 # It must never be invoked using a public browser key.
 [functions.process-invoices]
 verify_jwt = false
+
+# Local configuration; enable the same options in the connected Lovable/Supabase project.
+[auth]
+enable_signup = true
+enable_anonymous_sign_ins = true
+enable_manual_linking = true

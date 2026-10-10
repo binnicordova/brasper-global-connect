@@ -5,6 +5,11 @@ const mock = vi.hoisted(() => ({
   rows: [] as Record<string, unknown>[],
   rpc: vi.fn(),
   upload: vi.fn(),
+  guest: false,
+  signedIn: true,
+  startGuest: vi.fn(),
+  saveAccess: vi.fn(),
+  emailLogin: vi.fn(),
 }));
 const user = "00000000-0000-4000-8000-000000000001";
 const operation = "00000000-0000-4000-8000-000000000002";
@@ -13,12 +18,21 @@ vi.mock("@/lib/supabase", () => ({
     auth: {
       getSession: async () => ({
         data: {
-          session: {
-            user: { id: "00000000-0000-4000-8000-000000000001", email: "client@example.test" },
-          },
+          session: mock.signedIn
+            ? {
+                user: {
+                  id: "00000000-0000-4000-8000-000000000001",
+                  email: mock.guest ? undefined : "client@example.test",
+                  is_anonymous: mock.guest,
+                },
+              }
+            : null,
         },
         error: null,
       }),
+      signInAnonymously: mock.startGuest,
+      updateUser: mock.saveAccess,
+      signInWithOtp: mock.emailLogin,
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
     },
     rpc: mock.rpc,
@@ -61,13 +75,21 @@ const Portal = Route.options.component as ComponentType;
 beforeEach(() => {
   vi.clearAllMocks();
   mock.rows = [];
+  mock.guest = false;
+  mock.signedIn = true;
+  mock.startGuest.mockImplementation(async () => ({
+    data: { session: { user: { id: user, is_anonymous: true } } },
+    error: null,
+  }));
+  mock.saveAccess.mockResolvedValue({ error: null });
+  mock.emailLogin.mockResolvedValue({ error: null });
   URL.createObjectURL = vi.fn(() => "blob:local-preview");
   URL.revokeObjectURL = vi.fn();
   Element.prototype.scrollIntoView = vi.fn();
   window.history.replaceState(null, "", "/transferencias");
   mock.upload.mockResolvedValue({ error: null });
   mock.rpc.mockImplementation(async (name: string, p: Record<string, unknown>) => {
-    if (name === "create_transfer_details") {
+    if (name === "create_transfer_details" || name === "create_guest_transfer_details") {
       const fields = Object.fromEntries(
         Object.entries(p).map(([key, value]) => [key.replace(/^p_/, ""), value]),
       );
@@ -108,7 +130,11 @@ afterEach(() => {
 async function fillAndAttach(submit = true, attach = true) {
   const rendered = render(<Portal />);
   await screen.findByText("Cotiza tu envío");
-  fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+  fireEvent.click(screen.getByRole("button", { name: /^Continuar$/ }));
+  if (mock.guest)
+    fireEvent.change(screen.getByLabelText("Tu correo de contacto"), {
+      target: { value: "guest@example.test" },
+    });
   for (const [label, value] of [
     ["Tu nombre completo", "Cliente de prueba"],
     ["Tu DNI, RUC o documento", "12345678"],
@@ -196,7 +222,9 @@ describe("Customer transfer submission", () => {
   });
   it("preserves entered data when correcting the account and requires confirmation", async () => {
     await fillAndAttach(false);
-    expect(mock.rpc).not.toHaveBeenCalled();
+    expect(mock.rpc.mock.calls.filter(([name]) => name !== "verify_transfer_contact")).toHaveLength(
+      0,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Volver" }));
     expect(screen.getByLabelText("Clave PIX del titular")).toHaveValue("recipient@example.test");
     fireEvent.change(screen.getByLabelText("Clave PIX del titular"), {
@@ -208,7 +236,9 @@ describe("Customer transfer submission", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /Enviar solicitud y comprobante a revisión/ }),
     );
-    expect(mock.rpc).not.toHaveBeenCalled();
+    expect(mock.rpc.mock.calls.filter(([name]) => name !== "verify_transfer_contact")).toHaveLength(
+      0,
+    );
   });
   it("retains the requested amount and refuses to silently select another route", async () => {
     window.history.replaceState(null, "", "/transferencias?from=USD&to=PEN&amount=450.50");
@@ -231,7 +261,9 @@ describe("Customer transfer submission", () => {
     fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
     fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
     expect(screen.getByRole("heading", { name: "Tus datos de contacto" })).toBeVisible();
-    expect(mock.rpc).not.toHaveBeenCalled();
+    expect(mock.rpc.mock.calls.filter(([name]) => name !== "verify_transfer_contact")).toHaveLength(
+      0,
+    );
   });
   it("registers an unpaid request and shows payment instructions without claiming payment", async () => {
     await fillAndAttach(true, false);
@@ -241,5 +273,44 @@ describe("Customer transfer submission", () => {
     expect(
       screen.getByText("Esperando tu pago", { selector: "span.operation-status" }),
     ).toBeVisible();
+  });
+  it("offers guest access without asking for an email, password or registration", async () => {
+    mock.signedIn = false;
+    render(<Portal />);
+    fireEvent.click(await screen.findByRole("button", { name: /Continuar sin cuenta/ }));
+    await screen.findByText("Acceso de invitado · sin registro");
+    expect(mock.startGuest).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("heading", { name: "Cotiza tu envío" })).toBeVisible();
+    expect(screen.queryByLabelText("Contraseña")).not.toBeInTheDocument();
+  });
+  it("submits guest contact and receipt privately without requiring email confirmation", async () => {
+    mock.guest = true;
+    await fillAndAttach();
+    await screen.findByText(/Solicitud y comprobante enviados a revisión/);
+    expect(mock.rpc).toHaveBeenCalledWith(
+      "create_guest_transfer_details",
+      expect.objectContaining({
+        p_contact_email: "guest@example.test",
+        p_customer_phone: "+51999999999",
+      }),
+    );
+    expect(mock.rpc).not.toHaveBeenCalledWith("create_transfer_details", expect.anything());
+    expect(mock.upload).toHaveBeenCalledTimes(1);
+  });
+  it("offers optional access recovery by verified email without collecting a password", async () => {
+    mock.guest = true;
+    render(<Portal />);
+    fireEvent.click(await screen.findByRole("button", { name: /Guardar acceso con una cuenta/ }));
+    fireEvent.change(screen.getByLabelText("Correo para guardar tu acceso"), {
+      target: { value: "recover@example.test" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar enlace de confirmación" }));
+    await screen.findByText(/Revisa tu correo y confirma el enlace/);
+    expect(mock.saveAccess).toHaveBeenCalledWith(
+      { email: "recover@example.test" },
+      expect.objectContaining({ emailRedirectTo: expect.stringContaining("/transferencias") }),
+    );
+    expect(screen.queryByLabelText("Elige una contraseña")).not.toBeInTheDocument();
+    expect(mock.startGuest).not.toHaveBeenCalled();
   });
 });

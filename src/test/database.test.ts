@@ -28,6 +28,8 @@ beforeAll(async () => {
   await db.exec(
     `insert into auth.users values('${owner}','owner@example.test',now()),('${other}','other@example.test',now()),('${staff}','staff@example.test',now());insert into staff_members(user_id) values('${staff}');insert into fx_rates(id,from_currency,to_currency,rate,commission_percent,valid_until) values('${rate}','PEN','BRL',1.475,5,now()+interval '1 day');insert into deposit_accounts(currency,bank,holder,account_number) values('PEN','Test bank','Brasper test','1234');`,
   );
+  await db.exec("alter table auth.users add column is_anonymous boolean not null default false");
+  await db.exec(readFileSync("supabase/migrations/202610100005_guest_exchange.sql", "utf8"));
 }, 20000);
 afterAll(async () => {
   await db.close();
@@ -240,5 +242,92 @@ describe("Database authorization and workflow", () => {
     expect((await db.query(`select status from transfers where id='${id}'`)).rows[0]).toMatchObject(
       { status: "paid_out" },
     );
+  });
+  it("allows private guest transactions without confirmed email and preserves owner isolation", async () => {
+    const guest = "00000000-0000-4000-8000-000000000006";
+    await db.exec(`insert into auth.users values('${guest}',null,null,true)`);
+    const args = `'${rate}',300,'Guest','123456','Recipient','456789','Bank','pix-key','pix','Holder','987654','','+51999999999','','','guest@example.test'`;
+    await expect(act(owner, `select create_guest_transfer_details(${args})`)).rejects.toThrow(
+      /invitado/,
+    );
+    const response = await act(guest, `select create_guest_transfer_details(${args}) as id`);
+    const id = String((response.rows[0] as { id: string }).id);
+    expect(
+      (
+        await act(
+          guest,
+          `select customer_email,customer_email_verified,status from transfers where id='${id}'`,
+        )
+      ).rows[0],
+    ).toMatchObject({
+      customer_email: "guest@example.test",
+      customer_email_verified: false,
+      status: "awaiting_payment",
+    });
+    expect((await act(other, `select id from transfers where id='${id}'`)).rows).toHaveLength(0);
+    await expect(
+      act(
+        guest,
+        `select create_guest_transfer_base('${rate}',300,'Guest','123','Recipient','456','Bank','111','guest@example.test')`,
+      ),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      act(guest, `update transfers set customer_email_verified=true where id='${id}'`),
+    ).rejects.toThrow(/permission denied/);
+    await expect(act(guest, "select verify_transfer_contact()")).rejects.toThrow(/Confirma/);
+    const path = `${guest}/${id}/deposit/photo.jpg`;
+    await act(
+      guest,
+      `insert into storage.objects(bucket_id,name) values('transfer-proofs','${path}')`,
+    );
+    await act(guest, `select submit_proof('${id}','${path}')`);
+    expect(
+      (await act(other, `select * from storage.objects where name='${path}'`)).rows,
+    ).toHaveLength(0);
+    await expect(act(guest, `select review_transfer('${id}','verify','fake')`)).rejects.toThrow(
+      /autorizado/,
+    );
+    await act(staff, `select review_transfer('${id}','verify','Bank checked')`);
+    const sent = `${staff}/${id}/payout/sent.pdf`;
+    await act(
+      staff,
+      `insert into storage.objects(bucket_id,name) values('transfer-proofs','${sent}')`,
+    );
+    await act(staff, `select review_transfer('${id}','payout','Sent','ref','${sent}')`);
+    await db.exec(
+      `update invoices set status='accepted',environment='production' where transfer_id='${id}'`,
+    );
+    expect((await db.query("select * from claim_invoice_delivery()")).rows).toHaveLength(0);
+    await db.exec(
+      `update auth.users set email='verified@example.test',email_confirmed_at=now(),is_anonymous=false where id='${guest}'`,
+    );
+    await act(guest, "select verify_transfer_contact()");
+    expect(
+      (
+        await act(
+          guest,
+          `select customer_email,customer_email_verified from transfers where id='${id}'`,
+        )
+      ).rows[0],
+    ).toMatchObject({ customer_email: "verified@example.test", customer_email_verified: true });
+    expect((await db.query("select * from claim_invoice_delivery()")).rows).toHaveLength(1);
+  });
+  it("limits repeated guest submissions and rejects calls without a private session", async () => {
+    const guest = "00000000-0000-4000-8000-000000000007";
+    await db.exec(`insert into auth.users values('${guest}',null,null,true)`);
+    const args = `'${rate}',300,'Guest','123','Recipient','456','Bank','pix-key','pix','Holder','789','','+51999999999','','','guest@example.test'`;
+    await db.exec("set role anon");
+    try {
+      await expect(db.query(`select create_guest_transfer_details(${args})`)).rejects.toThrow(
+        /permission denied/,
+      );
+    } finally {
+      await db.exec("reset role");
+    }
+    for (let i = 0; i < 10; i++) await act(guest, `select create_guest_transfer_details(${args})`);
+    await expect(act(guest, `select create_guest_transfer_details(${args})`)).rejects.toThrow(
+      /Límite/,
+    );
+    expect((await act(guest, "select id from transfers")).rows).toHaveLength(10);
   });
 });

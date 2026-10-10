@@ -5,11 +5,19 @@ El desarrollo añade `/transferencias`: autenticación por correo, cotización b
 ## Configuración de Supabase
 
 1. Crear o elegir el proyecto de Brasper. Copiar `.env.example` a `.env.local` y configurar URL y clave pública/anon. No colocar service_role ni claves fiscales en VITE_*.
-2. Aplicar las migraciones en orden: `202610100001_transfer_workflow.sql`, `202610100002_staff_dashboard.sql` , `202610100003_recipient_details.sql` y `202610100004_sunat_beta.sql`, con SQL Editor o `supabase db push`. Crean permisos RLS, buckets privados, resumen global y datos completos de la cuenta receptora. No repetir migraciones ya aplicadas.
-3. Configurar Auth: Site URL y redirect permitido `https://DOMINIO/transferencias`; confirmación de correo habilitada y SMTP oficial. Los usuarios crean su cuenta; un administrador añade los UUID autorizados a `public.staff_members` desde SQL Editor. Los usuarios no pueden darse ese rol.
+2. Aplicar las migraciones en orden: `202610100001_transfer_workflow.sql`, `202610100002_staff_dashboard.sql` , `202610100003_recipient_details.sql` , `202610100004_sunat_beta.sql` y `202610100005_guest_exchange.sql`, con SQL Editor o `supabase db push`. Crean permisos RLS, buckets privados, resumen global y datos completos de la cuenta receptora. No repetir migraciones ya aplicadas.
+3. Configurar Auth: Site URL y redirect permitido `https://DOMINIO/transferencias`; confirmación de correo habilitada y SMTP oficial. Habilitar **Anonymous sign-ins** y **manual identity linking** para «Continuar sin cuenta». Los usuarios crean su cuenta; un administrador añade los UUID autorizados a `public.staff_members` desde SQL Editor. Los usuarios no pueden darse ese rol.
 4. Registrar cuentas oficiales de ingreso en `deposit_accounts`: moneda, banco, titular, número e instrucciones. Las instrucciones se copian a cada solicitud para conservarlas si luego cambia la cuenta.
 5. Registrar tasas aprobadas en `fx_rates`: monedas origen/destino, tasa, comisión porcentual, rango de montos y vencimiento. No hay tasas ni cuentas ficticias precargadas. La base calcula la comisión y recepción; el cliente no puede sobrescribir esos valores.
 6. Definir política de privacidad y retención aplicable antes de operar con personas reales. Los archivos son privados; acceso temporal firmado de 60 segundos. Limpiar mediante un procedimiento de administración los archivos huérfanos de cargas fallidas, conservando los usados por operaciones.
+
+## Cambio sin registro
+
+El cliente elige «Continuar sin cuenta». Supabase abre una sesión anónima privada sin pedir contraseña, registro ni confirmación de correo. Esta identidad técnica conserva el aislamiento RLS de cada operación y sus archivos; no hace público el acceso. La quinta migración incorpora `create_guest_transfer_details`, correo de contacto sin verificar y máximo 10 solicitudes por sesión en 24 horas. Conserva los límites de acceso anónimo del proveedor; comprueba su configuración antes de publicar.
+
+El invitado introduce contacto, cuenta de destino y comprobante, y consulta sus operaciones en el mismo navegador. Se explica que borrar datos del navegador o cambiar de dispositivo puede perder ese acceso. No se promete recuperación por conocer una referencia. «Guardar acceso con una cuenta (opcional)» vincula un correo a la misma identidad, conservando sus operaciones, tras confirmar el correo. Luego puede ingresar desde otro dispositivo mediante enlace por correo, sin exigir contraseña. No se fusionan cuentas existentes automáticamente.
+
+El correo escrito por un invitado no acredita identidad. Se muestra como contacto sin verificar; el worker productivo no envía documentos financieros a esa dirección hasta verificarla. El invitado puede consultar los documentos autorizados en su sesión privada. SUNAT beta conserva sus reglas: sin validez tributaria, sin correo automático ni finalización de la operación real.
 
 ## Operación manual
 
@@ -68,3 +76,5 @@ La entrega reclama un job de forma atómica y usa idempotencia de Resend; restri
 Las pruebas PostgreSQL (PGlite) ejecutan la migración con tablas auxiliares de Auth/Storage y verifican RLS, manipulación de estados, cálculo de importes, vencimiento y prevención de doble payout. No sustituyen la prueba con Supabase real, Storage real, proveedor fiscal y correo. Antes de activar, validar una operación por ruta en homologación con su documento auténtico.
 
 Referencias oficiales: [Storage/RLS Supabase](https://supabase.com/docs/guides/storage/security/access-control), [Resend Send Email](https://resend.com/docs/api-reference/emails/send-email), [integración externa Keyfacil](https://keyfacil.com/).
+
+Referencia para acceso sin registro y conversión opcional: [Supabase Anonymous Sign-Ins](https://supabase.com/docs/guides/auth/auth-anonymous).

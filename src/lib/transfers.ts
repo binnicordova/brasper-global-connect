@@ -89,6 +89,7 @@ export type Transfer = {
   recipient_amount: number;
   customer_name: string;
   customer_email: string;
+  customer_email_verified?: boolean;
   customer_document: string;
   recipient_name: string;
   recipient_document: string;
