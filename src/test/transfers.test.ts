@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { quoteAmounts, validateProof, transferInput } from "@/lib/transfers";
+import { quoteAmounts, validateProof, transferInput, firstInvoice } from "@/lib/transfers";
 describe("Transfer validations", () => {
   it("separates paid amount, fee and recipient amount", () => {
     expect(quoteAmounts(300, 1.475, 5)).toEqual({ commission: 15, received: 420.38 });
@@ -22,5 +22,26 @@ describe("Transfer validations", () => {
     };
     expect(transferInput.safeParse(input).success).toBe(false);
     expect(transferInput.safeParse({ ...input, amount: Infinity }).success).toBe(false);
+  });
+});
+describe("firstInvoice", () => {
+  const invoice = {
+    status: "delivered",
+    number: "F001-00000001",
+    pdf_path: "invoices/f.pdf",
+    xml_path: null,
+    cdr_path: null,
+    error: null,
+  };
+  it("reads the single object the backend returns because transfer_id is unique", () => {
+    expect(firstInvoice(invoice)).toEqual(invoice);
+  });
+  it("returns null when the transfer has no invoice yet", () => {
+    expect(firstInvoice(null)).toBeNull();
+    expect(firstInvoice(undefined)).toBeNull();
+    expect(firstInvoice([])).toBeNull();
+  });
+  it("still reads the list shape used by older data", () => {
+    expect(firstInvoice([invoice, { ...invoice, status: "queued" }])).toEqual(invoice);
   });
 });

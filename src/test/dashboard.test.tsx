@@ -8,6 +8,7 @@ const mock = vi.hoisted(() => ({
   in: vi.fn(),
   ilike: vi.fn(),
   sign: vi.fn(),
+  invoices: [] as unknown,
 }));
 vi.mock("@/lib/supabase", () => ({
   supabase: {
@@ -42,7 +43,7 @@ vi.mock("@/lib/supabase", () => ({
                   to_currency: "BRL",
                   status: "proof_submitted",
                   created_at: "2026-10-10T00:00:00Z",
-                  invoices: [],
+                  invoices: mock.invoices,
                 },
               ],
         count: 1,
@@ -79,6 +80,7 @@ const Dashboard = Route.options.component as ComponentType;
 beforeEach(() => {
   vi.clearAllMocks();
   mock.staff = true;
+  mock.invoices = [];
   mock.rpc.mockResolvedValue({
     data: {
       statuses: { proof_submitted: 73, verified: 5, paid_out: 8, completed: 12 },
