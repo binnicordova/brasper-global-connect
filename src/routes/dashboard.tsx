@@ -208,15 +208,15 @@ function Dashboard() {
         ) : access !== "staff" ? (
           <section className="ops-card ops-access">
             <ShieldCheck size={36} />
-            <h2>{supabase ? "Acceso para el equipo" : "Conectar el centro de operaciones"}</h2>
+            <h2>Acceso para el equipo</h2>
             <p>
-              {supabase
-                ? "Inicia sesión con una cuenta autorizada por Brasper. Los clientes consultan sus solicitudes en Mis transferencias."
-                : "Conecta Supabase y aplica las migraciones para consultar operaciones reales. Las cuentas del equipo se asignan desde la base de datos."}
+              Ingreso exclusivo para cuentas autorizadas por Brasper. Los clientes hacen sus
+              transferencias desde su propia cuenta.
             </p>
-            <Button asChild variant="brand">
+            <StaffLogin />
+            <Button asChild variant="outline">
               <a href="/transferencias">
-                Ir a mi cuenta <ArrowRight />
+                Soy cliente <ArrowRight />
               </a>
             </Button>
           </section>
