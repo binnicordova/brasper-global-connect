@@ -13,6 +13,29 @@ export const transferInput = z.object({
   recipientBank: z.string().trim().min(2).max(200),
   recipientAccount: z.string().trim().min(2).max(200),
 });
+export const recipientDetailsInput = transferInput
+  .extend({
+    recipientAccountType: z.enum(["bank_account", "cci", "pix"]),
+    recipientAccountHolder: z.string().trim().min(2).max(200),
+    recipientAccountHolderDocument: z.string().trim().min(2).max(200),
+    recipientBankBranch: z.string().trim().max(50),
+    customerPhone: z.string().trim().min(6).max(40),
+    recipientPhone: z.string().trim().max(40),
+    transferNote: z.string().trim().max(500),
+  })
+  .superRefine((v, ctx) => {
+    if (v.recipientAccountType === "cci" && !/^\d{20}$/.test(v.recipientAccount))
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["recipientAccount"],
+        message: "El CCI debe tener 20 dígitos",
+      });
+  });
+export const accountTypeLabels: Record<string, string> = {
+  bank_account: "Cuenta bancaria",
+  cci: "CCI",
+  pix: "Clave PIX",
+};
 export const statusLabels: Record<string, string> = {
   awaiting_payment: "Esperando tu pago",
   proof_submitted: "Pago en revisión",
@@ -68,6 +91,13 @@ export type Transfer = {
   recipient_document: string;
   recipient_bank: string;
   recipient_account: string;
+  recipient_account_type?: string;
+  recipient_account_holder?: string;
+  recipient_account_holder_document?: string;
+  recipient_bank_branch?: string;
+  customer_phone?: string;
+  recipient_phone?: string;
+  transfer_note?: string;
   status: string;
   deposit_instructions: {
     bank: string;

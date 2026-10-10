@@ -8,8 +8,12 @@ import {
   LayoutDashboard,
   RefreshCw,
   ShieldCheck,
+  Image,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { EvidencePreview } from "@/components/evidence-preview";
+import { TransferDetails } from "@/components/transfer-details";
 import { supabase } from "@/lib/supabase";
 import { statusLabels, invoiceLabels, type Transfer } from "@/lib/transfers";
 import plan from "../../MASTER_PLAN.json";
@@ -26,6 +30,7 @@ type Summary = {
 const money = (amount: number, currency: string) =>
   `${Number(amount).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
 function Dashboard() {
+  const [opened, setOpened] = useState<Transfer | null>(null);
   const [access, setAccess] = useState<"loading" | "staff" | "denied">("loading");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [rows, setRows] = useState<Transfer[]>([]);
@@ -39,6 +44,23 @@ function Dashboard() {
   const [count, setCount] = useState(0);
   const [query, setQuery] = useState({ status: "proof_submitted", search: "" });
   useEffect(() => {
+    if (access !== "staff" || !supabase) return;
+    let timer: number | undefined;
+    const refresh = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setQuery((q) => ({ ...q })), 500);
+    };
+    const channel = supabase
+      .channel("staff-dashboard-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "transfers" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, refresh)
+      .subscribe();
+    return () => {
+      window.clearTimeout(timer);
+      void supabase!.removeChannel(channel);
+    };
+  }, [access]);
+  useEffect(() => {
     if (!supabase) {
       setAccess("denied");
       return;
@@ -47,6 +69,7 @@ function Dashboard() {
     async function checkAccess() {
       setSummary(null);
       setRows([]);
+      setOpened(null);
       setAccess("loading");
       const { data: user, error: authError } = await supabase!.auth.getUser();
       if (!active) return;
@@ -101,6 +124,7 @@ function Dashboard() {
         } else {
           setSummary(s.data);
           setRows(t.data ?? []);
+          setOpened((old) => (old ? (t.data?.find((item) => item.id === old.id) ?? old) : null));
           setCount(t.count ?? 0);
           setUpdated(new Date().toLocaleTimeString("es-PE"));
         }
@@ -283,6 +307,7 @@ function Dashboard() {
                         <th>Importes</th>
                         <th>Estado</th>
                         <th>Comprobante</th>
+                        <th>Prueba de pago</th>
                         <th>
                           <span className="sr-only">Acción</span>
                         </th>
@@ -312,6 +337,19 @@ function Dashboard() {
                             {t.invoices[0]
                               ? invoiceLabels[t.invoices[0].status]
                               : "Aún no solicitado"}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="ops-receipt-button"
+                              onClick={() => setOpened(t)}
+                            >
+                              <Image size={16} />
+                              {t.proof_path ? "Ver imagen / datos" : "Ver datos"}
+                            </button>
+                            <small>
+                              {t.proof_path ? "Archivo privado adjunto" : "Sin prueba adjunta"}
+                            </small>
                           </td>
                           <td>
                             <a className="ops-open" href={`/transferencias#operacion-${t.id}`}>
@@ -453,6 +491,53 @@ function Dashboard() {
               </section>
             </div>
           </>
+        )}
+        {access === "staff" && (
+          <Dialog
+            open={Boolean(opened)}
+            onOpenChange={(open) => {
+              if (!open) setOpened(null);
+            }}
+          >
+            <DialogContent className="operation-dialog">
+              <DialogTitle>Operación {opened?.id.slice(0, 8).toUpperCase()}</DialogTitle>
+              <DialogDescription>
+                Datos enviados por el cliente y sus archivos privados. Comprueba el ingreso en banco
+                antes de confirmar.
+              </DialogDescription>
+              {opened && (
+                <>
+                  <div className="operation-dialog-summary">
+                    <strong>
+                      {money(opened.amount, opened.from_currency)} →{" "}
+                      {money(opened.recipient_amount, opened.to_currency)}
+                    </strong>
+                    <span>{statusLabels[opened.status]}</span>
+                  </div>
+                  <TransferDetails transfer={opened} />
+                  {opened.proof_path ? (
+                    <EvidencePreview
+                      path={opened.proof_path}
+                      label="Comprobante de pago enviado por el cliente"
+                    />
+                  ) : (
+                    <p>El cliente todavía no adjuntó su prueba de pago.</p>
+                  )}
+                  {opened.payout_path && (
+                    <EvidencePreview
+                      path={opened.payout_path}
+                      label="Constancia del envío al destinatario"
+                    />
+                  )}
+                  <Button asChild variant="brand">
+                    <a href={`/transferencias#operacion-${opened.id}`}>
+                      Revisar esta operación <ArrowRight size={16} />
+                    </a>
+                  </Button>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
         )}
       </main>
     </div>

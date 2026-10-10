@@ -1770,3 +1770,212 @@ footer {
     padding: 48px 0;
   }
 }
+
+.transfer-step-heading {
+  display: flex;
+  align-items: start;
+  gap: 14px;
+  padding: 22px 0 4px;
+  border-top: 1px solid var(--color-border);
+}
+.transfer-step-heading > span {
+  background: var(--color-accent);
+  color: var(--color-primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 600;
+}
+.transfer-step-heading h3 {
+  font-weight: 600;
+  font-size: 16px;
+}
+.transfer-step-heading p {
+  margin-top: 5px;
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.receipt-upload {
+  margin: 10px 0;
+}
+.receipt-upload .upload-proof {
+  margin: 0;
+}
+.receipt-error {
+  color: var(--color-destructive);
+  font-size: 12px;
+  margin: 12px 0;
+}
+.receipt-local-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  margin-top: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+.receipt-local-preview > img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  background: var(--color-accent);
+  border-radius: 8px;
+}
+.receipt-local-preview > div {
+  min-width: 0;
+  flex: 1;
+}
+.receipt-local-preview strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.receipt-local-preview small {
+  display: block;
+  color: var(--color-muted-foreground);
+  font-size: 11px;
+  margin-top: 6px;
+}
+.receipt-local-preview > button {
+  cursor: pointer;
+  padding: 8px;
+}
+.operation-upload {
+  padding: 20px;
+  background: var(--color-accent);
+  border-radius: 12px;
+  margin-top: 20px;
+}
+.operation-upload > p {
+  font-size: 11px;
+  color: var(--color-muted-foreground);
+  margin-top: 12px;
+}
+.operation-upload .upload-proof {
+  background: var(--color-card);
+}
+.operation-card {
+  scroll-margin-top: 24px;
+}
+.operation-recipient,
+.operation-evidence {
+  border-top: 1px solid var(--color-border);
+  margin-top: 18px;
+}
+.operation-recipient > summary,
+.operation-evidence > summary {
+  padding: 16px 0;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.transfer-details h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 18px 0 12px;
+}
+.transfer-details dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.transfer-details dt {
+  color: var(--color-muted-foreground);
+  font-size: 10px;
+  margin-bottom: 5px;
+}
+.transfer-details dd {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.transfer-notes p {
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.evidence-preview {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 16px 0;
+}
+.evidence-preview figcaption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.evidence-preview figcaption button {
+  margin-left: auto;
+}
+.evidence-preview > img {
+  width: 100%;
+  height: auto;
+  max-height: 500px;
+  object-fit: contain;
+  background: var(--color-accent);
+  border-radius: 6px;
+}
+.evidence-preview > object {
+  display: block;
+  width: 100%;
+  height: 450px;
+}
+.evidence-preview > a {
+  display: block;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--color-primary);
+}
+.evidence-preview > p {
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+}
+.ops-receipt-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 0;
+  color: var(--color-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.operation-dialog {
+  max-width: 720px;
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+.operation-dialog-summary {
+  background: var(--color-accent);
+  border-radius: 10px;
+  padding: 16px;
+}
+.operation-dialog-summary strong {
+  font-size: 18px;
+  font-weight: 600;
+  display: block;
+}
+.operation-dialog-summary span {
+  font-size: 11px;
+  display: block;
+  margin-top: 8px;
+}
+@media (max-width: 480px) {
+  .transfer-details dl {
+    grid-template-columns: 1fr;
+  }
+  .receipt-local-preview > img {
+    width: 70px;
+    height: 70px;
+  }
+  .operation-upload {
+    padding: 14px;
+  }
+}

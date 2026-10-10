@@ -172,7 +172,8 @@ function Index() {
               <p>
                 Conectamos Perú, Brasil y Estados Unidos.
                 <br />
-                Cotiza, comparte tu prueba de pago y sigue cada paso de tu envío.
+                Completa la cuenta del destinatario, adjunta tu comprobante y sigue cada paso de tu
+                envío.
               </p>
               <Button variant="brand" size="lg" className="hero-cta" asChild>
                 <a href="/transferencias">

@@ -7,14 +7,12 @@ import {
   CheckCircle2,
   FileText,
   LockKeyhole,
-  Upload,
   RefreshCw,
   LogOut,
   ArrowLeftRight,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
-  transferInput,
   quoteAmounts,
   validateProof,
   statusLabels,
@@ -23,6 +21,10 @@ import {
   type Transfer,
 } from "@/lib/transfers";
 import { Button } from "@/components/ui/button";
+import { ReceiptUpload } from "@/components/receipt-upload";
+import { EvidenceDetails } from "@/components/evidence-preview";
+import { TransferDetails } from "@/components/transfer-details";
+import { recipientDetailsInput } from "@/lib/transfers";
 export const Route = createFileRoute("/transferencias")({
   component: TransferPortal,
   head: () => ({ meta: [{ title: "Mis transferencias | Brasper" }] }),
@@ -30,6 +32,10 @@ export const Route = createFileRoute("/transferencias")({
 const money = (n: number, c: string) =>
   `${Number(n).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${c}`;
 function TransferPortal() {
+  const [initialReceipt, setInitialReceipt] = useState<File | null>(null);
+  const [accountType, setAccountType] = useState("bank_account");
+  const [proofFiles, setProofFiles] = useState<Record<string, File | null>>({});
+  const [newOperation, setNewOperation] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null),
     [ready, setReady] = useState(false),
     [staff, setStaff] = useState(false),
@@ -44,6 +50,15 @@ function TransferPortal() {
     [busy, setBusy] = useState(false),
     [register, setRegister] = useState(false),
     [admin, setAdmin] = useState(false);
+  useEffect(() => {
+    if (newOperation) {
+      const element = document.getElementById(`operacion-${newOperation}`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+        setNewOperation(null);
+      }
+    }
+  }, [newOperation, transfers]);
   const rate = rates.find((r) => r.id === selected),
     amounts = rate
       ? quoteAmounts(Number(amount), Number(rate.rate), Number(rate.commission_percent))
@@ -94,6 +109,8 @@ function TransferPortal() {
   }
   useEffect(() => {
     if (session) {
+      setInitialReceipt(null);
+      setProofFiles({});
       setTransfers([]);
       setEvents([]);
       setRates([]);
@@ -102,6 +119,8 @@ function TransferPortal() {
       setSelected("");
       void load().catch((e) => setMessage(e.message));
     } else {
+      setInitialReceipt(null);
+      setProofFiles({});
       setTransfers([]);
       setStaff(false);
       setAdmin(false);
@@ -140,8 +159,10 @@ function TransferPortal() {
       d = new FormData(form);
     await run(async () => {
       if (!supabase || !rate) return;
-      const v = transferInput.parse({ rateId: rate.id, amount, ...Object.fromEntries(d) });
-      const { error } = await supabase.rpc("create_transfer", {
+      const v = recipientDetailsInput.parse({ rateId: rate.id, amount, ...Object.fromEntries(d) });
+      const file = initialReceipt;
+      if (file) validateProof(file);
+      const { data: id, error } = await supabase.rpc("create_transfer_details", {
         p_rate_id: v.rateId,
         p_amount: v.amount,
         p_customer_name: v.customerName,
@@ -150,16 +171,43 @@ function TransferPortal() {
         p_recipient_document: v.recipientDocument,
         p_recipient_bank: v.recipientBank,
         p_recipient_account: v.recipientAccount,
+        p_recipient_account_type: v.recipientAccountType,
+        p_recipient_account_holder: v.recipientAccountHolder,
+        p_recipient_account_holder_document: v.recipientAccountHolderDocument,
+        p_recipient_bank_branch: v.recipientBankBranch,
+        p_customer_phone: v.customerPhone,
+        p_recipient_phone: v.recipientPhone,
+        p_transfer_note: v.transferNote,
       });
       if (error) throw error;
       form.reset();
+      setInitialReceipt(null);
+      let receiptError = "";
+      if (file) {
+        try {
+          const path = await upload({ id }, file, "deposit");
+          const { error: attachError } = await supabase.rpc("submit_proof", {
+            p_transfer_id: id,
+            p_path: path,
+          });
+          if (attachError) throw attachError;
+        } catch {
+          receiptError =
+            "Los datos quedaron guardados, pero no se pudo adjuntar el comprobante. Vuelve a subirlo en esta operación; no registres otra solicitud.";
+        }
+      }
+      window.history.replaceState(null, "", window.location.pathname);
       await load();
+      setNewOperation(id);
       setMessage(
-        "Solicitud registrada. Usa las instrucciones de pago de tu operación y adjunta la prueba.",
+        receiptError ||
+          (file
+            ? "Solicitud y comprobante enviados a revisión. El equipo verificará el ingreso bancario."
+            : "Datos registrados. Paso siguiente: realiza el pago a la cuenta indicada y envía tu comprobante a revisión."),
       );
     });
   }
-  async function upload(t: Transfer, file: File, kind: "deposit" | "payout") {
+  async function upload(t: Pick<Transfer, "id">, file: File, kind: "deposit" | "payout") {
     if (!supabase || !session) throw new Error("Inicia sesión");
     validateProof(file);
     const ext = file.type === "application/pdf" ? "pdf" : file.type === "image/png" ? "png" : "jpg";
@@ -175,6 +223,7 @@ function TransferPortal() {
       const path = await upload(t, file, "deposit");
       const { error } = await supabase!.rpc("submit_proof", { p_transfer_id: t.id, p_path: path });
       if (error) throw error;
+      setProofFiles((old) => ({ ...old, [t.id]: null }));
       await load();
       setMessage("Prueba recibida. Nuestro equipo verificará el ingreso en la cuenta bancaria.");
     });
@@ -336,8 +385,8 @@ function TransferPortal() {
                 <div className="portal-section-title">
                   <ArrowLeftRight />
                   <div>
-                    <h2>Una nueva transferencia</h2>
-                    <p>La tasa y comisión se guardan con tu solicitud.</p>
+                    <h2>Realiza tu transferencia desde aquí</h2>
+                    <p>Completa los datos, registra el pago y sigue la revisión del equipo.</p>
                   </div>
                 </div>
                 {!rates.length ? (
@@ -347,9 +396,22 @@ function TransferPortal() {
                   </p>
                 ) : (
                   <form className="portal-form transfer-form" onSubmit={create}>
+                    <div className="transfer-step-heading wide">
+                      <span>01</span>
+                      <div>
+                        <h3>Cotiza tu envío</h3>
+                        <p>Revisa cuánto pagas y cuánto recibe el destinatario.</p>
+                      </div>
+                    </div>
                     <label>
                       Ruta
-                      <select value={selected} onChange={(e) => setSelected(e.target.value)}>
+                      <select
+                        value={selected}
+                        onChange={(e) => {
+                          setSelected(e.target.value);
+                          setAccountType("bank_account");
+                        }}
+                      >
                         {rates.map((r) => (
                           <option key={r.id} value={r.id}>
                             {r.from_currency} → {r.to_currency}
@@ -391,25 +453,135 @@ function TransferPortal() {
                         </p>
                       </div>
                     )}
+                    <div className="transfer-step-heading wide">
+                      <span>02</span>
+                      <div>
+                        <h3>Tus datos de contacto</h3>
+                        <p>El comprobante se enviará a {session.user.email}.</p>
+                      </div>
+                    </div>
                     {[
                       ["customerName", "Tu nombre completo"],
                       ["customerDocument", "Tu DNI, RUC o documento"],
-                      ["recipientName", "Nombre del destinatario"],
-                      ["recipientDocument", "Documento del destinatario"],
-                      ["recipientBank", "Banco de destino"],
-                      ["recipientAccount", "Cuenta o clave de destino"],
                     ].map(([name, label]) => (
                       <label key={name}>
                         {label}
                         <input name={name} required minLength={2} maxLength={200} />
                       </label>
                     ))}
+                    <label>
+                      Tu teléfono con código de país
+                      <input
+                        name="customerPhone"
+                        type="tel"
+                        required
+                        minLength={6}
+                        maxLength={40}
+                        autoComplete="tel"
+                        placeholder="Ej. +51 …"
+                      />
+                    </label>
+                    <div className="transfer-step-heading wide">
+                      <span>03</span>
+                      <div>
+                        <h3>Destinatario y cuenta a recibir</h3>
+                        <p>
+                          Copia los datos tal como aparecen en el banco. Destino:{" "}
+                          {rate?.to_currency}.
+                        </p>
+                      </div>
+                    </div>
+                    {[
+                      ["recipientName", "Nombre completo del destinatario"],
+                      ["recipientDocument", "Documento del destinatario"],
+                      ["recipientAccountHolder", "Titular de la cuenta receptora"],
+                      [
+                        "recipientAccountHolderDocument",
+                        "Documento del titular (DNI / CPF / CNPJ u otro)",
+                      ],
+                      ["recipientBank", "Banco de la cuenta receptora"],
+                    ].map(([name, label]) => (
+                      <label key={name}>
+                        {label}
+                        <input name={name} required minLength={2} maxLength={200} />
+                      </label>
+                    ))}
+                    <label>
+                      Tipo de cuenta o clave
+                      <select
+                        name="recipientAccountType"
+                        value={accountType}
+                        onChange={(e) => setAccountType(e.target.value)}
+                      >
+                        <option value="bank_account">Cuenta bancaria</option>
+                        {rate?.to_currency === "PEN" && (
+                          <option value="cci">CCI (20 dígitos)</option>
+                        )}
+                        {rate?.to_currency === "BRL" && <option value="pix">Clave PIX</option>}
+                      </select>
+                    </label>
+                    <label>
+                      {accountType === "pix"
+                        ? "Clave PIX del titular"
+                        : accountType === "cci"
+                          ? "CCI de la cuenta"
+                          : "Número de cuenta receptora"}
+                      <input
+                        name="recipientAccount"
+                        required
+                        minLength={accountType === "cci" ? 20 : 2}
+                        maxLength={accountType === "cci" ? 20 : 200}
+                        inputMode={accountType === "cci" ? "numeric" : "text"}
+                        pattern={accountType === "cci" ? "[0-9]{20}" : undefined}
+                        placeholder={
+                          accountType === "pix"
+                            ? "CPF, CNPJ, correo, teléfono o clave aleatoria"
+                            : "Sin abreviar"
+                        }
+                      />
+                    </label>
+                    <label>
+                      Agencia / sucursal (si corresponde)
+                      <input name="recipientBankBranch" maxLength={50} />
+                    </label>
+                    <label>
+                      Teléfono del destinatario (opcional)
+                      <input name="recipientPhone" type="tel" maxLength={40} />
+                    </label>
+                    <label className="wide">
+                      Información adicional (opcional)
+                      <textarea
+                        name="transferNote"
+                        maxLength={500}
+                        placeholder="Indicaciones que deba revisar el equipo"
+                      />
+                    </label>
+                    <div className="transfer-step-heading wide">
+                      <span>04</span>
+                      <div>
+                        <h3>Prueba del pago a Brasper</h3>
+                        <p>
+                          Si ya realizaste el ingreso, adjunta la foto ahora. Si aún no pagaste,
+                          registra los datos y recibirás las instrucciones para continuar.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="wide">
+                      <ReceiptUpload
+                        file={initialReceipt}
+                        onChange={setInitialReceipt}
+                        disabled={busy}
+                      />
+                    </div>
                     <label className="wide portal-consent">
                       <input type="checkbox" required /> Confirmo los datos del destinatario y
                       autorizo su uso para gestionar este envío y el comprobante.
                     </label>
                     <Button variant="brand" className="wide" disabled={busy}>
-                      Registrar solicitud <ArrowRight size={16} />
+                      {initialReceipt
+                        ? "Enviar solicitud y comprobante a revisión"
+                        : "Guardar datos y continuar al pago"}{" "}
+                      <ArrowRight size={16} />
                     </Button>
                     <p className="wide">
                       La prueba de pago será revisada por el equipo antes de enviar el dinero.
@@ -502,21 +674,47 @@ function TransferPortal() {
                       </div>
                     )}
                     {["awaiting_payment", "proof_submitted"].includes(t.status) && !admin && (
-                      <label className="upload-proof">
-                        <Upload size={18} />
-                        {t.proof_path ? "Adjuntar una nueva prueba" : "Subir prueba de pago"}
-                        <input
-                          type="file"
-                          accept="application/pdf,image/jpeg,image/png"
+                      <div className="operation-upload">
+                        <h4>
+                          {t.proof_path
+                            ? "Actualizar la prueba de pago"
+                            : "Completa tu pago y envía la prueba"}
+                        </h4>
+                        <ReceiptUpload
+                          file={proofFiles[t.id] ?? null}
+                          onChange={(file) => setProofFiles((old) => ({ ...old, [t.id]: file }))}
                           disabled={busy}
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) void proof(t, f);
-                            e.target.value = "";
-                          }}
                         />
-                        <small>PDF, JPG o PNG · máximo 5 MB</small>
-                      </label>
+                        <Button
+                          variant="brand"
+                          disabled={busy || !proofFiles[t.id]}
+                          onClick={() => void proof(t, proofFiles[t.id]!)}
+                        >
+                          Enviar comprobante a revisión <ArrowRight size={16} />
+                        </Button>
+                        <p>
+                          El equipo recibirá tus datos y este archivo. La revisión bancaria es
+                          manual.
+                        </p>
+                      </div>
+                    )}
+                    <details className="operation-recipient">
+                      <summary>Datos de la cuenta receptora y del remitente</summary>
+                      <TransferDetails transfer={t} />
+                    </details>
+                    {t.proof_path && (
+                      <EvidenceDetails
+                        path={t.proof_path}
+                        label="Comprobante de pago a Brasper"
+                        summary="Ver imagen o PDF del pago"
+                      />
+                    )}
+                    {t.payout_path && (
+                      <EvidenceDetails
+                        path={t.payout_path}
+                        label="Constancia del envío al destinatario"
+                        summary="Ver imagen o PDF del envío al destinatario"
+                      />
                     )}
                     <div className="document-actions">
                       {t.proof_path && (

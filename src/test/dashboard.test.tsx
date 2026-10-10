@@ -7,6 +7,7 @@ const mock = vi.hoisted(() => ({
   eq: vi.fn(),
   in: vi.fn(),
   ilike: vi.fn(),
+  sign: vi.fn(),
 }));
 vi.mock("@/lib/supabase", () => ({
   supabase: {
@@ -15,6 +16,12 @@ vi.mock("@/lib/supabase", () => ({
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
     },
     rpc: mock.rpc,
+    storage: { from: () => ({ createSignedUrl: mock.sign }) },
+    channel: () => {
+      const channel = { on: () => channel, subscribe: () => channel };
+      return channel;
+    },
+    removeChannel: vi.fn(),
     from: (table: string) => {
       const result = Promise.resolve({
         data:
@@ -25,6 +32,10 @@ vi.mock("@/lib/supabase", () => ({
                   id: "00000000-0000-4000-8000-000000000001",
                   customer_name: "Cliente de prueba",
                   recipient_name: "Destinatario",
+                  recipient_bank: "Banco de prueba",
+                  recipient_account: "123456789",
+                  recipient_account_holder: "Titular de prueba",
+                  proof_path: "staff-user/00000000-0000-4000-8000-000000000001/deposit/photo.jpg",
                   amount: 300,
                   recipient_amount: 420.38,
                   from_currency: "PEN",
@@ -76,6 +87,10 @@ beforeEach(() => {
     },
     error: null,
   });
+  mock.sign.mockResolvedValue({
+    data: { signedUrl: "https://example.test/private-receipt.jpg?token=test" },
+    error: null,
+  });
 });
 afterEach(cleanup);
 describe("Staff dashboard", () => {
@@ -112,5 +127,21 @@ describe("Staff dashboard", () => {
     expect(
       screen.getByText("Documento fiscal auténtico aceptado en homologación y correo probado."),
     ).toBeInTheDocument();
+  });
+  it("opens receiving-account details and the private receipt inside the dashboard", async () => {
+    render(<Dashboard />);
+    fireEvent.click(await screen.findByRole("button", { name: "Ver imagen / datos" }));
+    expect(await screen.findByText("Titular de prueba")).toBeInTheDocument();
+    expect(screen.getByText("123456789")).toBeInTheDocument();
+    const image = await screen.findByRole("img", {
+      name: "Comprobante de pago enviado por el cliente",
+    });
+    expect(image).toHaveAttribute("src", "https://example.test/private-receipt.jpg?token=test");
+    expect(mock.sign).toHaveBeenCalledWith(
+      "staff-user/00000000-0000-4000-8000-000000000001/deposit/photo.jpg",
+      60,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 });

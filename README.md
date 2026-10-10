@@ -39,4 +39,4 @@ El portal `/transferencias` incorpora solicitudes, carga privada de pruebas de p
 
 Para configurar desde Lovable, usa el [prompt de activación](docs/PROMPT_LOVABLE.md). La [plantilla SQL comentada](supabase/manual-setup.example.sql) describe los datos oficiales que debe cargar el administrador.
 
-El equipo dispone de `/dashboard` con cola de operaciones, totales del historial por moneda y seguimiento de la puesta en marcha desde `MASTER_PLAN.json`. Requiere la segunda migración y un usuario autorizado en `staff_members`.
+El equipo dispone de `/dashboard` con cola de operaciones, totales del historial por moneda y seguimiento de la puesta en marcha desde `MASTER_PLAN.json`. Requiere las migraciones pendientes y un usuario autorizado en `staff_members`. El formulario recoge la cuenta receptora completa y una foto/PDF opcional al registrar; si aún no pagó, el cliente obtiene instrucciones y adjunta la prueba después. El dashboard abre los datos y las imágenes privadas de cada operación.

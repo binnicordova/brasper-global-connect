@@ -23,6 +23,7 @@ beforeAll(async () => {
   );
   await db.exec(readFileSync("supabase/migrations/202610100001_transfer_workflow.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202610100002_staff_dashboard.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/202610100003_recipient_details.sql", "utf8"));
   await db.exec(
     `insert into auth.users values('${owner}','owner@example.test',now()),('${other}','other@example.test',now()),('${staff}','staff@example.test',now());insert into staff_members(user_id) values('${staff}');insert into fx_rates(id,from_currency,to_currency,rate,commission_percent,valid_until) values('${rate}','PEN','BRL',1.475,5,now()+interval '1 day');insert into deposit_accounts(currency,bank,holder,account_number) values('PEN','Test bank','Brasper test','1234');`,
   );
@@ -142,5 +143,61 @@ describe("Database authorization and workflow", () => {
         amounts: [{ currency: "PEN", amount: 300, operations: 1 }],
       },
     });
+  });
+  it("saves the full receiving account and links the private receipt for staff", async () => {
+    await db.exec(`update fx_rates set valid_until=now()+interval '1 day' where id='${rate}'`);
+    const result = await act(
+      owner,
+      `select create_transfer_details('${rate}',300,'Owner','123456','Recipient','456789','Test bank','key@example.test','pix','Account holder','987654','001','+51999999999','+5511999999999','Test instructions') as id`,
+    );
+    const id = String((result.rows[0] as { id: string }).id);
+    const path = `${owner}/${id}/deposit/photo.jpg`;
+    await act(
+      owner,
+      `insert into storage.objects(bucket_id,name) values('transfer-proofs','${path}')`,
+    );
+    await act(owner, `select submit_proof('${id}','${path}')`);
+    expect(
+      (
+        await act(
+          staff,
+          `select recipient_account_type,recipient_account_holder,recipient_account_holder_document,recipient_account,recipient_bank_branch,customer_phone,recipient_phone,transfer_note,proof_path,status from transfers where id='${id}'`,
+        )
+      ).rows[0],
+    ).toMatchObject({
+      recipient_account_type: "pix",
+      recipient_account_holder: "Account holder",
+      recipient_account_holder_document: "987654",
+      recipient_account: "key@example.test",
+      recipient_bank_branch: "001",
+      customer_phone: "+51999999999",
+      recipient_phone: "+5511999999999",
+      transfer_note: "Test instructions",
+      proof_path: path,
+      status: "proof_submitted",
+    });
+    expect((await act(other, `select * from transfers where id='${id}'`)).rows).toHaveLength(0);
+    expect(
+      (await act(staff, `select * from storage.objects where name='${path}'`)).rows,
+    ).toHaveLength(1);
+    expect(
+      (await act(other, `select * from storage.objects where name='${path}'`)).rows,
+    ).toHaveLength(0);
+  });
+  it("rolls back incompatible account types without leaving an extra operation", async () => {
+    const before = (await db.query("select id from transfers")).rows.length;
+    await expect(
+      act(
+        owner,
+        `select create_transfer_details('${rate}',300,'Owner','123','Recipient','456','Bank','12345678901234567890','cci','Holder','789','','+51999999999','','')`,
+      ),
+    ).rejects.toThrow(/incompatible/);
+    expect((await db.query("select id from transfers")).rows).toHaveLength(before);
+    await expect(
+      act(
+        owner,
+        `select create_transfer_details('${rate}',300,'Owner','123','Recipient','456','Bank','key','pix','Holder','789','','','','')`,
+      ),
+    ).rejects.toThrow(/teléfono/);
   });
 });

@@ -10,6 +10,7 @@ Activa el flujo de transferencias de Brasper usando el código existente. Conser
 
 - `supabase/migrations/202610100001_transfer_workflow.sql`: tablas, RLS, Storage privado y funciones PostgreSQL.
 - `supabase/migrations/202610100002_staff_dashboard.sql`: resumen global protegido para el equipo.
+- `supabase/migrations/202610100003_recipient_details.sql`: cuenta receptora completa y actualización del dashboard por Realtime.
 - `supabase/functions/process-invoices/index.ts`: worker de facturación y correo.
 - `supabase/config.toml`: configuración del worker.
 - `supabase/manual-setup.example.sql`: plantilla comentada para configurar manualmente equipo, cuentas bancarias y tasas.
@@ -39,7 +40,11 @@ Cliente elige una cotización vigente, introduce datos del destinatario y crea s
 
 Subir prueba NO confirma el ingreso. El equipo revisa el banco manualmente y confirma mediante `review_transfer`. Luego realiza el envío bancario fuera de la plataforma y registra referencia y constancia. Solo ese registro crea una solicitud única de facturación. El cliente consulta sus estados y descarga su comprobante cuando esté disponible.
 
-Usa los RPC existentes `create_transfer`, `submit_proof` y `review_transfer`. Conserva auditoría y transiciones; no permitas actualizaciones directas del cliente, saltar verificaciones, duplicar envíos o duplicar documentos. Las tasas y cuentas oficiales se cargan manualmente por ahora. Si faltan, informa que no hay una cotización o cuenta habilitada; no inventes valores.
+Usa `create_transfer_details` para registrar la operación completa, `submit_proof` para enlazar el comprobante y `review_transfer` para la revisión del equipo. Conserva auditoría y transiciones; no permitas actualizaciones directas del cliente, saltar verificaciones, duplicar envíos o duplicar documentos. Las tasas y cuentas oficiales se cargan manualmente por ahora. Si faltan, informa que no hay una cotización o cuenta habilitada; no inventes valores.
+
+El cliente debe poder completar el formulario y adjuntar una foto/PDF desde la web. Recoge nombre, documento y teléfono del remitente; destinatario y documento; titular y documento de la cuenta receptora; banco, cuenta/CCI/PIX, agencia, teléfono opcional y observaciones. Muestra vista previa antes de enviar. Si no pagó todavía, guarda los datos y muestra las instrucciones para luego adjuntar la prueba en esa misma operación. Si ya pagó, registra solicitud y archivo y pasa a revisión. Si falla la carga, conserva la solicitud y permite reintentar su comprobante sin volver a crearla.
+
+En `/dashboard`, el equipo debe abrir la imagen/PDF y todos los datos en el diálogo de la operación, sin convertir el bucket en público. Activa Realtime para actualizar la cola cuando lleguen solicitudes/pruebas; verifica que un cliente no pueda obtener archivos ni datos de otros. Conserva Actualizar como respaldo. Los componentes existentes `receipt-upload`, `evidence-preview` y `transfer-details` implementan estos pasos.
 
 **Automatización fiscal:**
 
