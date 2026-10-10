@@ -34,6 +34,159 @@ function worker(vars: Record<string, string>, db: unknown, fetchMock = vi.fn()) 
   return handler;
 }
 describe("Billing worker integration boundaries", () => {
+  it("blocks beta boletas before calling the invoice-only gateway", async () => {
+    const network = vi.fn();
+    const handle = worker(
+      { BILLING_WORKER_SECRET: "secret", BILLING_ENVIRONMENT: "beta" },
+      {
+        rpc: async () => ({
+          data: [{ id: "boleta", status: "blocked", document_type: "03" }],
+          error: null,
+        }),
+      },
+      network,
+    );
+    const response = await handle(
+      new Request("https://local.test", {
+        method: "POST",
+        headers: { Authorization: "Bearer secret" },
+      }),
+    );
+    expect(await response.json()).toMatchObject({ status: "blocked", id: "boleta" });
+    expect(network).not.toHaveBeenCalled();
+  });
+  it("passes the requested boleta and billing recipient to production and rejects a mismatched factura", async () => {
+    const update = vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) }));
+    const upload = vi.fn();
+    const transfer = {
+      id: "transfer",
+      user_id: "owner",
+      status: "paid_out",
+      from_currency: "BRL",
+      to_currency: "PEN",
+      billing_type: "boleta",
+      billing_email: "billing@example.test",
+      billing_name: "Cliente",
+      billing_document: "12345678",
+      billing_document_type: "1",
+    };
+    const db = {
+      rpc: async () => ({
+        data: [{ id: "invoice", transfer_id: "transfer", document_type: "03" }],
+        error: null,
+      }),
+      storage: { from: () => ({ upload }) },
+      from: (table: string) =>
+        table === "transfers"
+          ? {
+              select: () => ({
+                eq: () => ({ single: async () => ({ data: transfer, error: null }) }),
+              }),
+            }
+          : { update },
+    };
+    const network = vi.fn(async () =>
+      Response.json({
+        authority: "SUNAT",
+        document_type: "01",
+        status: "accepted",
+        cdr_code: "0",
+        external_id: "wrong-type",
+        number: "F001-1",
+      }),
+    );
+    const handle = worker(
+      {
+        BILLING_WORKER_SECRET: "secret",
+        BILLING_GATEWAY_URL: "https://provider.test",
+        BILLING_GATEWAY_TOKEN: "token",
+        BILLING_ALLOWED_ROUTES: "BRL-PEN",
+      },
+      db,
+      network,
+    );
+    const response = await handle(
+      new Request("https://local.test", {
+        method: "POST",
+        headers: { Authorization: "Bearer secret" },
+      }),
+    );
+    expect(response.status).toBe(502);
+    const sent = JSON.parse(
+      String((network.mock.calls[0] as unknown as [string, RequestInit])[1].body),
+    );
+    expect(sent).toMatchObject({
+      document_type: "03",
+      billing: {
+        type: "boleta",
+        email: "billing@example.test",
+        name: "Cliente",
+        document: "12345678",
+        document_type: "1",
+      },
+    });
+    expect(upload).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "reconciliation_required" }),
+    );
+  });
+  it("sends an accepted production document to its chosen billing email instead of account email", async () => {
+    const rpc = vi.fn(async () => ({
+      data: [
+        {
+          id: "invoice",
+          transfer_id: "transfer",
+          document_type: "03",
+          pdf_path: "private/doc.pdf",
+          number: "B001-1",
+          email_attempted_at: new Date().toISOString(),
+        },
+      ],
+      error: null,
+    }));
+    const db = {
+      rpc,
+      storage: {
+        from: () => ({ download: async () => ({ data: new Blob(["%PDF-test"]), error: null }) }),
+      },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({
+              data: {
+                customer_email: "account@example.test",
+                billing_email: "billing@example.test",
+              },
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    };
+    const network = vi.fn(async () => Response.json({ id: "message" }));
+    const handle = worker(
+      {
+        BILLING_WORKER_SECRET: "secret",
+        RESEND_API_KEY: "test-key",
+        BILLING_FROM_EMAIL: "sender@example.test",
+      },
+      db,
+      network,
+    );
+    const response = await handle(
+      new Request("https://local.test", {
+        method: "POST",
+        headers: { Authorization: "Bearer secret" },
+      }),
+    );
+    expect(await response.json()).toMatchObject({ status: "delivered" });
+    const sent = JSON.parse(
+      String((network.mock.calls[0] as unknown as [string, RequestInit])[1].body),
+    );
+    expect(sent.to).toEqual(["billing@example.test"]);
+    expect(sent.subject).toBe("Boleta Brasper B001-1");
+    expect(rpc).toHaveBeenCalledWith("complete_invoice_delivery", { p_invoice_id: "invoice" });
+  });
   it("rejects requests without scheduler authorization", async () => {
     const rpc = vi.fn();
     const handle = worker({ BILLING_WORKER_SECRET: "secret" }, { rpc });
@@ -160,6 +313,7 @@ describe("Billing worker integration boundaries", () => {
     const network = vi.fn(async () =>
       Response.json({
         authority: "SUNAT",
+        document_type: "01",
         environment: "beta",
         status: "accepted",
         cdr_code: "0",

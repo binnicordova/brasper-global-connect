@@ -326,49 +326,51 @@ function Dashboard() {
                       {rows.map((t) => {
                         const invoice = firstInvoice(t.invoices);
                         return (
-                        <tr key={t.id}>
-                          <td>
-                            <strong>{t.customer_name}</strong>
-                            <small>
-                              {t.id.slice(0, 8)} ·{" "}
-                              {new Date(t.created_at).toLocaleDateString("es-PE")}
-                            </small>
-                            <small>Para {t.recipient_name}</small>
-                          </td>
-                          <td>
-                            <strong>{money(t.amount, t.from_currency)}</strong>
-                            <small>Recibe {money(t.recipient_amount, t.to_currency)}</small>
-                          </td>
-                          <td>
-                            <span className={`ops-status state-${t.status}`}>
-                              {statusLabels[t.status]}
-                            </span>
-                          </td>
-                          <td>
-                            {invoice ? invoiceLabels[invoice.status] : "Aún no solicitado"}
-                            {invoice?.environment === "beta" && (
-                              <small>Ensayo sin validez tributaria</small>
-                            )}
-                          </td>
-                          <td>
-                            <button
-                              type="button"
-                              className="ops-receipt-button"
-                              onClick={() => setOpened(t)}
-                            >
-                              <Image size={16} />
-                              {t.proof_path ? "Ver imagen / datos" : "Ver datos"}
-                            </button>
-                            <small>
-                              {t.proof_path ? "Archivo privado adjunto" : "Sin prueba adjunta"}
-                            </small>
-                          </td>
-                          <td>
-                            <a className="ops-open" href={`/transferencias#operacion-${t.id}`}>
-                              Abrir <ArrowRight size={14} />
-                            </a>
-                          </td>
-                        </tr>
+                          <tr key={t.id}>
+                            <td>
+                              <strong>{t.customer_name}</strong>
+                              <small>
+                                {t.id.slice(0, 8)} ·{" "}
+                                {new Date(t.created_at).toLocaleDateString("es-PE")}
+                              </small>
+                              <small>Para {t.recipient_name}</small>
+                            </td>
+                            <td>
+                              <strong>{money(t.amount, t.from_currency)}</strong>
+                              <small>Recibe {money(t.recipient_amount, t.to_currency)}</small>
+                            </td>
+                            <td>
+                              <span className={`ops-status state-${t.status}`}>
+                                {statusLabels[t.status]}
+                              </span>
+                            </td>
+                            <td>
+                              <strong>{t.billing_type === "boleta" ? "Boleta" : "Factura"}</strong>
+                              <small>{t.billing_email || t.customer_email}</small>
+                              {invoice ? invoiceLabels[invoice.status] : "Aún no solicitado"}
+                              {invoice?.environment === "beta" && (
+                                <small>Ensayo sin validez tributaria</small>
+                              )}
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="ops-receipt-button"
+                                onClick={() => setOpened(t)}
+                              >
+                                <Image size={16} />
+                                {t.proof_path ? "Ver imagen / datos" : "Ver datos"}
+                              </button>
+                              <small>
+                                {t.proof_path ? "Archivo privado adjunto" : "Sin prueba adjunta"}
+                              </small>
+                            </td>
+                            <td>
+                              <a className="ops-open" href={`/transferencias#operacion-${t.id}`}>
+                                Abrir <ArrowRight size={14} />
+                              </a>
+                            </td>
+                          </tr>
                         );
                       })}
                     </tbody>
@@ -593,9 +595,27 @@ function StaffLogin() {
     );
   return (
     <form onSubmit={submit} className="grid w-full max-w-sm gap-3" aria-label="Ingreso del equipo">
-      <input name="email" type="email" required placeholder="Correo del equipo" autoComplete="email" className="rounded-md border border-input bg-background px-3 py-2" />
-      <input name="password" type="password" required placeholder="Contraseña" autoComplete="current-password" className="rounded-md border border-input bg-background px-3 py-2" />
-      {msg && <p role="alert" className="text-sm text-destructive">{msg}</p>}
+      <input
+        name="email"
+        type="email"
+        required
+        placeholder="Correo del equipo"
+        autoComplete="email"
+        className="rounded-md border border-input bg-background px-3 py-2"
+      />
+      <input
+        name="password"
+        type="password"
+        required
+        placeholder="Contraseña"
+        autoComplete="current-password"
+        className="rounded-md border border-input bg-background px-3 py-2"
+      />
+      {msg && (
+        <p role="alert" className="text-sm text-destructive">
+          {msg}
+        </p>
+      )}
       <Button type="submit" variant="brand" disabled={busy}>
         {busy ? "Ingresando…" : "Ingresar al panel"}
       </Button>

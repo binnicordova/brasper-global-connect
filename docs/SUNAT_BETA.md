@@ -6,7 +6,7 @@ La clave `BETA_API_KEY` existente fue reutilizada, con autorización del usuario
 
 ## Activación en Lovable
 
-1. Integra los archivos de la rama `codex/transfer-workflow` y aplica las cinco migraciones en orden, incluyendo `202610100004_sunat_beta.sql` y `202610100005_guest_exchange.sql` una sola vez.
+1. Sincroniza `main` y aplica las ocho migraciones en orden, incluyendo `202610100004_sunat_beta.sql` y `202610100005_guest_exchange.sql` una sola vez.
 2. Configura el backend **de Brasper**, Auth, Storage, equipo, tasas y cuentas siguiendo `TRANSFER_WORKFLOW.md`.
 3. En los secretos privados del servidor web configura `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BILLING_BETA_ENABLED=true` y `BILLING_GATEWAY_TOKEN`. Para el token reutiliza el valor del archivo local privado; no lo pegues en chat, código, variables VITE ni SQL público.
 4. En los secretos de la Edge Function configura `BILLING_ENVIRONMENT=beta`, `BILLING_GATEWAY_URL=https://DOMINIO/api/billing-beta`, `BILLING_GATEWAY_TOKEN` y `BILLING_WORKER_SECRET`, reutilizando los valores privados autorizados. Supabase proporciona sus credenciales internas a la función. No conectes el proyecto Supabase del hotel.
@@ -31,3 +31,5 @@ El 10 de octubre de 2026 se hizo **un envío real al servicio SUNAT beta**: `F90
 Para desarrollo local: `npm run setup:billing-beta` crea el archivo privado desde el proyecto original sin sobrescribirlo; `npm run dev:billing-beta` lo carga en el servidor. Añade las credenciales del backend de Brasper al archivo privado para activar la cola local. `npm run smoke:billing-beta` envía una sola prueba ficticia independiente: no ejecutarlo para reintentar un envío incierto.
 
 Para producción faltan configuración fiscal propia de Brasper, credenciales SOL/certificado autorizado, tratamiento del servicio, series, receptor, adaptador productivo y correo verificado. Ninguna credencial productiva del hotel se copió.
+
+El flujo web recoge factura o boleta. El motor beta de este documento admite solo factura (`01`); las solicitudes de boleta (`03`) se conservan y bloquean sin consumir serie F902. Ver [BILLING_PREFERENCES_LOVABLE.md](BILLING_PREFERENCES_LOVABLE.md).

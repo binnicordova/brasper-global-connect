@@ -93,7 +93,7 @@ beforeEach(() => {
   window.history.replaceState(null, "", "/transferencias");
   mock.upload.mockResolvedValue({ error: null });
   mock.rpc.mockImplementation(async (name: string, p: Record<string, unknown>) => {
-    if (name === "create_transfer_details" || name === "create_guest_transfer_details") {
+    if (name === "create_validated_transfer") {
       const fields = Object.fromEntries(
         Object.entries(p).map(([key, value]) => [key.replace(/^p_/, ""), value]),
       );
@@ -116,7 +116,7 @@ beforeEach(() => {
       ];
       return { data: operation, error: null };
     }
-    if (name === "submit_proof") {
+    if (name === "submit_transfer_proof") {
       mock.rows = mock.rows.map((r) => ({
         ...r,
         status: "proof_submitted",
@@ -201,20 +201,34 @@ describe("Staff review integration", () => {
     });
   });
 });
-async function fillAndAttach(submit = true, attach = true) {
+async function fillAndAttach(submit = true, attach = true, invoice = false) {
   const rendered = render(<Portal />);
   await screen.findByText("Cotiza tu envío");
   fireEvent.click(screen.getByRole("button", { name: /^Continuar$/ }));
   if (mock.guest)
-    fireEvent.change(screen.getByLabelText("Tu correo de contacto"), {
+    fireEvent.change(screen.getByLabelText("Correo para recibir el comprobante"), {
       target: { value: "guest@example.test" },
     });
   for (const [label, value] of [
     ["Tu nombre completo", "Cliente de prueba"],
     ["Tu DNI, RUC o documento", "12345678"],
     ["Tu teléfono con código de país", "+51999999999"],
+    ["Banco desde el que pagarás", "Banco de origen"],
+    ["Motivo del cambio", "Apoyo a mi familia"],
   ])
     fireEvent.change(screen.getByLabelText(label!), { target: { value } });
+  fireEvent.change(screen.getByLabelText("Origen de los fondos"), { target: { value: "salary" } });
+  if (invoice) {
+    fireEvent.change(screen.getByLabelText("Tipo de comprobante"), {
+      target: { value: "factura" },
+    });
+    fireEvent.change(screen.getByLabelText("RUC para la factura"), {
+      target: { value: "20100070970" },
+    });
+    fireEvent.change(screen.getByLabelText("Razón social para la factura"), {
+      target: { value: "Empresa de prueba" },
+    });
+  }
   fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
   for (const [label, value] of [
     ["Nombre completo del destinatario", "Destinatario"],
@@ -222,6 +236,7 @@ async function fillAndAttach(submit = true, attach = true) {
     ["Titular de la cuenta receptora", "Titular"],
     ["Documento del titular (DNI / CPF / CNPJ u otro)", "12345678901"],
     ["Banco de la cuenta receptora", "Banco de prueba"],
+    ["Relación con el destinatario y el titular de la cuenta", "Familia"],
   ])
     fireEvent.change(screen.getByLabelText(label!), { target: { value } });
   fireEvent.change(screen.getByLabelText("Tipo de cuenta o clave"), { target: { value: "pix" } });
@@ -234,6 +249,9 @@ async function fillAndAttach(submit = true, attach = true) {
   if (attach) {
     fireEvent.change(rendered.container.querySelector('input[name="receipt"]')!, {
       target: { files: [file] },
+    });
+    fireEvent.change(screen.getByLabelText("Número de operación de tu pago bancario"), {
+      target: { value: "OP-12345" },
     });
     expect(
       screen.getByRole("img", { name: "Vista previa del comprobante seleccionado" }),
@@ -251,13 +269,86 @@ async function fillAndAttach(submit = true, attach = true) {
   return file;
 }
 describe("Customer transfer submission", () => {
+  it("includes mandatory billing email and boleta with the same receiving-account submission", async () => {
+    await fillAndAttach(true, false);
+    await screen.findByText(/Datos registrados. Paso siguiente/);
+    expect(mock.rpc).toHaveBeenCalledWith(
+      "create_validated_transfer",
+      expect.objectContaining({
+        p_source_country: "PE",
+        p_destination_country: "BR",
+        p_origin_bank: "Banco de origen",
+        p_funds_origin: "salary",
+        p_transfer_purpose: "Apoyo a mi familia",
+        p_recipient_relationship: "Familia",
+        p_declaration_accepted: true,
+        p_billing_type: "boleta",
+        p_billing_email: "client@example.test",
+        p_billing_name: "Cliente de prueba",
+        p_billing_document: "12345678",
+        p_billing_document_type: "1",
+      }),
+    );
+    expect(screen.getByText("Datos del comprobante")).toBeInTheDocument();
+  });
+  it("requires the payment operation number before creating a request with a photo", async () => {
+    await fillAndAttach(false);
+    fireEvent.change(screen.getByLabelText("Número de operación de tu pago bancario"), {
+      target: { value: "" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Enviar solicitud y comprobante a revisión/ }),
+    );
+    expect(mock.rpc.mock.calls.some(([name]) => name === "create_validated_transfer")).toBe(false);
+    expect(mock.upload).not.toHaveBeenCalled();
+  });
+  it("blocks an empty Peru declaration and preserves funds when going back", async () => {
+    await fillAndAttach(false, false);
+    fireEvent.click(screen.getByRole("button", { name: "Volver" }));
+    fireEvent.click(screen.getByRole("button", { name: "Volver" }));
+    expect(screen.getByLabelText("Origen de los fondos")).toHaveValue("salary");
+    expect(screen.getByLabelText("Motivo del cambio")).toHaveValue("Apoyo a mi familia");
+    fireEvent.change(screen.getByLabelText("Origen de los fondos"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    expect(screen.getByRole("heading", { name: "Tus datos de contacto" })).toBeVisible();
+    expect(mock.rpc.mock.calls.some(([name]) => name === "create_validated_transfer")).toBe(false);
+  });
+  it("records invoice RUC and legal name instead of the receiving-account holder", async () => {
+    await fillAndAttach(true, false, true);
+    await screen.findByText(/Datos registrados. Paso siguiente/);
+    expect(mock.rpc).toHaveBeenCalledWith(
+      "create_validated_transfer",
+      expect.objectContaining({
+        p_billing_type: "factura",
+        p_billing_email: "client@example.test",
+        p_billing_name: "Empresa de prueba",
+        p_billing_document: "20100070970",
+        p_billing_document_type: "6",
+        p_recipient_account_holder: "Titular",
+      }),
+    );
+  });
+  it("preserves billing choices when going back and refuses an empty invoice email", async () => {
+    await fillAndAttach(false, false, true);
+    expect(screen.getByText("Empresa de prueba · RUC 20100070970")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Volver" }));
+    fireEvent.click(screen.getByRole("button", { name: "Volver" }));
+    expect(screen.getByLabelText("Tipo de comprobante")).toHaveValue("factura");
+    expect(screen.getByLabelText("RUC para la factura")).toHaveValue("20100070970");
+    fireEvent.change(screen.getByLabelText("Correo para recibir el comprobante"), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    expect(screen.getByRole("heading", { name: "Tus datos de contacto" })).toBeVisible();
+    expect(mock.rpc.mock.calls.some(([name]) => name === "create_validated_transfer")).toBe(false);
+  });
   it("saves recipient details, uploads the photo and submits the same operation for review", async () => {
     const file = await fillAndAttach();
     await screen.findByText(
       "Solicitud y comprobante enviados a revisión. El equipo verificará el ingreso bancario.",
     );
     expect(mock.rpc).toHaveBeenCalledWith(
-      "create_transfer_details",
+      "create_validated_transfer",
       expect.objectContaining({
         p_recipient_account_type: "pix",
         p_recipient_account: "recipient@example.test",
@@ -272,9 +363,10 @@ describe("Customer transfer submission", () => {
       { contentType: "image/jpeg", upsert: false },
     );
     expect(mock.rpc).toHaveBeenCalledWith(
-      "submit_proof",
+      "submit_transfer_proof",
       expect.objectContaining({
         p_transfer_id: operation,
+        p_bank_reference: "OP-12345",
         p_path: expect.stringContaining(`${operation}/deposit/`),
       }),
     );
@@ -286,10 +378,12 @@ describe("Customer transfer submission", () => {
     mock.upload.mockResolvedValue({ error: { message: "Storage unavailable" } });
     await fillAndAttach();
     await screen.findByText(/Los datos quedaron guardados, pero no se pudo adjuntar/);
-    expect(mock.rpc.mock.calls.filter(([name]) => name === "create_transfer_details")).toHaveLength(
-      1,
+    expect(
+      mock.rpc.mock.calls.filter(([name]) => name === "create_validated_transfer"),
+    ).toHaveLength(1);
+    expect(mock.rpc.mock.calls.filter(([name]) => name === "submit_transfer_proof")).toHaveLength(
+      0,
     );
-    expect(mock.rpc.mock.calls.filter(([name]) => name === "submit_proof")).toHaveLength(0);
     expect(
       screen.getByText("Esperando tu pago", { selector: "span.operation-status" }),
     ).toBeInTheDocument();
@@ -330,7 +424,7 @@ describe("Customer transfer submission", () => {
     await screen.findByText("Cotiza tu envío");
     fireEvent.change(screen.getByLabelText("Monto que pagas (PEN)"), { target: { value: "0" } });
     fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
-    expect(screen.getByRole("heading", { name: "Cotiza tu envío" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Cotiza tu envío" })).toBeVisible();
     fireEvent.change(screen.getByLabelText("Monto que pagas (PEN)"), { target: { value: "300" } });
     fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
     fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
@@ -354,7 +448,7 @@ describe("Customer transfer submission", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Continuar sin cuenta/ }));
     await screen.findByText("Acceso de invitado · sin registro");
     expect(mock.startGuest).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("heading", { name: "Cotiza tu envío" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Cotiza tu envío" })).toBeVisible();
     expect(screen.queryByLabelText("Contraseña")).not.toBeInTheDocument();
   });
   it("submits guest contact and receipt privately without requiring email confirmation", async () => {
@@ -362,13 +456,12 @@ describe("Customer transfer submission", () => {
     await fillAndAttach();
     await screen.findByText(/Solicitud y comprobante enviados a revisión/);
     expect(mock.rpc).toHaveBeenCalledWith(
-      "create_guest_transfer_details",
+      "create_validated_transfer",
       expect.objectContaining({
-        p_contact_email: "guest@example.test",
+        p_billing_email: "guest@example.test",
         p_customer_phone: "+51999999999",
       }),
     );
-    expect(mock.rpc).not.toHaveBeenCalledWith("create_transfer_details", expect.anything());
     expect(mock.upload).toHaveBeenCalledTimes(1);
   });
   it("offers optional access recovery by verified email without collecting a password", async () => {

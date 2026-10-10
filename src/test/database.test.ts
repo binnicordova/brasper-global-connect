@@ -31,10 +31,12 @@ beforeAll(async () => {
   await db.exec("alter table auth.users add column is_anonymous boolean not null default false");
   await db.exec(readFileSync("supabase/migrations/202610100005_guest_exchange.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202610100006_safe_transfer_review.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/202610100007_billing_preferences.sql", "utf8"));
 }, 20000);
 afterAll(async () => {
   await db.close();
 });
+
 describe("Database authorization and workflow", () => {
   it("calculates totals server-side and snapshots payment instructions", async () => {
     const result = await act(
@@ -423,5 +425,246 @@ describe("Database authorization and workflow", () => {
     } finally {
       await db.exec("reset role");
     }
+  });
+});
+
+describe("Billing choices saved with transfers", () => {
+  const details = (rateId = rate, name = "Owner", document = "12345678") =>
+    `'${rateId}',300,'${name}','${document}','Recipient','456789','Bank','1111','bank_account','Holder','987654','','+51999999999','',''`;
+
+  it("stores invoice recipient independently of bank recipient and snapshots type after payout", async () => {
+    const response = await act(
+      owner,
+      `select create_transfer_with_billing(${details()},'factura','OWNER@example.test','Empresa de prueba','20100070970','6') as id`,
+    );
+    const id = String((response.rows[0] as { id: string }).id);
+    expect(
+      (
+        await act(
+          staff,
+          `select billing_type,billing_email,billing_email_verified,billing_name,billing_document,billing_document_type,recipient_name,status from transfers where id='${id}'`,
+        )
+      ).rows[0],
+    ).toMatchObject({
+      billing_type: "factura",
+      billing_email: "owner@example.test",
+      billing_email_verified: true,
+      billing_name: "Empresa de prueba",
+      billing_document: "20100070970",
+      billing_document_type: "6",
+      recipient_name: "Recipient",
+      status: "awaiting_payment",
+    });
+    expect((await act(other, `select id from transfers where id='${id}'`)).rows).toHaveLength(0);
+    expect((await db.query(`select id from invoices where transfer_id='${id}'`)).rows).toHaveLength(
+      0,
+    );
+    await db.exec(
+      `update transfers set status='paid_out' where id='${id}'; insert into invoices(transfer_id,status) values('${id}','blocked')`,
+    );
+    expect(
+      (await db.query(`select document_type from invoices where transfer_id='${id}'`)).rows[0],
+    ).toMatchObject({ document_type: "01" });
+  });
+
+  it("supports a guest selling BRL, saves boleta and never silently emits a beta factura", async () => {
+    const guest = "00000000-0000-4000-8000-000000000008",
+      reverse = "00000000-0000-4000-8000-000000000009";
+    await db.exec(
+      `insert into auth.users values('${guest}',null,null,true); insert into fx_rates(id,from_currency,to_currency,rate,commission_percent,valid_until) values('${reverse}','BRL','PEN',0.668,0,now()+interval '1 day'); insert into deposit_accounts(currency,bank,holder,account_number) values('BRL','Bank BR','Brasper test','1234')`,
+    );
+    const response = await act(
+      guest,
+      `select create_transfer_with_billing(${details(reverse, "Guest")},'boleta','guest@example.test','Guest','12345678','1') as id`,
+    );
+    const id = String((response.rows[0] as { id: string }).id);
+    expect(
+      (
+        await act(
+          guest,
+          `select from_currency,to_currency,billing_type,billing_email_verified,status from transfers where id='${id}'`,
+        )
+      ).rows[0],
+    ).toMatchObject({
+      from_currency: "BRL",
+      to_currency: "PEN",
+      billing_type: "boleta",
+      billing_email_verified: false,
+      status: "awaiting_payment",
+    });
+    await db.exec(
+      `update transfers set status='paid_out' where id='${id}'; insert into invoices(transfer_id) values('${id}')`,
+    );
+    const job = (await db.query("select * from claim_beta_invoice()")).rows[0];
+    expect(job).toMatchObject({
+      transfer_id: id,
+      document_type: "03",
+      status: "blocked",
+      number: null,
+      beta_sent_at: null,
+    });
+    expect((await db.query("select * from claim_beta_invoice()")).rows).toHaveLength(0);
+  });
+
+  it("rejects invalid billing and missing sessions atomically, without leaving extra transfers", async () => {
+    const count = (await db.query("select id from transfers")).rows.length;
+    for (const invalid of [
+      "'factura','bad-email','Empresa','20100070970','6'",
+      "'factura','owner@example.test','Empresa','123','6'",
+      "'factura','owner@example.test','','20100070970','6'",
+      "'boleta','owner@example.test','Other','12345678','1'",
+      "null,'owner@example.test','Owner','12345678','1'",
+    ])
+      await expect(
+        act(owner, `select create_transfer_with_billing(${details()},${invalid})`),
+      ).rejects.toThrow();
+    await expect(
+      act(
+        "00000000-0000-4000-8000-000000000099",
+        `select create_transfer_with_billing(${details()},'boleta','owner@example.test','Owner','12345678','1')`,
+      ),
+    ).rejects.toThrow(/Sesión/);
+    expect((await db.query("select id from transfers")).rows).toHaveLength(count);
+  });
+
+  it("keeps the chosen email when confirming account access and only delivers to that verified address", async () => {
+    const response = await act(
+      owner,
+      `select create_transfer_with_billing(${details()},'factura','billing@example.test','Empresa','20100070970','6') as id`,
+    );
+    const id = String((response.rows[0] as { id: string }).id);
+    await db.exec(
+      `update transfers set status='paid_out' where id='${id}'; insert into invoices(transfer_id,status,environment) values('${id}','accepted','production')`,
+    );
+    await act(owner, "select verify_transfer_contact()");
+    expect(
+      (
+        await db.query(
+          `select billing_email,billing_email_verified from transfers where id='${id}'`,
+        )
+      ).rows[0],
+    ).toMatchObject({ billing_email: "billing@example.test", billing_email_verified: false });
+    expect((await db.query("select * from claim_invoice_delivery()")).rows).toHaveLength(0);
+    await db.exec(`update auth.users set email='billing@example.test' where id='${owner}'`);
+    await act(owner, "select verify_transfer_contact()");
+    expect((await db.query("select * from claim_invoice_delivery()")).rows[0]).toMatchObject({
+      transfer_id: id,
+    });
+    await db.exec(`update auth.users set email='owner@example.test' where id='${owner}'`);
+  });
+});
+
+describe("Exchange declarations enforced after the incremental validation migration", () => {
+  beforeAll(async () => {
+    await db.exec(readFileSync("supabase/migrations/202610100008_exchange_validation.sql", "utf8"));
+  });
+  const args = (
+    id = rate,
+    source = "PE",
+    destination = "BR",
+    origin = "salary",
+    detail = "",
+    purpose = "Family support",
+    relationship = "Family",
+    accepted = "true",
+  ) =>
+    `'${id}',300,'Owner','12345678','Recipient','87654321','Bank','123456789','bank_account','Holder','987654321','','+51999999999','','','boleta','owner@example.test','Owner','12345678','1','1','${source}','${destination}','Bank origin','${origin}','${detail}','${purpose}','${relationship}',${accepted}`;
+  it("stores Peru declarations and a private bank reference without marking the money received", async () => {
+    const response = await act(owner, `select create_validated_transfer(${args()}) as id`);
+    const id = String((response.rows[0] as { id: string }).id);
+    expect(
+      (
+        await act(
+          staff,
+          `select source_country,destination_country,origin_bank,funds_origin,transfer_purpose,recipient_relationship,status from transfers where id='${id}'`,
+        )
+      ).rows[0],
+    ).toMatchObject({
+      source_country: "PE",
+      destination_country: "BR",
+      origin_bank: "Bank origin",
+      funds_origin: "salary",
+      transfer_purpose: "Family support",
+      recipient_relationship: "Family",
+      status: "awaiting_payment",
+    });
+    const path = `${owner}/${id}/deposit/validated.jpg`;
+    await act(
+      owner,
+      `insert into storage.objects(bucket_id,name) values('transfer-proofs','${path}')`,
+    );
+    await expect(act(owner, `select submit_transfer_proof('${id}','${path}','')`)).rejects.toThrow(
+      /número de operación/,
+    );
+    await expect(
+      act(other, `select submit_transfer_proof('${id}','${path}','OP-123')`),
+    ).rejects.toThrow(/autorizada/);
+    await act(owner, `select submit_transfer_proof('${id}','${path}','OP-123')`);
+    expect(
+      (await act(staff, `select deposit_bank_reference,status from transfers where id='${id}'`))
+        .rows[0],
+    ).toMatchObject({ deposit_bank_reference: "OP-123", status: "proof_submitted" });
+    expect((await act(other, `select * from transfers where id='${id}'`)).rows).toHaveLength(0);
+  });
+  it("rejects missing origin, purpose, third-party relationship and consent atomically", async () => {
+    const count = (await db.query("select id from transfers")).rows.length;
+    for (const invalid of [
+      args(rate, "PE", "BR", ""),
+      args(rate, "PE", "BR", "other", ""),
+      args(rate, "PE", "BR", "salary", "", ""),
+      args(rate, "PE", "BR", "salary", "", "Family support", ""),
+      args(rate, "PE", "BR", "salary", "", "Family support", "Family", "false"),
+      args(rate, "BR", "BR"),
+    ])
+      await expect(act(owner, `select create_validated_transfer(${invalid})`)).rejects.toThrow();
+    expect((await db.query("select id from transfers")).rows).toHaveLength(count);
+    for (const invalid of [
+      args().replace("'12345678'", "'1234'"),
+      args().replace("'+51999999999'", "'999999999'"),
+      args().replace("'Bank origin'", "''"),
+    ])
+      await expect(act(owner, `select create_validated_transfer(${invalid})`)).rejects.toThrow();
+  });
+  it("requires Peru declarations even for USD and only snapshots configured banks in the right country", async () => {
+    const usd = "00000000-0000-4000-8000-000000000010";
+    await db.exec(
+      `insert into fx_rates(id,from_currency,to_currency,rate,commission_percent,valid_until) values('${usd}','USD','BRL',5,0,now()+interval '1 day'); insert into deposit_accounts(currency,bank,holder,account_number,country) values('USD','Peru bank','Brasper','USD-PE','PE'),('USD','Brazil bank','Brasper','USD-BR','BR')`,
+    );
+    await expect(
+      act(owner, `select create_validated_transfer(${args(usd, "PE", "BR", "", "", "")})`),
+    ).rejects.toThrow(/origen/);
+    const response = await act(owner, `select create_validated_transfer(${args(usd)}) as id`);
+    const id = String((response.rows[0] as { id: string }).id);
+    expect(
+      (await db.query(`select deposit_instructions from transfers where id='${id}'`)).rows[0],
+    ).toMatchObject({
+      deposit_instructions: [{ bank: "Peru bank", country: "PE", account_number: "USD-PE" }],
+    });
+    const nonPeru = await act(
+      owner,
+      `select create_validated_transfer(${args(usd, "BR", "BR", "", "", "")}) as id`,
+    );
+    expect(nonPeru.rows).toHaveLength(1);
+  });
+  it("allows a guest to exchange without registration, and disables old endpoints that bypass checks", async () => {
+    const guest = "00000000-0000-4000-8000-000000000008";
+    expect(
+      (await act(guest, `select create_validated_transfer(${args()}) as id`)).rows,
+    ).toHaveLength(1);
+    await expect(
+      act(
+        owner,
+        `select create_transfer('${rate}',300,'Owner','123','Recipient','456','Bank','1111')`,
+      ),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      act(
+        owner,
+        `select create_transfer_with_billing(${args().split(",").slice(0, 20).join(",")})`,
+      ),
+    ).rejects.toThrow(/permission denied/);
+    await expect(act(owner, `select submit_proof('${transfer}','unused')`)).rejects.toThrow(
+      /permission denied/,
+    );
   });
 });

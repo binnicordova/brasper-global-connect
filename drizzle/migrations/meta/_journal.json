@@ -15,6 +15,20 @@
       "when": 1791680000000,
       "tag": "0001_safe_transfer_review",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791682000000,
+      "tag": "0002_billing_preferences",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791683000000,
+      "tag": "0003_exchange_validation",
+      "breakpoints": true
     }
   ]
 }

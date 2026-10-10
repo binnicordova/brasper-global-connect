@@ -19,7 +19,7 @@ Deno.serve(async (request: Request) => {
     if (delivery) {
       const { data: customer, error: customerError } = await db
         .from("transfers")
-        .select("customer_email")
+        .select("customer_email,billing_email")
         .eq("id", delivery.transfer_id)
         .single();
       if (customerError) return json({ error: customerError.message }, 500);
@@ -55,9 +55,9 @@ Deno.serve(async (request: Request) => {
         },
         body: JSON.stringify({
           from: env("BILLING_FROM_EMAIL"),
-          to: [accepted.transfers.customer_email],
-          subject: `Comprobante Brasper ${accepted.number}`,
-          text: `Tu transferencia ha sido enviada. Adjuntamos tu comprobante ${accepted.number}. Puedes consultar el seguimiento en tu cuenta de Brasper.`,
+          to: [accepted.transfers.billing_email || accepted.transfers.customer_email],
+          subject: `${accepted.document_type === "03" ? "Boleta" : "Factura"} Brasper ${accepted.number}`,
+          text: `Tu transferencia ha sido enviada. Adjuntamos tu comprobante ${accepted.number}. Puedes consultar el seguimiento en el portal de Brasper.`,
           attachments: [{ filename: "comprobante.pdf", content: btoa(binary) }],
         }),
         signal: AbortSignal.timeout(20000),
@@ -82,11 +82,24 @@ Deno.serve(async (request: Request) => {
   if (claimError) return json({ error: claimError.message }, 500);
   const job = jobs?.[0];
   if (!job) return json({ status: "idle" });
+  if (job.status === "blocked") return json({ status: "blocked", id: job.id });
   const { data: transfer, error: transferError } = await db
     .from("transfers")
     .select("*")
     .eq("id", job.transfer_id)
     .single();
+  const documentType = job.document_type || (transfer?.billing_type === "boleta" ? "03" : "01");
+  if (beta && documentType === "03") {
+    await db
+      .from("invoices")
+      .update({
+        status: "blocked",
+        error:
+          "Boleta solicitada: configurar el emisor de boletas; el motor beta actual solo admite facturas.",
+      })
+      .eq("id", job.id);
+    return json({ status: "blocked", id: job.id });
+  }
   const routes = env("BILLING_ALLOWED_ROUTES")
     .split(",")
     .map((x) => x.trim());
@@ -120,7 +133,19 @@ Deno.serve(async (request: Request) => {
       body: JSON.stringify({
         operation_id: transfer.id,
         invoice_request_id: job.id,
-        ...(beta ? {} : { transfer }),
+        ...(beta
+          ? {}
+          : {
+              transfer,
+              document_type: documentType,
+              billing: {
+                type: transfer.billing_type || "factura",
+                email: transfer.billing_email || transfer.customer_email,
+                name: transfer.billing_name || transfer.customer_name,
+                document: transfer.billing_document || transfer.customer_document,
+                document_type: transfer.billing_document_type || "0",
+              },
+            }),
       }),
       signal: AbortSignal.timeout(beta ? 40000 : 20000),
     });
@@ -150,6 +175,7 @@ Deno.serve(async (request: Request) => {
       document.authority !== "SUNAT" ||
       (beta ? document.environment !== "beta" : document.environment === "beta") ||
       document.status !== "accepted" ||
+      document.document_type !== documentType ||
       document.cdr_code !== "0" ||
       typeof document.external_id !== "string" ||
       typeof document.number !== "string"

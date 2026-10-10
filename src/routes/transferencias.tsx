@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
+  countryLabels,
+  fundsOriginLabels,
+  identityDocumentLabels,
   quoteAmounts,
   validateProof,
   statusLabels,
@@ -81,6 +84,13 @@ function TransferPortal() {
   }
   const [initialReceipt, setInitialReceipt] = useState<File | null>(null);
   const [accountType, setAccountType] = useState("bank_account");
+  const [customerDocumentType, setCustomerDocumentType] = useState("1");
+  const [sourceUsdCountry, setSourceUsdCountry] = useState("");
+  const [destinationUsdCountry, setDestinationUsdCountry] = useState("");
+  const [fundsOrigin, setFundsOrigin] = useState("");
+  const [initialBankReference, setInitialBankReference] = useState("");
+  const [bankReferences, setBankReferences] = useState<Record<string, string>>({});
+  const [billingType, setBillingType] = useState("boleta");
   const [proofFiles, setProofFiles] = useState<Record<string, File | null>>({});
   const [newOperation, setNewOperation] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null),
@@ -114,6 +124,14 @@ function TransferPortal() {
     amounts = rate
       ? quoteAmounts(Number(amount), Number(rate.rate), Number(rate.commission_percent))
       : null;
+  const sourceCountry =
+    rate?.from_currency === "PEN" ? "PE" : rate?.from_currency === "BRL" ? "BR" : sourceUsdCountry;
+  const destinationCountry =
+    rate?.to_currency === "PEN" ? "PE" : rate?.to_currency === "BRL" ? "BR" : destinationUsdCountry;
+  const involvesPeru = sourceCountry === "PE" || destinationCountry === "PE";
+  const billingDocumentType = ["cpf", "cnpj"].includes(customerDocumentType)
+    ? "0"
+    : customerDocumentType;
   useEffect(() => {
     if (!supabase) {
       setReady(true);
@@ -305,42 +323,58 @@ function TransferPortal() {
       if (!supabase || !rate) return;
       const v = recipientDetailsInput.parse({ rateId: rate.id, amount, ...Object.fromEntries(d) });
       const file = initialReceipt;
-      if (file) validateProof(file);
-      const guestEmail = guest ? String(d.get("customerEmail") || "").trim() : "";
-      if (guest && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail))
-        throw new Error("Completa tu correo de contacto.");
-      const { data: id, error } = await supabase.rpc(
-        guest ? "create_guest_transfer_details" : "create_transfer_details",
-        {
-          ...(guest ? { p_contact_email: guestEmail } : {}),
-          p_rate_id: v.rateId,
-          p_amount: v.amount,
-          p_customer_name: v.customerName,
-          p_customer_document: v.customerDocument,
-          p_recipient_name: v.recipientName,
-          p_recipient_document: v.recipientDocument,
-          p_recipient_bank: v.recipientBank,
-          p_recipient_account: v.recipientAccount,
-          p_recipient_account_type: v.recipientAccountType,
-          p_recipient_account_holder: v.recipientAccountHolder,
-          p_recipient_account_holder_document: v.recipientAccountHolderDocument,
-          p_recipient_bank_branch: v.recipientBankBranch,
-          p_customer_phone: v.customerPhone,
-          p_recipient_phone: v.recipientPhone,
-          p_transfer_note: v.transferNote,
-        },
-      );
+      if (file) {
+        validateProof(file);
+        if (initialBankReference.trim().length < 2)
+          throw new Error("Indica el número de operación de tu pago bancario");
+      }
+      const { data: id, error } = await supabase.rpc("create_validated_transfer", {
+        p_declaration_accepted: d.get("declarationAccepted") === "yes",
+        p_customer_document_type: v.customerDocumentType,
+        p_source_country: v.sourceCountry,
+        p_destination_country: v.destinationCountry,
+        p_origin_bank: v.originBank,
+        p_funds_origin: v.fundsOrigin,
+        p_funds_detail: v.fundsDetail,
+        p_transfer_purpose: v.transferPurpose,
+        p_recipient_relationship: v.recipientRelationship,
+        p_rate_id: v.rateId,
+        p_amount: v.amount,
+        p_customer_name: v.customerName,
+        p_customer_document: v.customerDocument,
+        p_recipient_name: v.recipientName,
+        p_recipient_document: v.recipientDocument,
+        p_recipient_bank: v.recipientBank,
+        p_recipient_account: v.recipientAccount,
+        p_recipient_account_type: v.recipientAccountType,
+        p_recipient_account_holder: v.recipientAccountHolder,
+        p_recipient_account_holder_document: v.recipientAccountHolderDocument,
+        p_recipient_bank_branch: v.recipientBankBranch,
+        p_customer_phone: v.customerPhone,
+        p_recipient_phone: v.recipientPhone,
+        p_transfer_note: v.transferNote,
+        p_billing_type: v.billingType,
+        p_billing_email: v.billingEmail,
+        p_billing_name: v.billingType === "factura" ? v.billingLegalName : v.customerName,
+        p_billing_document: v.billingType === "factura" ? v.billingRuc : v.customerDocument,
+        p_billing_document_type: v.billingType === "factura" ? "6" : v.billingDocumentType,
+      });
       if (error) throw error;
       form.reset();
       setStep(0);
       setReviewData(null);
       setIntent(null);
       setInitialReceipt(null);
+      setBillingType("boleta");
+      setCustomerDocumentType("1");
+      setFundsOrigin("");
+      setInitialBankReference("");
       let receiptError = "";
       if (file) {
         try {
           const path = await upload({ id }, file, "deposit");
-          const { error: attachError } = await supabase.rpc("submit_proof", {
+          const { error: attachError } = await supabase.rpc("submit_transfer_proof", {
+            p_bank_reference: initialBankReference.trim(),
             p_transfer_id: id,
             p_path: path,
           });
@@ -374,8 +408,15 @@ function TransferPortal() {
   }
   async function proof(t: Transfer, file: File) {
     await run(async () => {
+      const reference = (bankReferences[t.id] ?? t.deposit_bank_reference ?? "").trim();
+      if (reference.length < 2 || reference.length > 100)
+        throw new Error("Indica el número de operación de tu pago bancario");
       const path = await upload(t, file, "deposit");
-      const { error } = await supabase!.rpc("submit_proof", { p_transfer_id: t.id, p_path: path });
+      const { error } = await supabase!.rpc("submit_transfer_proof", {
+        p_transfer_id: t.id,
+        p_path: path,
+        p_bank_reference: reference,
+      });
       if (error) throw error;
       setProofFiles((old) => ({ ...old, [t.id]: null }));
       await load();
@@ -721,12 +762,26 @@ function TransferPortal() {
                         <div>
                           <h3 tabIndex={-1}>Tus datos de contacto</h3>
                           <p>
-                            {guest
-                              ? "Déjanos tu contacto para gestionar el cambio. Podrás consultar el comprobante en esta sesión."
-                              : `El comprobante se enviará a ${session.user.email}.`}
+                            Déjanos tu contacto y elige el comprobante que necesitas para este
+                            cambio.
                           </p>
                         </div>
                       </div>
+                      <label>
+                        Tipo de documento del remitente
+                        <select
+                          name="customerDocumentType"
+                          value={customerDocumentType}
+                          onChange={(e) => setCustomerDocumentType(e.target.value)}
+                        >
+                          {Object.entries(identityDocumentLabels).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <input type="hidden" name="billingDocumentType" value={billingDocumentType} />
                       {[
                         ["customerName", "Tu nombre completo"],
                         ["customerDocument", "Tu DNI, RUC o documento"],
@@ -736,18 +791,17 @@ function TransferPortal() {
                           <input name={name} required minLength={2} maxLength={200} />
                         </label>
                       ))}
-                      {guest && (
-                        <label>
-                          Tu correo de contacto
-                          <input
-                            name="customerEmail"
-                            type="email"
-                            required
-                            maxLength={320}
-                            autoComplete="email"
-                          />
-                        </label>
-                      )}
+                      <label>
+                        Correo para recibir el comprobante
+                        <input
+                          name="billingEmail"
+                          type="email"
+                          required
+                          maxLength={254}
+                          autoComplete="email"
+                          defaultValue={guest ? "" : session.user.email || ""}
+                        />
+                      </label>
                       <label>
                         Tu teléfono con código de país
                         <input
@@ -757,9 +811,132 @@ function TransferPortal() {
                           minLength={6}
                           maxLength={40}
                           autoComplete="tel"
+                          pattern={"\\+[1-9][0-9]{7,14}"}
                           placeholder="Ej. +51 …"
                         />
                       </label>
+                      <label>
+                        Tipo de comprobante
+                        <select
+                          name="billingType"
+                          value={billingType}
+                          onChange={(e) => setBillingType(e.target.value)}
+                        >
+                          <option value="boleta">Boleta</option>
+                          <option value="factura">Factura</option>
+                        </select>
+                      </label>
+                      {billingType === "factura" ? (
+                        <>
+                          <label>
+                            RUC para la factura
+                            <input
+                              name="billingRuc"
+                              required
+                              inputMode="numeric"
+                              pattern="[0-9]{11}"
+                              minLength={11}
+                              maxLength={11}
+                            />
+                          </label>
+                          <label>
+                            Razón social para la factura
+                            <input name="billingLegalName" required minLength={2} maxLength={200} />
+                          </label>
+                        </>
+                      ) : (
+                        <>
+                          <p className="wide">
+                            La boleta usará tu nombre y documento indicados arriba.
+                          </p>
+                        </>
+                      )}
+                      <label>
+                        Banco desde el que pagarás
+                        <input name="originBank" required minLength={2} maxLength={200} />
+                      </label>
+                      {[
+                        {
+                          name: "sourceCountry",
+                          label: "País de la cuenta de origen",
+                          currency: rate?.from_currency,
+                          value: sourceCountry,
+                          change: setSourceUsdCountry,
+                        },
+                        {
+                          name: "destinationCountry",
+                          label: "País de la cuenta receptora",
+                          currency: rate?.to_currency,
+                          value: destinationCountry,
+                          change: setDestinationUsdCountry,
+                        },
+                      ].map((country) => (
+                        <label key={country.name}>
+                          {country.label}
+                          {country.currency === "USD" ? (
+                            <select
+                              name={country.name}
+                              value={country.value}
+                              required
+                              onChange={(e) => country.change(e.target.value)}
+                            >
+                              <option value="">Elige el país del banco</option>
+                              <option value="PE">Perú</option>
+                              <option value="BR">Brasil</option>
+                            </select>
+                          ) : (
+                            <>
+                              <input type="hidden" name={country.name} value={country.value} />
+                              <span>{countryLabels[country.value]}</span>
+                            </>
+                          )}
+                        </label>
+                      ))}
+                      {involvesPeru && (
+                        <>
+                          <p className="wide">
+                            Para operaciones con Perú, declara de dónde proviene el dinero y para
+                            qué realizarás el cambio. El equipo revisará estos datos junto con tu
+                            pago.
+                          </p>
+                          <label>
+                            Origen de los fondos
+                            <select
+                              name="fundsOrigin"
+                              required
+                              value={fundsOrigin}
+                              onChange={(e) => setFundsOrigin(e.target.value)}
+                            >
+                              <option value="">Elige el origen</option>
+                              {Object.entries(fundsOriginLabels).map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            Detalle del origen de fondos{" "}
+                            {fundsOrigin === "other" ? "" : "(opcional)"}
+                            <textarea
+                              name="fundsDetail"
+                              required={fundsOrigin === "other"}
+                              minLength={fundsOrigin === "other" ? 5 : undefined}
+                              maxLength={500}
+                            />
+                          </label>
+                          <label className="wide">
+                            Motivo del cambio
+                            <textarea
+                              name="transferPurpose"
+                              required
+                              minLength={5}
+                              maxLength={500}
+                              placeholder="Ej. apoyar a mi familia, pagar estudios o a un proveedor"
+                            />
+                          </label>
+                        </>
+                      )}
                     </fieldset>
                     <fieldset
                       className="exchange-fieldset wide"
@@ -836,6 +1013,14 @@ function TransferPortal() {
                         <input name="recipientPhone" type="tel" maxLength={40} />
                       </label>
                       <label className="wide">
+                        Relación con el destinatario y el titular de la cuenta
+                        <input
+                          name="recipientRelationship"
+                          maxLength={200}
+                          placeholder="Obligatorio si envías a otra persona. Ej. familiar, proveedor o representante"
+                        />
+                      </label>
+                      <label className="wide">
                         Información adicional (opcional)
                         <textarea
                           name="transferNote"
@@ -902,6 +1087,53 @@ function TransferPortal() {
                                 {reviewData.recipientAccountHolderDocument}
                               </dd>
                             </div>
+                            <div>
+                              <dt>Banco de origen</dt>
+                              <dd>
+                                {reviewData.originBank} · {countryLabels[reviewData.sourceCountry]}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt>País de recepción</dt>
+                              <dd>{countryLabels[reviewData.destinationCountry]}</dd>
+                            </div>
+                            {reviewData.fundsOrigin && (
+                              <div>
+                                <dt>Origen de fondos</dt>
+                                <dd>
+                                  {fundsOriginLabels[reviewData.fundsOrigin]}
+                                  {reviewData.fundsDetail && ` · ${reviewData.fundsDetail}`}
+                                </dd>
+                              </div>
+                            )}
+                            {reviewData.transferPurpose && (
+                              <div>
+                                <dt>Motivo del cambio</dt>
+                                <dd>{reviewData.transferPurpose}</dd>
+                              </div>
+                            )}
+                            {reviewData.recipientRelationship && (
+                              <div>
+                                <dt>Relación con el destinatario / titular</dt>
+                                <dd>{reviewData.recipientRelationship}</dd>
+                              </div>
+                            )}
+                            <div>
+                              <dt>Tipo de comprobante</dt>
+                              <dd>{reviewData.billingType === "factura" ? "Factura" : "Boleta"}</dd>
+                            </div>
+                            <div>
+                              <dt>Correo de entrega</dt>
+                              <dd>{reviewData.billingEmail}</dd>
+                            </div>
+                            <div>
+                              <dt>Receptor del comprobante</dt>
+                              <dd>
+                                {reviewData.billingType === "factura"
+                                  ? `${reviewData.billingLegalName} · RUC ${reviewData.billingRuc}`
+                                  : `${reviewData.customerName} · ${reviewData.customerDocument}`}
+                              </dd>
+                            </div>
                           </dl>
                           <p>
                             Revisa el número de cuenta antes de confirmar. Podrás volver para
@@ -916,9 +1148,24 @@ function TransferPortal() {
                           disabled={busy}
                         />
                       </div>
+                      {initialReceipt && (
+                        <label className="wide">
+                          Número de operación de tu pago bancario
+                          <input
+                            value={initialBankReference}
+                            onChange={(e) => setInitialBankReference(e.target.value)}
+                            required
+                            minLength={2}
+                            maxLength={100}
+                            placeholder="El número que figura en la constancia de tu banco"
+                          />
+                        </label>
+                      )}
                       <label className="wide portal-consent">
-                        <input type="checkbox" required /> Confirmo los datos del destinatario y
-                        autorizo su uso para gestionar este envío y el comprobante.
+                        <input type="checkbox" name="declarationAccepted" value="yes" required />{" "}
+                        Declaro que los fondos provienen de mi cuenta y que la información del
+                        remitente, destinatario y origen de fondos es correcta. Autorizo su uso para
+                        gestionar este envío y el comprobante.
                       </label>
                     </fieldset>
                     <div className="exchange-navigation wide">
@@ -993,6 +1240,10 @@ function TransferPortal() {
                         <p>
                           Para {t.recipient_name} · {t.recipient_bank}
                         </p>
+                        <p>
+                          {t.billing_type === "boleta" ? "Boleta" : "Factura"} ·{" "}
+                          {t.billing_email || t.customer_email}
+                        </p>
                       </div>
                       <span className={`operation-status status-${t.status}`}>
                         {statusLabels[t.status]}
@@ -1052,6 +1303,18 @@ function TransferPortal() {
                             ? "Actualizar la prueba de pago"
                             : "Completa tu pago y envía la prueba"}
                         </h4>
+                        <label>
+                          Número de operación de tu pago bancario
+                          <input
+                            value={bankReferences[t.id] ?? t.deposit_bank_reference ?? ""}
+                            onChange={(e) =>
+                              setBankReferences((old) => ({ ...old, [t.id]: e.target.value }))
+                            }
+                            minLength={2}
+                            maxLength={100}
+                            disabled={busy}
+                          />
+                        </label>
                         <ReceiptUpload
                           file={proofFiles[t.id] ?? null}
                           onChange={(file) => setProofFiles((old) => ({ ...old, [t.id]: file }))}
@@ -1059,7 +1322,12 @@ function TransferPortal() {
                         />
                         <Button
                           variant="brand"
-                          disabled={busy || !proofFiles[t.id]}
+                          disabled={
+                            busy ||
+                            !proofFiles[t.id] ||
+                            (bankReferences[t.id] ?? t.deposit_bank_reference ?? "").trim().length <
+                              2
+                          }
                           onClick={() => void proof(t, proofFiles[t.id]!)}
                         >
                           Enviar comprobante a revisión <ArrowRight size={16} />
@@ -1071,7 +1339,7 @@ function TransferPortal() {
                       </div>
                     )}
                     <details className="operation-recipient">
-                      <summary>Datos de la cuenta receptora y del remitente</summary>
+                      <summary>Datos de la cuenta receptora, remitente y comprobante</summary>
                       <TransferDetails transfer={t} />
                     </details>
                     {t.proof_path && (

@@ -2,7 +2,7 @@
 
 Para proyectos ya activados, aplica además la migración de revisión segura y sigue [FIX_REVIEW_LOVABLE.md](FIX_REVIEW_LOVABLE.md). Cancelar requiere `cancel_transfer`, fuera del desplegable de revisión, con confirmación explícita y estado esperado. `review_transfer` rechaza cancelaciones de pantallas antiguas.
 
-Copia el siguiente texto en el proyecto Lovable conectado a `jordyalania/brasper-global-connect`. Los archivos están en la rama `codex/transfer-workflow`, PR #1. Primero integra esos cambios en la rama que Lovable sincroniza o importa los archivos; no asumas que Lovable ya ve el PR.
+Copia el siguiente texto en el proyecto Lovable conectado a `jordyalania/brasper-global-connect`. Los archivos están en `main`; sincroniza esa rama y comprueba las migraciones pendientes antes de publicar.
 
 ---
 
@@ -45,7 +45,7 @@ Cliente continúa sin cuenta o usa una cuenta opcional; elige una cotización vi
 
 Subir prueba NO confirma el ingreso. El equipo revisa el banco manualmente y confirma mediante `review_transfer`. Luego realiza el envío bancario fuera de la plataforma y registra referencia y constancia. Solo ese registro crea una solicitud única de facturación. El cliente consulta sus estados y descarga su comprobante cuando esté disponible.
 
-Usa `create_guest_transfer_details` con `p_contact_email` para invitados y `create_transfer_details` para cuentas confirmadas; registra la operación completa, `submit_proof` para enlazar el comprobante y `review_transfer` para la revisión del equipo. Conserva auditoría y transiciones; no permitas actualizaciones directas del cliente, saltar verificaciones, duplicar envíos o duplicar documentos. Las tasas y cuentas oficiales se cargan manualmente por ahora. Si faltan, informa que no hay una cotización o cuenta habilitada; no inventes valores.
+Aplica también `202610100006_safe_transfer_review.sql` `202610100007_billing_preferences.sql` y `202610100008_exchange_validation.sql`. Usa `create_validated_transfer` para invitados y cuentas confirmadas; pide correo obligatorio y elección factura/boleta, recoge RUC/razón social para factura y tipo de documento para boleta, y conserva todo en resumen, historial y dashboard; registra la operación completa, `submit_transfer_proof` con número de operación para enlazar el comprobante y `review_transfer` para la revisión del equipo. Conserva auditoría y transiciones; no permitas actualizaciones directas del cliente, saltar verificaciones, duplicar envíos o duplicar documentos. Las tasas y cuentas oficiales se cargan manualmente por ahora. Si faltan, informa que no hay una cotización o cuenta habilitada; no inventes valores.
 
 El invitado conserva acceso privado en el mismo navegador. «Guardar acceso con una cuenta (opcional)» usa `auth.updateUser`, confirma correo y mantiene el UUID; no crear un usuario distinto ni perder sus operaciones. `verify_transfer_contact` valida el correo desde Auth antes de permitir entrega productiva por email. No hacer público ningún bucket ni desactivar RLS para permitir invitados.
 
@@ -71,3 +71,7 @@ Tras aceptación fiscal auténtica, conserva PDF/XML/CDR y envía el PDF por cor
 Ejecuta las pruebas del repositorio y una prueba integral en el backend real: dos clientes aislados, cuenta del equipo, carga privada, verificación, registro de envío y prevención de duplicados. Prueba facturación en homologación solo cuando exista el proveedor configurado. Comprueba que los secretos no llegan al cliente y revisa la interfaz móvil.
 
 Entrega un resumen de migraciones aplicadas, funciones desplegadas, scheduler y variables configuradas (solo nombres). Indica por separado qué funciona realmente y qué depende de datos o credenciales pendientes. No publiques ni habilites emisión fiscal en producción durante pruebas de homologación.
+
+La activación de factura/boleta y el contrato actualizado del worker están en [BILLING_PREFERENCES_LOVABLE.md](BILLING_PREFERENCES_LOVABLE.md). Una boleta debe quedar bloqueada en beta hasta configurar su emisor; nunca generar una factura en su lugar.
+
+**Validaciones de cambio:** sigue `docs/EXCHANGE_VALIDATIONS.md`: pide tipo/documento y teléfono internacional, banco/país de origen y país de destino. Para Perú exige origen de los fondos y motivo del cambio, también en USD. Si el destinatario o titular es distinto del remitente, pide su relación y conserva el envío a terceros bajo revisión manual. Usa declaración explícita de titularidad de fondos. Configura `deposit_accounts.country`, especialmente cuentas USD; no inventes bancos ni países para esas cuentas. Mantén deshabilitados los RPC antiguos de creación para impedir eludir controles y verifica RLS para invitados.

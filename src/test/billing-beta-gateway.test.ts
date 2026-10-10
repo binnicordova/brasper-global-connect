@@ -84,3 +84,28 @@ it("claims submission before sending and persists uncertainty without resending"
   expect((await handleBetaBilling(request())).status).toBe(409);
   expect(mocks.send).toHaveBeenCalledTimes(1);
 });
+it("rejects a boleta job even if it carries an invoice series", async () => {
+  mocks.client.mockReturnValue({
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: async () => ({
+            data: {
+              id: invoice,
+              transfer_id: operation,
+              status: "processing",
+              environment: "beta",
+              number: "F902-1",
+              beta_sent_at: null,
+              document_type: "03",
+            },
+            error: null,
+          }),
+        }),
+      }),
+    }),
+  });
+  expect((await handleBetaBilling(request())).status).toBe(409);
+  expect(mocks.prepare).not.toHaveBeenCalled();
+  expect(mocks.send).not.toHaveBeenCalled();
+});

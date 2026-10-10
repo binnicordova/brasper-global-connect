@@ -30,7 +30,7 @@ export async function handleBetaBilling(request: Request) {
   const db = createClient(url, key);
   const { data: job, error } = await db
     .from("invoices")
-    .select("id,transfer_id,status,environment,number,beta_sent_at")
+    .select("id,transfer_id,status,environment,number,beta_sent_at,document_type")
     .eq("id", body.invoice_request_id)
     .single();
   if (
@@ -40,6 +40,7 @@ export async function handleBetaBilling(request: Request) {
     job.environment !== "beta" ||
     job.status !== "processing" ||
     job.beta_sent_at ||
+    (job.document_type && job.document_type !== "01") ||
     !/^F902-[1-9]\d{0,7}$/.test(job.number || "")
   )
     return Response.json(
@@ -83,6 +84,7 @@ export async function handleBetaBilling(request: Request) {
   }
   return Response.json({
     authority: "SUNAT",
+    document_type: "01",
     environment: "beta",
     status: accepted
       ? "accepted"
