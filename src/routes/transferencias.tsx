@@ -264,6 +264,17 @@ function TransferPortal() {
           })
         : await supabase.auth.signInWithPassword(credentials);
       if (result.error) throw result.error;
+      if (!register && result.data.user) {
+        const { data: staff } = await supabase
+          .from("staff_members")
+          .select("user_id")
+          .eq("user_id", result.data.user.id)
+          .maybeSingle();
+        if (staff) {
+          window.location.assign("/dashboard");
+          return;
+        }
+      }
       if (register) setMessage("Revisa tu correo para confirmar tu cuenta antes de operar.");
     });
   }
