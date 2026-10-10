@@ -32,3 +32,7 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Transferencias y revisión interna
+
+El portal `/transferencias` incorpora solicitudes, carga privada de pruebas de pago, revisión de ingreso, registro manual de envío y cola de facturación. Sigue [la guía de activación](docs/TRANSFER_WORKFLOW.md) para configurar Supabase, tasas, cuentas, roles y proveedor fiscal. Sin esas credenciales el portal informa que está en preparación; no simula pagos ni emisión SUNAT.

@@ -1,6 +1,12 @@
 # Brasper
-- [x] Diseñar e implementar la página y el calculador orientativo.
-- [x] Implementar el formulario que prepara mensajes sin guardar datos personales.
-- [x] Verificar la página en escritorio y móvil, el calculador y el formulario.
-- [ ] Activar el envío directo por WhatsApp: falta el número oficial de Brasper.
-- [ ] Usar tasas oficiales: faltan tasas o fuente aprobada por Brasper.
+- [x] Landing y calculador ilustrativo separados de cotizaciones operativas.
+- [x] WhatsApp oficial publicado por Brasper.
+- [x] Portal de solicitudes y seguimiento con autenticación.
+- [x] Migración PostgreSQL, RLS y archivos privados.
+- [x] Revisión manual de ingreso y registro de envío con constancia.
+- [x] Cola fiscal con prevención de duplicados y worker de integración.
+- [ ] Aplicar migración y habilitar credenciales Supabase en el entorno real.
+- [ ] Configurar tasas aprobadas, cuentas bancarias y usuarios del equipo.
+- [ ] Implementar adaptador con contrato real del proveedor SUNAT/Keyfacil.
+- [ ] Configurar correo oficial, cron y probar emisión en homologación.
+- [ ] Aprobar política de privacidad y procedimientos de devoluciones/retención.
