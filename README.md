@@ -32,3 +32,11 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Transferencias y revisión interna
+
+El portal `/transferencias` incorpora solicitudes, carga privada de pruebas de pago, revisión de ingreso, registro manual de envío y cola de facturación. Sigue [la guía de activación](docs/TRANSFER_WORKFLOW.md) para configurar Supabase, tasas, cuentas, roles y proveedor fiscal. Sin esas credenciales el portal informa que está en preparación; no simula pagos ni emisión SUNAT.
+
+Para configurar desde Lovable, usa el [prompt de activación](docs/PROMPT_LOVABLE.md). La [plantilla SQL comentada](supabase/manual-setup.example.sql) describe los datos oficiales que debe cargar el administrador.
+
+El equipo dispone de `/dashboard` con cola de operaciones, totales del historial por moneda y seguimiento de la puesta en marcha desde `MASTER_PLAN.json`. Requiere las migraciones pendientes y un usuario autorizado en `staff_members`. El formulario recoge la cuenta receptora completa y una foto/PDF opcional al registrar; si aún no pagó, el cliente obtiene instrucciones y adjunta la prueba después. El dashboard abre los datos y las imágenes privadas de cada operación.

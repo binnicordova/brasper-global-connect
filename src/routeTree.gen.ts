@@ -10,33 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as TransferenciasRouteImport } from './routes/transferencias'
+import { Route as ApiBillingBetaRouteImport } from './routes/api.billing-beta'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransferenciasRoute = TransferenciasRouteImport.update({
+  id: '/transferencias',
+  path: '/transferencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBillingBetaRoute = ApiBillingBetaRouteImport.update({
+  id: '/api/billing-beta',
+  path: '/api/billing-beta',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/transferencias': typeof TransferenciasRoute
+  '/api/billing-beta': typeof ApiBillingBetaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/transferencias': typeof TransferenciasRoute
+  '/api/billing-beta': typeof ApiBillingBetaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/transferencias': typeof TransferenciasRoute
+  '/api/billing-beta': typeof ApiBillingBetaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/dashboard' | '/transferencias' | '/api/billing-beta'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/dashboard' | '/transferencias' | '/api/billing-beta'
+  id: '__root__' | '/' | '/dashboard' | '/transferencias' | '/api/billing-beta'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
+  TransferenciasRoute: typeof TransferenciasRoute
+  ApiBillingBetaRoute: typeof ApiBillingBetaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +78,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transferencias': {
+      id: '/transferencias'
+      path: '/transferencias'
+      fullPath: '/transferencias'
+      preLoaderRoute: typeof TransferenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/billing-beta': {
+      id: '/api/billing-beta'
+      path: '/api/billing-beta'
+      fullPath: '/api/billing-beta'
+      preLoaderRoute: typeof ApiBillingBetaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
+  TransferenciasRoute: TransferenciasRoute,
+  ApiBillingBetaRoute: ApiBillingBetaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

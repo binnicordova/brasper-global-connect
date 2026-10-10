@@ -1,0 +1,60 @@
+{
+  "northStar": "Operaciones con prueba de pago pendientes de revisión",
+  "phases": [
+    {
+      "name": "01 · Flujo y permisos",
+      "exit": "Portal, migraciones y pruebas disponibles en el repositorio.",
+      "tasks": [
+        { "label": "Solicitudes y cotizaciones calculadas en BD", "done": true },
+        { "label": "Archivos privados y revisión manual", "done": true },
+        { "label": "Cola fiscal y prevención de duplicados", "done": true }
+      ]
+    },
+    {
+      "name": "02 · Conectar el entorno real",
+      "exit": "Una operación completa validada en Supabase con cliente y equipo.",
+      "tasks": [
+        { "label": "Aplicar migraciones y configurar Auth/Storage", "done": false },
+        { "label": "Registrar tasas y cuentas oficiales", "done": false },
+        { "label": "Asignar equipo y verificar aislamiento real", "done": false }
+      ]
+    },
+    {
+      "name": "03 · Activar emisión y entrega",
+      "exit": "Documento fiscal auténtico aceptado en homologación y correo probado.",
+      "tasks": [
+        { "label": "Configurar emisor y adaptador fiscal de producción", "done": false },
+        { "label": "Configurar correo y scheduler", "done": false },
+        { "label": "Homologar emisión y procedimiento de conciliación", "done": false }
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "name": "Un envío trazable de principio a fin",
+      "results": [
+        {
+          "label": "Cada cambio operativo genera un evento de auditoría",
+          "state": "Implementado; validar en entorno real"
+        },
+        {
+          "label": "Cada envío registrado crea una sola solicitud fiscal",
+          "state": "Verificado en pruebas locales"
+        }
+      ]
+    },
+    {
+      "name": "Activar el servicio con datos oficiales",
+      "results": [
+        { "label": "Tasas, cuentas y equipo configurados", "state": "Pendiente" },
+        { "label": "Emisión fiscal y correo homologados", "state": "Pendiente" }
+      ]
+    }
+  ],
+  "modules": [
+    { "name": "Página principal", "state": "Código disponible" },
+    { "name": "Portal de clientes", "state": "Pendiente de conexión real" },
+    { "name": "Revisión y envíos", "state": "Pendiente de configuración" },
+    { "name": "Facturación SUNAT", "state": "Motor beta disponible; producción pendiente" }
+  ]
+}

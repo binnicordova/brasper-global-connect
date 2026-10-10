@@ -15,6 +15,10 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+.env
+.env.*
+!.env.example
+supabase/.temp/
 
 # Wrangler / Cloudflare
 .wrangler/
@@ -30,3 +34,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+artifacts/billing-beta/

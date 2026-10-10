@@ -79,7 +79,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Brasper | Transferencias internacionales" },
-      { name: "description", content: "Conectamos Perú, Brasil y Estados Unidos con transferencias seguras." },
+      {
+        name: "description",
+        content: "Conectamos Perú, Brasil y Estados Unidos con transferencias seguras.",
+      },
       { property: "og:title", content: "Brasper | Transferencias internacionales" },
       { property: "og:description", content: "Tu dinero más cerca, sin fronteras." },
       { property: "og:type", content: "website" },
@@ -91,7 +94,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,
