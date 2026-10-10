@@ -1,4 +1,6 @@
 # Brasper
-- [ ] Diseñar e implementar la página y el calculador.
-- [ ] Implementar el formulario y acceso a WhatsApp sin inventar datos de contacto.
-- [ ] Verificar la página y sus interacciones.
+- [x] Diseñar e implementar la página y el calculador orientativo.
+- [x] Implementar el formulario que prepara mensajes sin guardar datos personales.
+- [x] Verificar la página en escritorio y móvil, el calculador y el formulario.
+- [ ] Activar el envío directo por WhatsApp: falta el número oficial de Brasper.
+- [ ] Usar tasas oficiales: faltan tasas o fuente aprobada por Brasper.
