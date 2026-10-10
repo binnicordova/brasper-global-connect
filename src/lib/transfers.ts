@@ -123,3 +123,16 @@ export type Transfer = {
     error: string | null;
   }[];
 };
+export type Invoice = Transfer["invoices"][number];
+/**
+ * `invoices.transfer_id` is UNIQUE, so the backend returns a single object (or
+ * null) rather than a list. Older code and tests use the list shape, so accept
+ * both and never crash when a transfer has no invoice yet.
+ */
+export function firstInvoice(
+  invoices: Invoice[] | Invoice | null | undefined,
+): Invoice | null {
+  if (Array.isArray(invoices)) return invoices[0] ?? null;
+  if (invoices && typeof invoices === "object") return invoices;
+  return null;
+}

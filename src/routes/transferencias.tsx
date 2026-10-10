@@ -18,6 +18,7 @@ import {
   validateProof,
   statusLabels,
   invoiceLabels,
+  firstInvoice,
   type Rate,
   type Transfer,
 } from "@/lib/transfers";
@@ -947,7 +948,7 @@ function TransferPortal() {
                 </div>
               )}
               {transfers.map((t) => {
-                const invoice = t.invoices?.[0];
+                const invoice = firstInvoice(t.invoices);
                 return (
                   <article
                     className="portal-card operation-card"

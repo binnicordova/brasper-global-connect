@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { EvidencePreview } from "@/components/evidence-preview";
 import { TransferDetails } from "@/components/transfer-details";
 import { supabase } from "@/lib/supabase";
-import { statusLabels, invoiceLabels, type Transfer } from "@/lib/transfers";
+import { statusLabels, invoiceLabels, firstInvoice, type Transfer } from "@/lib/transfers";
 import plan from "../../MASTER_PLAN.json";
 
 export const Route = createFileRoute("/dashboard")({
@@ -323,7 +323,9 @@ function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((t) => (
+                      {rows.map((t) => {
+                        const invoice = firstInvoice(t.invoices);
+                        return (
                         <tr key={t.id}>
                           <td>
                             <strong>{t.customer_name}</strong>
@@ -343,10 +345,8 @@ function Dashboard() {
                             </span>
                           </td>
                           <td>
-                            {t.invoices[0]
-                              ? invoiceLabels[t.invoices[0].status]
-                              : "Aún no solicitado"}
-                            {t.invoices[0]?.environment === "beta" && (
+                            {invoice ? invoiceLabels[invoice.status] : "Aún no solicitado"}
+                            {invoice?.environment === "beta" && (
                               <small>Ensayo sin validez tributaria</small>
                             )}
                           </td>
@@ -369,7 +369,8 @@ function Dashboard() {
                             </a>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
