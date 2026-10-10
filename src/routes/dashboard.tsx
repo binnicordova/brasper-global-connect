@@ -555,3 +555,49 @@ function Dashboard() {
     </div>
   );
 }
+
+function StaffLogin() {
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    void supabase?.auth
+      .getUser()
+      .then(({ data }) => setSignedIn(!!data.user && !data.user.is_anonymous));
+  }, []);
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!supabase) return;
+    const d = new FormData(e.currentTarget);
+    setBusy(true);
+    setMsg("");
+    const { error } = await supabase.auth.signInWithPassword({
+      email: String(d.get("email")),
+      password: String(d.get("password")),
+    });
+    setBusy(false);
+    if (error) setMsg("Correo o contraseña incorrectos.");
+  }
+  if (signedIn)
+    return (
+      <div className="grid gap-2">
+        <p role="alert">Esta cuenta no tiene permisos del equipo.</p>
+        <Button
+          variant="outline"
+          onClick={() => void supabase?.auth.signOut().then(() => setSignedIn(false))}
+        >
+          Cerrar sesión
+        </Button>
+      </div>
+    );
+  return (
+    <form onSubmit={submit} className="grid w-full max-w-sm gap-3" aria-label="Ingreso del equipo">
+      <input name="email" type="email" required placeholder="Correo del equipo" autoComplete="email" className="rounded-md border border-input bg-background px-3 py-2" />
+      <input name="password" type="password" required placeholder="Contraseña" autoComplete="current-password" className="rounded-md border border-input bg-background px-3 py-2" />
+      {msg && <p role="alert" className="text-sm text-destructive">{msg}</p>}
+      <Button type="submit" variant="brand" disabled={busy}>
+        {busy ? "Ingresando…" : "Ingresar al panel"}
+      </Button>
+    </form>
+  );
+}
