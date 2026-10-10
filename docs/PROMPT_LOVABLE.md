@@ -4,13 +4,15 @@ Copia el siguiente texto en el proyecto Lovable conectado a `jordyalania/brasper
 
 ---
 
-Activa el flujo de transferencias de Brasper usando el código existente. Conserva la landing y el diseño actual, e integra `/transferencias` con el backend de Supabase de este proyecto. Antes de modificar, lee `AGENTS.md` y `docs/TRANSFER_WORKFLOW.md`.
+Activa el flujo de transferencias de Brasper usando el código existente. Conserva la landing y el diseño actual, e integra `/transferencias` con el backend de Supabase de este proyecto. Antes de modificar, lee `AGENTS.md` y `docs/TRANSFER_WORKFLOW.md` y `docs/SUNAT_BETA.md`.
 
 **Archivos existentes que debes usar:**
 
 - `supabase/migrations/202610100001_transfer_workflow.sql`: tablas, RLS, Storage privado y funciones PostgreSQL.
 - `supabase/migrations/202610100002_staff_dashboard.sql`: resumen global protegido para el equipo.
 - `supabase/migrations/202610100003_recipient_details.sql`: cuenta receptora completa y actualización del dashboard por Realtime.
+- `supabase/migrations/202610100004_sunat_beta.sql`: ensayos SUNAT beta aislados y envío único.
+- `src/routes/api.billing-beta.ts` y `src/lib/sunat/`: gateway de servidor, XML firmado, PDF de prueba y transporte SUNAT beta.
 - `supabase/functions/process-invoices/index.ts`: worker de facturación y correo.
 - `supabase/config.toml`: configuración del worker.
 - `supabase/manual-setup.example.sql`: plantilla comentada para configurar manualmente equipo, cuentas bancarias y tasas.
@@ -52,8 +54,11 @@ Despliega `process-invoices` con `verify_jwt=false`; conserva su autenticación 
 
 Solicita en el gestor de secretos `BILLING_WORKER_SECRET`, `BILLING_GATEWAY_URL`, `BILLING_GATEWAY_TOKEN`, `BILLING_ALLOWED_ROUTES`, `RESEND_API_KEY` y `BILLING_FROM_EMAIL` cuando correspondan. Supabase proporciona las credenciales internas de la función. No pidas pegar secretos en el chat, no los muestres ni los guardes en Git o SQL público.
 
-El gateway documentado es un contrato interno del proyecto: todavía NO es una integración real con SUNAT o Keyfacil. Implementa el adaptador únicamente con documentación y credenciales oficiales del proveedor. Si no están disponibles, completa el portal y la revisión manual, y conserva la facturación bloqueada con un mensaje honesto. No generes facturas ficticias, CDR falsos, endpoints inventados ni calcules IGV sobre toda la remesa por defecto. El tratamiento fiscal, emisor, series y receptor deben estar configurados con el responsable de Brasper.
+Para esta etapa usa SUNAT beta: el motor directo ya está implementado en `/api/billing-beta`. Aplica también la cuarta migración. Configura los secretos del servidor `BILLING_BETA_ENABLED=true`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` del backend de Brasper y `BILLING_GATEWAY_TOKEN`. En el worker configura `BILLING_ENVIRONMENT=beta`, `BILLING_GATEWAY_URL=https://DOMINIO/api/billing-beta`, `BILLING_GATEWAY_TOKEN` y `BILLING_WORKER_SECRET`. Reutiliza la clave beta autorizada del archivo local privado `.env.billing-beta` mediante el gestor de secretos; el archivo no está en Git. No pidas mostrarla en el chat. No copies la BD ni credenciales SOL de producción de HOTEL JB.
 
+Conserva los ensayos con serie F902 y valores ficticios fijos; la serie F903 es para smoke tests independientes. No envíes datos personales de operaciones al entorno beta. Al aceptar SUNAT guarda XML/PDF/CDR privados y marca `beta_accepted`, sin email automático y sin completar la operación real. La interfaz debe mostrar «PRUEBA BETA - SIN VALIDEZ TRIBUTARIA». Nunca confundir un CDR beta con aceptación fiscal de producción. Ante timeout conserva el resultado y exige conciliación antes de reenviar.
+
+Para producción el gateway genérico sigue siendo un contrato interno pendiente del adaptador oficial. Configura emisor, SOL, certificado, series, receptor fiscal, concepto y tratamiento tributario propios de Brasper. No calcules IGV sobre toda la remesa por defecto ni uses la tasa hotelera.
 Tras aceptación fiscal auténtica, conserva PDF/XML/CDR y envía el PDF por correo desde un remitente verificado. Respeta idempotencia, ventanas de reintento y conciliación de `processing`, `sending` o `reconciliation_required`; no reemitas automáticamente ante timeout. Omie/Brasil queda fuera de esta activación inicial de SUNAT.
 
 **Verificación y entrega:**

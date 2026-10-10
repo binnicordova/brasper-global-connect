@@ -104,6 +104,8 @@ describe("Staff dashboard", () => {
       expect(mock.in).toHaveBeenCalledWith("invoices.status", [
         "blocked",
         "reconciliation_required",
+        "beta_rejected",
+        "beta_reconciliation_required",
       ]),
     );
     expect(screen.getByRole("link", { name: "Abrir" })).toHaveAttribute(

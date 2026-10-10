@@ -109,7 +109,12 @@ function Dashboard() {
       .order("id")
       .range(page * 50, page * 50 + 49);
     if (query.status === "invoice_attention")
-      request = request.in("invoices.status", ["blocked", "reconciliation_required"]);
+      request = request.in("invoices.status", [
+        "blocked",
+        "reconciliation_required",
+        "beta_rejected",
+        "beta_reconciliation_required",
+      ]);
     else if (query.status === "sent") request = request.in("status", ["paid_out", "completed"]);
     else if (query.status) request = request.eq("status", query.status);
     if (query.search) request = request.ilike("customer_name", `%${query.search}%`);
@@ -240,7 +245,11 @@ function Dashboard() {
                 },
                 {
                   label: "Revisión fiscal",
-                  value: (invoices["blocked"] ?? 0) + (invoices["reconciliation_required"] ?? 0),
+                  value:
+                    (invoices["blocked"] ?? 0) +
+                    (invoices["reconciliation_required"] ?? 0) +
+                    (invoices["beta_rejected"] ?? 0) +
+                    (invoices["beta_reconciliation_required"] ?? 0),
                   hint: "Configuración o conciliación necesaria",
                   target: "invoice_attention",
                 },
@@ -337,6 +346,9 @@ function Dashboard() {
                             {t.invoices[0]
                               ? invoiceLabels[t.invoices[0].status]
                               : "Aún no solicitado"}
+                            {t.invoices[0]?.environment === "beta" && (
+                              <small>Ensayo sin validez tributaria</small>
+                            )}
                           </td>
                           <td>
                             <button

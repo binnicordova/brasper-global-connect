@@ -52,6 +52,9 @@ export const invoiceLabels: Record<string, string> = {
   delivered: "Comprobante enviado",
   blocked: "Facturación pendiente de configuración",
   reconciliation_required: "Revisión de facturación requerida",
+  beta_accepted: "Prueba aceptada en SUNAT beta · sin validez tributaria",
+  beta_rejected: "Prueba SUNAT beta rechazada",
+  beta_reconciliation_required: "Prueba SUNAT beta por conciliar",
 };
 export function quoteAmounts(amount: number, rate: number, percent: number) {
   const commission = Math.round(((amount * percent) / 100 + Number.EPSILON) * 100) / 100;
@@ -110,6 +113,7 @@ export type Transfer = {
   payout_reference: string | null;
   created_at: string;
   invoices: {
+    environment?: string;
     status: string;
     number: string | null;
     pdf_path: string | null;

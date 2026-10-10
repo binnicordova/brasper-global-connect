@@ -5,7 +5,7 @@ El desarrollo añade `/transferencias`: autenticación por correo, cotización b
 ## Configuración de Supabase
 
 1. Crear o elegir el proyecto de Brasper. Copiar `.env.example` a `.env.local` y configurar URL y clave pública/anon. No colocar service_role ni claves fiscales en VITE_*.
-2. Aplicar las migraciones en orden: `202610100001_transfer_workflow.sql`, `202610100002_staff_dashboard.sql` y `202610100003_recipient_details.sql`, con SQL Editor o `supabase db push`. Crean permisos RLS, buckets privados, resumen global y datos completos de la cuenta receptora. No repetir migraciones ya aplicadas.
+2. Aplicar las migraciones en orden: `202610100001_transfer_workflow.sql`, `202610100002_staff_dashboard.sql` , `202610100003_recipient_details.sql` y `202610100004_sunat_beta.sql`, con SQL Editor o `supabase db push`. Crean permisos RLS, buckets privados, resumen global y datos completos de la cuenta receptora. No repetir migraciones ya aplicadas.
 3. Configurar Auth: Site URL y redirect permitido `https://DOMINIO/transferencias`; confirmación de correo habilitada y SMTP oficial. Los usuarios crean su cuenta; un administrador añade los UUID autorizados a `public.staff_members` desde SQL Editor. Los usuarios no pueden darse ese rol.
 4. Registrar cuentas oficiales de ingreso en `deposit_accounts`: moneda, banco, titular, número e instrucciones. Las instrucciones se copian a cada solicitud para conservarlas si luego cambia la cuenta.
 5. Registrar tasas aprobadas en `fx_rates`: monedas origen/destino, tasa, comisión porcentual, rango de montos y vencimiento. No hay tasas ni cuentas ficticias precargadas. La base calcula la comisión y recepción; el cliente no puede sobrescribir esos valores.
@@ -27,9 +27,9 @@ Equipo: entra a la misma página, abre «Bandeja del equipo», comprueba el ingr
 
 Registrar envío crea exactamente una solicitud fiscal en `invoices`. No se puede saltar la verificación ni repetir payout para crear otro comprobante. Si se cancela después de un ingreso, el reembolso debe gestionarse fuera del sistema y documentarse: no hay módulo de devolución automatizada.
 
-## Facturación: preparada, pendiente de proveedor real
+## Facturación: SUNAT beta implementado; producción pendiente
 
-El repositorio **no contiene un emisor SUNAT directo ni un conector Keyfacil ya operativo**. Incluye una cola y una Edge Function preparada para una pasarela fiscal autorizada. La API de emisión de Keyfacil no es pública: integrar su contrato real o un proveedor elegido antes de habilitar. No utilizar el calculador como criterio fiscal ni asignar IGV a todas las operaciones.
+El repositorio incluye un emisor **SUNAT beta directo**, reutilizado del proyecto local de facturación. La activación y sus secretos están en [SUNAT_BETA.md](SUNAT_BETA.md). Las pruebas son ficticias, no completan transferencias ni se envían por correo al cliente. La producción fiscal y Keyfacil siguen pendientes. Incluye una cola y una Edge Function preparada para una pasarela fiscal autorizada de producción. La API de emisión de Keyfacil no es pública: integrar su contrato real o un proveedor elegido antes de habilitar. No utilizar el calculador como criterio fiscal ni asignar IGV a todas las operaciones.
 
 La pasarela debe configurar razón social/RUC, certificado y permisos fiscales, series, tipo de comprobante, receptor fiscal, concepto, base y tratamiento tributario. Debe cumplir idempotencia por `invoice_request_id`, almacenar el resultado fiscal y permitir conciliación. La ruta de transferencia por sí sola no define la entidad emisora ni los impuestos.
 

@@ -9,9 +9,10 @@ Deno.serve(async (request: Request) => {
     return json({ error: "Unauthorized" }, 401);
   if (request.method !== "POST") return json({ error: "POST required" }, 405);
   const db = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"));
+  const beta = env("BILLING_ENVIRONMENT") === "beta";
   // Email retries never reissue the fiscal document.
   let accepted = null;
-  if (env("RESEND_API_KEY") && env("BILLING_FROM_EMAIL")) {
+  if (!beta && env("RESEND_API_KEY") && env("BILLING_FROM_EMAIL")) {
     const { data: deliveryJobs, error } = await db.rpc("claim_invoice_delivery");
     if (error) return json({ error: error.message }, 500);
     const delivery = deliveryJobs?.[0];
@@ -75,7 +76,9 @@ Deno.serve(async (request: Request) => {
       return json({ status: "email_retry_required" }, 502);
     }
   }
-  const { data: jobs, error: claimError } = await db.rpc("claim_invoice");
+  const { data: jobs, error: claimError } = await db.rpc(
+    beta ? "claim_beta_invoice" : "claim_invoice",
+  );
   if (claimError) return json({ error: claimError.message }, 500);
   const job = jobs?.[0];
   if (!job) return json({ status: "idle" });
@@ -95,7 +98,7 @@ Deno.serve(async (request: Request) => {
     transfer.status !== "paid_out" ||
     !gateway.startsWith("https://") ||
     !token ||
-    !routes.includes(`${transfer.from_currency}-${transfer.to_currency}`)
+    (!beta && !routes.includes(`${transfer.from_currency}-${transfer.to_currency}`))
   ) {
     await db
       .from("invoices")
@@ -114,14 +117,38 @@ Deno.serve(async (request: Request) => {
         "Content-Type": "application/json",
         "Idempotency-Key": job.id,
       },
-      body: JSON.stringify({ operation_id: transfer.id, invoice_request_id: job.id, transfer }),
-      signal: AbortSignal.timeout(20000),
+      body: JSON.stringify({
+        operation_id: transfer.id,
+        invoice_request_id: job.id,
+        ...(beta ? {} : { transfer }),
+      }),
+      signal: AbortSignal.timeout(beta ? 40000 : 20000),
     });
     if (!response.ok)
       throw new Error(`Fiscal gateway HTTP ${response.status}: reconcile before retry`);
     const document = await response.json();
     if (
+      beta &&
+      document.authority === "SUNAT" &&
+      document.environment === "beta" &&
+      document.status !== "accepted"
+    ) {
+      const status =
+        document.status === "rejected" ? "beta_rejected" : "beta_reconciliation_required";
+      await db
+        .from("invoices")
+        .update({
+          status,
+          error:
+            "Prueba SUNAT beta: " +
+            String(document.message || document.cdr_code || "Revisión requerida").slice(0, 400),
+        })
+        .eq("id", job.id);
+      return json({ status, id: job.id });
+    }
+    if (
       document.authority !== "SUNAT" ||
+      (beta ? document.environment !== "beta" : document.environment === "beta") ||
       document.status !== "accepted" ||
       document.cdr_code !== "0" ||
       typeof document.external_id !== "string" ||
@@ -150,7 +177,7 @@ Deno.serve(async (request: Request) => {
     const { error } = await db
       .from("invoices")
       .update({
-        status: "accepted",
+        status: beta ? "beta_accepted" : "accepted",
         external_id: document.external_id,
         number: document.number,
         pdf_path: paths["pdf"],
@@ -160,12 +187,18 @@ Deno.serve(async (request: Request) => {
       })
       .eq("id", job.id);
     if (error) throw error;
-    return json({ status: "accepted", id: job.id });
+    return json({ status: beta ? "beta_accepted" : "accepted", id: job.id });
   } catch (error) {
     await db
       .from("invoices")
-      .update({ status: "reconciliation_required", error: String(error).slice(0, 500) })
+      .update({
+        status: beta ? "beta_reconciliation_required" : "reconciliation_required",
+        error: String(error).slice(0, 500),
+      })
       .eq("id", job.id);
-    return json({ status: "reconciliation_required", id: job.id }, 502);
+    return json(
+      { status: beta ? "beta_reconciliation_required" : "reconciliation_required", id: job.id },
+      502,
+    );
   }
 });

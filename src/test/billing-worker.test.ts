@@ -127,4 +127,76 @@ describe("Billing worker integration boundaries", () => {
       expect.objectContaining({ status: "reconciliation_required" }),
     );
   });
+  it("stores accepted beta artifacts without sending customer data or email", async () => {
+    const update = vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) }));
+    const rpc = vi.fn(async () => ({
+      data: [{ id: "invoice", transfer_id: "transfer" }],
+      error: null,
+    }));
+    const upload = vi.fn(async () => ({ error: null }));
+    const db = {
+      rpc,
+      storage: { from: () => ({ upload }) },
+      from: (table: string) =>
+        table === "transfers"
+          ? {
+              select: () => ({
+                eq: () => ({
+                  single: async () => ({
+                    data: {
+                      id: "transfer",
+                      user_id: "owner",
+                      status: "paid_out",
+                      customer_email: "private@example.test",
+                      recipient_account: "private-account",
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+            }
+          : { update },
+    };
+    const network = vi.fn(async () =>
+      Response.json({
+        authority: "SUNAT",
+        environment: "beta",
+        status: "accepted",
+        cdr_code: "0",
+        external_id: "SUNAT-beta/F902-1",
+        number: "F902-1",
+        pdf_base64: btoa("%PDF-test"),
+        xml_base64: btoa("<Invoice/>"),
+        cdr_base64: btoa("<ApplicationResponse/>"),
+      }),
+    );
+    const handle = worker(
+      {
+        BILLING_WORKER_SECRET: "secret",
+        BILLING_ENVIRONMENT: "beta",
+        BILLING_GATEWAY_URL: "https://brasper.test/api/billing-beta",
+        BILLING_GATEWAY_TOKEN: "token",
+        RESEND_API_KEY: "configured",
+        BILLING_FROM_EMAIL: "configured",
+      },
+      db,
+      network,
+    );
+    const response = await handle(
+      new Request("https://local.test", {
+        method: "POST",
+        headers: { Authorization: "Bearer secret" },
+      }),
+    );
+    expect(await response.json()).toMatchObject({ status: "beta_accepted" });
+    expect(rpc).toHaveBeenCalledWith("claim_beta_invoice");
+    expect(rpc).not.toHaveBeenCalledWith("claim_invoice_delivery");
+    expect(network).toHaveBeenCalledTimes(1);
+    const sent = JSON.parse(
+      String((network.mock.calls[0] as unknown as [string, RequestInit])[1].body),
+    );
+    expect(sent).toEqual({ operation_id: "transfer", invoice_request_id: "invoice" });
+    expect(upload).toHaveBeenCalledTimes(3);
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ status: "beta_accepted" }));
+  });
 });

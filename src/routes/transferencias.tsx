@@ -741,12 +741,17 @@ function TransferPortal() {
                           disabled={busy}
                           onClick={() => void openFile("invoice-documents", invoice.pdf_path!)}
                         >
-                          <FileText size={16} /> Comprobante {invoice.number}
+                          <FileText size={16} />{" "}
+                          {invoice.environment === "beta" ? "PDF de prueba beta" : "Comprobante"}{" "}
+                          {invoice.number}
                         </Button>
                       )}
                     </div>
                     {invoice && (
                       <p className="billing-status">
+                        {invoice.environment === "beta" && (
+                          <strong>ENSAYO SIN VALIDEZ TRIBUTARIA · </strong>
+                        )}
                         {invoiceLabels[invoice.status]}
                         {admin && invoice.error ? ` · ${invoice.error}` : ""}
                       </p>

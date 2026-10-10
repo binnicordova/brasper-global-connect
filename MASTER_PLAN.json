@@ -23,7 +23,7 @@
       "name": "03 · Activar emisión y entrega",
       "exit": "Documento fiscal auténtico aceptado en homologación y correo probado.",
       "tasks": [
-        { "label": "Implementar adaptador fiscal con contrato oficial", "done": false },
+        { "label": "Configurar emisor y adaptador fiscal de producción", "done": false },
         { "label": "Configurar correo y scheduler", "done": false },
         { "label": "Homologar emisión y procedimiento de conciliación", "done": false }
       ]
@@ -55,6 +55,6 @@
     { "name": "Página principal", "state": "Código disponible" },
     { "name": "Portal de clientes", "state": "Pendiente de conexión real" },
     { "name": "Revisión y envíos", "state": "Pendiente de configuración" },
-    { "name": "Facturación SUNAT", "state": "Adaptador pendiente" }
+    { "name": "Facturación SUNAT", "state": "Motor beta disponible; producción pendiente" }
   ]
 }

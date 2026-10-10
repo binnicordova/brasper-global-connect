@@ -34,3 +34,5 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+artifacts/billing-beta/

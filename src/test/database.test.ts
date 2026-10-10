@@ -24,6 +24,7 @@ beforeAll(async () => {
   await db.exec(readFileSync("supabase/migrations/202610100001_transfer_workflow.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202610100002_staff_dashboard.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202610100003_recipient_details.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/202610100004_sunat_beta.sql", "utf8"));
   await db.exec(
     `insert into auth.users values('${owner}','owner@example.test',now()),('${other}','other@example.test',now()),('${staff}','staff@example.test',now());insert into staff_members(user_id) values('${staff}');insert into fx_rates(id,from_currency,to_currency,rate,commission_percent,valid_until) values('${rate}','PEN','BRL',1.475,5,now()+interval '1 day');insert into deposit_accounts(currency,bank,holder,account_number) values('PEN','Test bank','Brasper test','1234');`,
   );
@@ -199,5 +200,45 @@ describe("Database authorization and workflow", () => {
         `select create_transfer_details('${rate}',300,'Owner','123','Recipient','456','Bank','key','pix','Holder','789','','','','')`,
       ),
     ).rejects.toThrow(/teléfono/);
+  });
+  it("claims beta once, persists results and excludes beta from production delivery", async () => {
+    const result = await act(
+      owner,
+      `select create_transfer('${rate}',300,'Owner','123','Recipient','456','Bank','1111') as id`,
+    );
+    const id = String((result.rows[0] as { id: string }).id);
+    await db.exec(
+      `update transfers set status='paid_out' where id='${id}'; insert into invoices(transfer_id) values('${id}')`,
+    );
+    await expect(act(owner, "select * from claim_beta_invoice()")).rejects.toThrow(
+      /permission denied/,
+    );
+    const claimed = (await db.query("select * from claim_beta_invoice()")).rows[0] as {
+      id: string;
+      number: string;
+      environment: string;
+    };
+    expect(claimed).toMatchObject({ number: "F902-1", environment: "beta" });
+    expect((await db.query("select * from claim_beta_invoice()")).rows).toHaveLength(0);
+    const prepared = JSON.stringify({ xml: "signed test", pdfBase64: "test" });
+    expect(
+      (await db.query(`select claim_beta_submission('${claimed.id}','${id}','${prepared}') as ok`))
+        .rows[0],
+    ).toMatchObject({ ok: true });
+    expect(
+      (await db.query(`select claim_beta_submission('${claimed.id}','${id}','${prepared}') as ok`))
+        .rows[0],
+    ).toMatchObject({ ok: false });
+    await db.exec(
+      `select record_beta_result('${claimed.id}','{"estado":"aceptado"}'); update invoices set status='accepted' where id='${claimed.id}'`,
+    );
+    expect((await db.query("select * from claim_invoice_delivery()")).rows).toHaveLength(0);
+    await db.exec(`update invoices set status='queued' where id='${claimed.id}'`);
+    expect((await db.query("select * from claim_invoice()")).rows).toHaveLength(0);
+    expect((await db.query("select * from claim_beta_invoice()")).rows).toHaveLength(0);
+    await db.exec(`select complete_invoice_delivery('${claimed.id}')`);
+    expect((await db.query(`select status from transfers where id='${id}'`)).rows[0]).toMatchObject(
+      { status: "paid_out" },
+    );
   });
 });
