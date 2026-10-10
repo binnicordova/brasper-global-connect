@@ -17,6 +17,8 @@ El dashboard `/dashboard` está reservado a cuentas del equipo. Muestra totales 
 
 Cliente: crea solicitud → paga a la cuenta indicada → sube PDF/JPG/PNG (máximo 5 MB). Subir evidencia no confirma ingreso.
 
+La calculadora inicia el cambio dentro de la web conservando únicamente monedas y monto en la URL. El asistente guía cotización → contacto → cuenta receptora → revisión y pago. Se pueden corregir datos sin perderlos antes de confirmar; cada paso se valida. Si la ruta solicitada no tiene tasa vigente, no se sustituye silenciosamente por otra. El resumen muestra comisión, monto a recibir y datos de cuenta.
+
 El formulario recoge contacto del remitente, documento y contacto del destinatario, titular y documento de la cuenta, banco, número de cuenta/CCI/PIX, agencia y observaciones. El RPC `create_transfer_details` valida y conserva los datos adicionales sin permitir cambios de estado del cliente. CCI se admite para PEN y PIX para BRL; la validación de formato no acredita propiedad de la cuenta ni consulta al banco.
 
 Si ya se realizó el ingreso, el cliente puede adjuntar su foto o PDF al registrar la solicitud. Si no, registra los datos y obtiene las instrucciones antes de pagar. La subida y el enlace del archivo son operaciones posteriores a la creación: si Storage falla, la solicitud permanece en espera de pago y se muestra que hay que subir el comprobante a esa misma operación. No se declara pago confirmado por adjuntar un archivo. La vista previa local se descarta al salir y los documentos enviados permanecen en Storage privado.

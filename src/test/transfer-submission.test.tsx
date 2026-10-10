@@ -105,13 +105,18 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
-async function fillAndAttach() {
+async function fillAndAttach(submit = true, attach = true) {
   const rendered = render(<Portal />);
   await screen.findByText("Cotiza tu envío");
+  fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
   for (const [label, value] of [
     ["Tu nombre completo", "Cliente de prueba"],
     ["Tu DNI, RUC o documento", "12345678"],
     ["Tu teléfono con código de país", "+51999999999"],
+  ])
+    fireEvent.change(screen.getByLabelText(label!), { target: { value } });
+  fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+  for (const [label, value] of [
     ["Nombre completo del destinatario", "Destinatario"],
     ["Documento del destinatario", "87654321"],
     ["Titular de la cuenta receptora", "Titular"],
@@ -123,17 +128,26 @@ async function fillAndAttach() {
   fireEvent.change(screen.getByLabelText("Clave PIX del titular"), {
     target: { value: "recipient@example.test" },
   });
+  fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+  expect(screen.getByText("Resumen de tu solicitud")).toBeVisible();
   const file = new File(["photo"], "comprobante.jpg", { type: "image/jpeg" });
-  fireEvent.change(rendered.container.querySelector('input[name="receipt"]')!, {
-    target: { files: [file] },
-  });
-  expect(
-    screen.getByRole("img", { name: "Vista previa del comprobante seleccionado" }),
-  ).toBeInTheDocument();
+  if (attach) {
+    fireEvent.change(rendered.container.querySelector('input[name="receipt"]')!, {
+      target: { files: [file] },
+    });
+    expect(
+      screen.getByRole("img", { name: "Vista previa del comprobante seleccionado" }),
+    ).toBeInTheDocument();
+  }
   fireEvent.click(screen.getByRole("checkbox"));
-  fireEvent.click(
-    screen.getByRole("button", { name: /Enviar solicitud y comprobante a revisión/ }),
-  );
+  if (submit)
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: attach
+          ? /Enviar solicitud y comprobante a revisión/
+          : /Guardar datos y continuar al pago/,
+      }),
+    );
   return file;
 }
 describe("Customer transfer submission", () => {
@@ -179,5 +193,53 @@ describe("Customer transfer submission", () => {
     expect(
       screen.getByText("Esperando tu pago", { selector: "span.operation-status" }),
     ).toBeInTheDocument();
+  });
+  it("preserves entered data when correcting the account and requires confirmation", async () => {
+    await fillAndAttach(false);
+    expect(mock.rpc).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Volver" }));
+    expect(screen.getByLabelText("Clave PIX del titular")).toHaveValue("recipient@example.test");
+    fireEvent.change(screen.getByLabelText("Clave PIX del titular"), {
+      target: { value: "corrected@example.test" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    expect(screen.getByText("Banco de prueba · corrected@example.test")).toBeVisible();
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Enviar solicitud y comprobante a revisión/ }),
+    );
+    expect(mock.rpc).not.toHaveBeenCalled();
+  });
+  it("retains the requested amount and refuses to silently select another route", async () => {
+    window.history.replaceState(null, "", "/transferencias?from=USD&to=PEN&amount=450.50");
+    render(<Portal />);
+    await screen.findByText(/La ruta elegida no tiene una cotización vigente/);
+    expect(screen.getByLabelText("Ruta")).toHaveValue("");
+    expect(screen.getByRole("button", { name: /Continuar/ })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Ruta"), {
+      target: { value: "00000000-0000-4000-8000-000000000003" },
+    });
+    expect(screen.getByLabelText("Monto que pagas (PEN)")).toHaveValue(450.5);
+  });
+  it("blocks invalid quote amounts and incomplete contact details before review", async () => {
+    render(<Portal />);
+    await screen.findByText("Cotiza tu envío");
+    fireEvent.change(screen.getByLabelText("Monto que pagas (PEN)"), { target: { value: "0" } });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    expect(screen.getByRole("heading", { name: "Cotiza tu envío" })).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Monto que pagas (PEN)"), { target: { value: "300" } });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    expect(screen.getByRole("heading", { name: "Tus datos de contacto" })).toBeVisible();
+    expect(mock.rpc).not.toHaveBeenCalled();
+  });
+  it("registers an unpaid request and shows payment instructions without claiming payment", async () => {
+    await fillAndAttach(true, false);
+    await screen.findByText(/Datos registrados. Paso siguiente/);
+    expect(mock.upload).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Instrucciones de ingreso" })).toBeVisible();
+    expect(
+      screen.getByText("Esperando tu pago", { selector: "span.operation-status" }),
+    ).toBeVisible();
   });
 });
