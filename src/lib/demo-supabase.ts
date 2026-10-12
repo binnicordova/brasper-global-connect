@@ -71,30 +71,15 @@ async function fileStore(bucket: string, path: string, file?: Blob): Promise<Blo
     };
   });
 }
-async function demoPdf(t: Transfer) {
-  const { PDFDocument, StandardFonts } = await import("pdf-lib");
-  const pdf = await PDFDocument.create();
-  const page = pdf.addPage([595, 842]);
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const lines = [
-    "BRASPER - DEMOSTRACION",
-    `${t.billing_type === "boleta" ? "Boleta" : "Factura"} demo`,
-    `Operacion: ${t.id}`,
-    `Cliente: ${t.billing_name || t.customer_name}`,
-    `Correo de ejemplo: ${t.billing_email}`,
-    `Comision: ${t.commission.toFixed(2)} ${t.from_currency}`,
-    "No se realiza ninguna emision ante SUNAT.",
-    "Correo registrado en la demo; no se entrega a un servicio de correo.",
-  ];
-  lines.forEach((line, i) =>
-    page.drawText(line.replace(/[^\x20-\x7e]/g, "?"), {
-      x: 45,
-      y: 780 - i * 28,
-      size: i === 0 ? 18 : 11,
-      font,
-    }),
+async function demoPdf(t: Transfer, number?: string, issuedAt?: string) {
+  const { buildDemoReceipt } = await import("../../supabase/functions/_shared/demo-receipt");
+  const invoice = t.invoices?.[0];
+  const bytes = await buildDemoReceipt(
+    t,
+    number || invoice?.number || `DEMO-${t.id.slice(0, 8)}`,
+    issuedAt || invoice?.demo_delivered_at || t.payout_at || t.created_at,
   );
-  return new Blob([new Uint8Array(await pdf.save())], { type: "application/pdf" });
+  return new Blob([bytes], { type: "application/pdf" });
 }
 const placeholder = () =>
   new Blob(
@@ -402,7 +387,8 @@ export function createDemoClient(): SupabaseClient {
               state.nextInvoice = (state.nextInvoice ?? 2) + 1;
               write(state);
               const path = `demo/${t.id}/comprobante.pdf`;
-              await fileStore("invoice-documents", path, await demoPdf(t));
+              const issuedAt = now();
+              await fileStore("invoice-documents", path, await demoPdf(t, number, issuedAt));
               const fresh = read();
               const latest = fresh.transfers.find((item) => item.id === t.id)!;
               latest.invoices = [
@@ -415,7 +401,7 @@ export function createDemoClient(): SupabaseClient {
                   cdr_path: null,
                   error: null,
                   demo_email: t.billing_email || t.customer_email,
-                  demo_delivered_at: now(),
+                  demo_delivered_at: issuedAt,
                 },
               ];
               latest.status = "completed";

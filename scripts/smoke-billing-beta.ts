@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { createDemoFixtures } from "../src/lib/demo-fixtures";
 import { BrasperBetaEngine } from "../src/lib/sunat/brasper-beta.server";
 
 // One fictional beta submission, never automatically retry an uncertain result.
@@ -10,7 +11,14 @@ const date = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 }).format(new Date());
 const number = Math.floor(Date.now() / 1000) % 99999999 || 1;
-const prepared = await engine.prepare(number, date, "F903");
+const operation = process.argv.includes("--operation-demo")
+  ? {
+      ...createDemoFixtures().transfers[4]!,
+      billing_document: "20100070970",
+      billing_name: "EMPRESA DEMO BETA",
+    }
+  : undefined;
+const prepared = await engine.prepare(number, date, "F903", operation);
 const folder = `artifacts/billing-beta/${prepared.reference}`;
 await mkdir(folder, { recursive: true, mode: 0o700 });
 await writeFile(`${folder}/invoice.xml`, prepared.xml, { mode: 0o600 });

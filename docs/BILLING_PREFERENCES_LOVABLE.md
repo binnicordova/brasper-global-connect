@@ -1,3 +1,5 @@
+> Actualización: para el despliegue actual usar `docs/BIG_UPDATE.md`. La migración 010 genera PDF demo de boletas en beta; las instrucciones históricas de bloqueo de boletas de este documento ya no aplican.
+
 # Factura o boleta en el flujo web
 
 El paso «Tus datos de contacto» solicita un correo obligatorio a invitados y usuarios con cuenta y permite elegir factura o boleta. Factura recoge RUC de 11 dígitos y razón social; boleta usa el nombre/documento del cliente y permite indicar su tipo. Son validaciones de formato, no una consulta de identidad o de estado del RUC.

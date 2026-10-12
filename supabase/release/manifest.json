@@ -9,7 +9,8 @@
     "202610100006_safe_transfer_review.sql",
     "202610100007_billing_preferences.sql",
     "202610100008_exchange_validation.sql",
-    "202610120009_pen_brl_only.sql"
+    "202610120009_pen_brl_only.sql",
+    "202610120010_demo_receipts.sql"
   ],
   "files": [
     {
@@ -49,8 +50,20 @@
       "sha256": "12b5603f56f0f083275d856705a819e1c5a8ab09eb9819e89b9efec8df0a7780"
     },
     {
+      "path": "supabase/migrations/202610120010_demo_receipts.sql",
+      "sha256": "0c8ceb74f7afb1ecb9677effcf1fd1fb6687f7f3be5ae46d3fb304580f61b7e6"
+    },
+    {
       "path": "supabase/functions/process-invoices/index.ts",
-      "sha256": "ddf1470a2948089ecbb4b742a412a426ece7728745f5274af4b4e2c6d3735a18"
+      "sha256": "bf5a9aca42fac12e7582b0b9d90e15d401444424b612a86149a117df5c22bce8"
+    },
+    {
+      "path": "supabase/functions/_shared/demo-receipt.ts",
+      "sha256": "59353dc954ba0da0ad8934d00ed922c29948bd1d072f26ebd1ced7d5d81f3239"
+    },
+    {
+      "path": "supabase/functions/process-invoices/deno.json",
+      "sha256": "035248f876900156de8825ba77b51d8d0e895a758fab24dbc4d9e475e2755b8a"
     },
     {
       "path": "supabase/config.toml",

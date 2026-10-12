@@ -36,3 +36,6 @@ supabase/.temp/
 *.sw?
 
 artifacts/billing-beta/
+
+# PDF rendering intermediates
+tmp/pdfs/

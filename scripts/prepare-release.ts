@@ -62,6 +62,8 @@ bundle += "\ncommit;\n";
 await writeFile("supabase/release/database-update.sql", bundle);
 for (const path of [
   "supabase/functions/process-invoices/index.ts",
+  "supabase/functions/_shared/demo-receipt.ts",
+  "supabase/functions/process-invoices/deno.json",
   "supabase/config.toml",
   "supabase/fixed-rates.example.sql",
   "supabase/manual-setup.example.sql",

@@ -772,6 +772,9 @@ function Dashboard() {
                             </p>
                           )}
                           {openedInvoice?.environment === "beta" && <p>Entorno de prueba</p>}
+                          {openedInvoice?.status === "demo_generated" && (
+                            <p>PDF demo disponible. Envío por correo pendiente de integración.</p>
+                          )}
                           {openedInvoice?.error && (
                             <p className="ops-alert">{openedInvoice.error}</p>
                           )}

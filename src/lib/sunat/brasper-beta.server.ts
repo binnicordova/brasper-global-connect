@@ -1,4 +1,7 @@
-import { PDFDocument, StandardFonts } from "pdf-lib";
+import {
+  buildDemoReceipt,
+  type ReceiptOperation,
+} from "../../../supabase/functions/_shared/demo-receipt";
 import { FacturaBuilder } from "./ubl/factura.builder";
 import { XmlSigner } from "./xml-signer";
 import { BetaTransport } from "./beta-transport";
@@ -12,6 +15,7 @@ export class BrasperBetaEngine {
     number: number,
     date: string,
     serie: "F902" | "F903" = "F902",
+    operation?: ReceiptOperation,
   ): Promise<BetaPrepared> {
     if (
       !Number.isSafeInteger(number) ||
@@ -25,7 +29,7 @@ export class BrasperBetaEngine {
     const emisor: EmisorConfig = {
       ruc: "20608550454",
       razonSocial: "BRASPER 21 SAC - PRUEBA BETA",
-      direccionFiscal: "DOMICILIO FICTICIO PARA PRUEBAS BETA",
+      direccionFiscal: "DOMICILIO DEMO PARA PRUEBAS BETA",
       ubigeo: "150101",
       codigoLocal: "0000",
       certificadoBase64: TEST_P12_BASE64,
@@ -33,51 +37,89 @@ export class BrasperBetaEngine {
       ambiente: "beta",
       apiKey: "",
     };
-    // Fixed fictional values. Never derive taxable amounts or a tax rate from a remittance.
+    // Only the service commission is invoiced; the remittance principal is never revenue.
+    // The 18% treatment is an explicit beta test assumption, not a production tax decision.
+    const gross = operation
+      ? Math.round(
+          Number(operation.commission) *
+            (operation.from_currency === "BRL" ? Number(operation.rate) : 1) *
+            100,
+        ) / 100
+      : 118;
+    if (
+      !Number.isFinite(gross) ||
+      gross <= 0 ||
+      (operation && !["PEN", "BRL"].includes(operation.from_currency))
+    )
+      throw new Error("Comisión beta inválida");
+    const name = operation?.billing_name || "CLIENTE DEMO BETA";
+    const document = operation?.billing_document || "20100070970";
+    if (!/^\d{11}$/.test(document) || (operation && operation.billing_type !== "factura"))
+      throw new Error("Factura beta requiere razón social y RUC");
+    const base = Math.round((gross / 1.18) * 100) / 100;
+    const tax = Math.round((gross - base) * 100) / 100;
     const c: ComprobanteInput = {
       tipo: "01",
       serie,
       correlativo: String(number),
       fechaEmision: date,
       moneda: "PEN",
-      receptor: { tipoDoc: "6", numDoc: "20100070970", razonSocial: "CLIENTE FICTICIO BETA" },
+      receptor: { tipoDoc: "6", numDoc: document, razonSocial: name },
       lineas: [
         {
-          descripcion: "PRUEBA SIN VALIDEZ TRIBUTARIA: servicio de transferencia ficticio",
+          descripcion: "PRUEBA SIN VALIDEZ TRIBUTARIA: servicio de transferencia demo",
           cantidad: 1,
-          valorUnitario: 100,
-          precioUnitario: 118,
+          valorUnitario: base,
+          precioUnitario: gross,
           unidadMedida: "ZZ",
           afectacionIgv: "10",
           tasaIgv: 18,
-          igvLinea: 18,
-          totalLinea: 118,
+          igvLinea: tax,
+          totalLinea: gross,
         },
       ],
-      totales: { valorVenta: 100, totalIgv: 18, totalVenta: 118 },
-      nota: "PRUEBA BETA - SIN VALIDEZ TRIBUTARIA. No representa esta remesa ni una venta real.",
+      totales: { valorVenta: base, totalIgv: tax, totalVenta: gross },
+      nota: "PRUEBA BETA - SIN VALIDEZ TRIBUTARIA. Comisión del servicio; ensayo de IGV 18%.",
     };
     const xml = new XmlSigner().sign(new FacturaBuilder().build({ emisor, comprobante: c }), {
       pfxBase64: TEST_P12_BASE64,
       pfxPassword: TEST_P12_PASSWORD,
     });
     const reference = `${serie}-${number}`;
-    const pdf = await PDFDocument.create(),
-      font = await pdf.embedFont(StandardFonts.Helvetica),
-      page = pdf.addPage();
-    [
-      "PRUEBA BETA - SIN VALIDEZ TRIBUTARIA",
-      `BRASPER 21 SAC - RUC ${emisor.ruc}`,
-      `${reference} - ${date}`,
-      "CLIENTE FICTICIO BETA",
-      "Servicio ficticio: base PEN 100.00; impuesto de ensayo PEN 18.00",
-      "TOTAL FICTICIO PEN 118.00",
-      "No representa una transferencia ni un comprobante fiscal real.",
-      "No se enviaron datos personales del cliente a SUNAT beta.",
-    ].forEach((text, i) => page.drawText(text, { x: 35, y: 780 - i * 28, size: 10, font }));
+    const receipt: ReceiptOperation = operation || {
+      id: reference,
+      billing_type: "factura",
+      billing_name: name,
+      billing_document: document,
+      billing_document_type: "6",
+      customer_name: name,
+      customer_document: document,
+      customer_email: "cliente@example.test",
+      from_currency: "PEN",
+      to_currency: "BRL",
+      amount: 118,
+      commission: 118,
+      recipient_amount: 0,
+      rate: 1,
+      recipient_name: "Destinatario demo",
+      recipient_bank: "Banco demo",
+      created_at: `${date}T12:00:00Z`,
+    };
+    const pdf = await buildDemoReceipt(
+      {
+        ...receipt,
+        demo_meta: {
+          code: operation?.demo_meta?.code || receipt.id,
+          issuer: emisor.razonSocial + " · RUC " + emisor.ruc,
+        },
+      },
+      reference,
+      `${date}T12:00:00Z`,
+      { beta: true, serviceTotal: gross, serviceCurrency: "PEN", taxBase: base, taxAmount: tax },
+    );
     return {
       xml,
-      pdfBase64: Buffer.from(await pdf.save()).toString("base64"),
+      pdfBase64: Buffer.from(pdf).toString("base64"),
       reference,
       fileName: `${emisor.ruc}-01-${reference}`,
     };

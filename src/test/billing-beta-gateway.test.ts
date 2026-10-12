@@ -42,23 +42,35 @@ it("claims submission before sending and persists uncertainty without resending"
     error: null,
   }));
   mocks.client.mockReturnValue({
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          single: async () => ({
-            data: {
-              id: invoice,
-              transfer_id: operation,
-              status: "processing",
-              environment: "beta",
-              number: "F902-1",
-              beta_sent_at: null,
-            },
-            error: null,
-          }),
-        }),
-      }),
-    }),
+    from: (table: string) =>
+      table === "transfers"
+        ? {
+            select: () => ({
+              eq: () => ({
+                single: async () => ({
+                  data: { status: "paid_out", billing_type: "factura" },
+                  error: null,
+                }),
+              }),
+            }),
+          }
+        : {
+            select: () => ({
+              eq: () => ({
+                single: async () => ({
+                  data: {
+                    id: invoice,
+                    transfer_id: operation,
+                    status: "processing",
+                    environment: "beta",
+                    number: "F902-1",
+                    beta_sent_at: null,
+                  },
+                  error: null,
+                }),
+              }),
+            }),
+          },
     rpc,
   });
   mocks.prepare.mockResolvedValue({ xml: "signed", pdfBase64: "PDF", reference: "F902-1" });
@@ -107,5 +119,77 @@ it("rejects a boleta job even if it carries an invoice series", async () => {
   });
   expect((await handleBetaBilling(request())).status).toBe(409);
   expect(mocks.prepare).not.toHaveBeenCalled();
+  expect(mocks.send).not.toHaveBeenCalled();
+});
+
+it("recovers persisted accepted artifacts without sending a second invoice", async () => {
+  const JSZip = (await import("jszip")).default;
+  const zip = new JSZip();
+  zip.file("cdr.xml", "<ApplicationResponse/>");
+  const prepared = {
+    xml: "signed saved",
+    pdfBase64: "saved PDF",
+    reference: "F902-7",
+    fileName: "saved",
+  };
+  mocks.client.mockReturnValue({
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: async () => ({
+            data: {
+              id: invoice,
+              transfer_id: operation,
+              status: "processing",
+              environment: "beta",
+              number: "F902-7",
+              document_type: "01",
+              beta_sent_at: "2026-10-12T12:00:00Z",
+              beta_prepared: prepared,
+              beta_result: {
+                estado: "aceptado",
+                codigo: "0",
+                cdrBase64: await zip.generateAsync({ type: "base64" }),
+              },
+            },
+            error: null,
+          }),
+        }),
+      }),
+    }),
+  });
+  const response = await handleBetaBilling(request());
+  expect(await response.json()).toMatchObject({
+    status: "accepted",
+    number: "F902-7",
+    pdf_base64: "saved PDF",
+  });
+  expect(mocks.prepare).not.toHaveBeenCalled();
+  expect(mocks.send).not.toHaveBeenCalled();
+});
+it("does not resend a reserved submission whose response was lost", async () => {
+  mocks.client.mockReturnValue({
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: async () => ({
+            data: {
+              id: invoice,
+              transfer_id: operation,
+              status: "processing",
+              environment: "beta",
+              number: "F902-8",
+              document_type: "01",
+              beta_sent_at: "2026-10-12T12:00:00Z",
+              beta_prepared: { xml: "signed" },
+              beta_result: null,
+            },
+            error: null,
+          }),
+        }),
+      }),
+    }),
+  });
+  expect((await handleBetaBilling(request())).status).toBe(409);
   expect(mocks.send).not.toHaveBeenCalled();
 });

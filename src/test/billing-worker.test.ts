@@ -3,12 +3,12 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import { describe, it, expect, vi } from "vitest";
+import { buildDemoReceipt } from "../../supabase/functions/_shared/demo-receipt";
 function worker(vars: Record<string, string>, db: unknown, fetchMock = vi.fn()) {
   let handler: (r: Request) => Promise<Response> = async () => new Response();
-  const source = readFileSync("supabase/functions/process-invoices/index.ts", "utf8").replace(
-    /import \{ createClient \} from [^;]+;/,
-    "",
-  );
+  const source = readFileSync("supabase/functions/process-invoices/index.ts", "utf8")
+    .replace(/import \{ createClient \} from [^;]+;/, "")
+    .replace(/import \{ buildDemoReceipt \} from [^;]+;/, "");
   const script = ts.transpile(source, {
     target: ts.ScriptTarget.ES2022,
     module: ts.ModuleKind.None,
@@ -21,6 +21,7 @@ function worker(vars: Record<string, string>, db: unknown, fetchMock = vi.fn()) 
       },
     },
     createClient: () => db,
+    buildDemoReceipt,
     Response,
     Request,
     AbortSignal,
@@ -34,15 +35,88 @@ function worker(vars: Record<string, string>, db: unknown, fetchMock = vi.fn()) 
   return handler;
 }
 describe("Billing worker integration boundaries", () => {
+  it("generates a data-specific demo boleta in beta without fiscal or email calls", async () => {
+    const upload = vi.fn(async () => ({ error: null }));
+    const update = vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) }));
+    const rpc = vi.fn(async () => ({
+      data: [
+        {
+          id: "demo-invoice",
+          transfer_id: "operation",
+          number: "DEMO-42",
+          created_at: "2026-10-12T12:00:00Z",
+        },
+      ],
+      error: null,
+    }));
+    const transfer = {
+      id: "operation",
+      user_id: "owner",
+      status: "paid_out",
+      billing_type: "boleta",
+      customer_name: "María Demo",
+      customer_document: "12345678",
+      customer_email: "maria@example.test",
+      from_currency: "PEN",
+      to_currency: "BRL",
+      amount: 300,
+      commission: 15,
+      rate: 1.425,
+      recipient_amount: 406.13,
+      recipient_name: "Ana Demo",
+      recipient_bank: "Banco Demo",
+      created_at: "2026-10-12T12:00:00Z",
+    };
+    const network = vi.fn();
+    const db = {
+      rpc,
+      storage: { from: () => ({ upload }) },
+      from: (table: string) =>
+        table === "transfers"
+          ? {
+              select: () => ({
+                eq: () => ({ single: async () => ({ data: transfer, error: null }) }),
+              }),
+            }
+          : { update },
+    };
+    const handle = worker(
+      { BILLING_WORKER_SECRET: "secret", BILLING_ENVIRONMENT: "beta" },
+      db,
+      network,
+    );
+    const response = await handle(
+      new Request("https://local.test", {
+        method: "POST",
+        headers: { Authorization: "Bearer secret" },
+      }),
+    );
+    expect(await response.json()).toEqual({ status: "demo_generated", id: "demo-invoice" });
+    expect(rpc).toHaveBeenCalledWith("claim_demo_invoice", { p_boleta_only: true });
+    expect(network).not.toHaveBeenCalled();
+    expect(upload).toHaveBeenCalledWith("owner/demo-invoice/demo.pdf", expect.any(Uint8Array), {
+      contentType: "application/pdf",
+      upsert: true,
+    });
+    expect(update).toHaveBeenCalledWith({
+      status: "demo_generated",
+      pdf_path: "owner/demo-invoice/demo.pdf",
+      error: null,
+    });
+  });
+
   it("blocks beta boletas before calling the invoice-only gateway", async () => {
     const network = vi.fn();
     const handle = worker(
       { BILLING_WORKER_SECRET: "secret", BILLING_ENVIRONMENT: "beta" },
       {
-        rpc: async () => ({
-          data: [{ id: "boleta", status: "blocked", document_type: "03" }],
-          error: null,
-        }),
+        rpc: async (name: string) =>
+          name === "claim_demo_invoice"
+            ? { data: [], error: null }
+            : {
+                data: [{ id: "boleta", status: "blocked", document_type: "03" }],
+                error: null,
+              },
       },
       network,
     );
@@ -195,10 +269,14 @@ describe("Billing worker integration boundaries", () => {
   });
   it("blocks a job before contacting a provider when configuration is absent", async () => {
     const update = vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) }));
-    const rpc = vi.fn(async () => ({
-      data: [{ id: "invoice", transfer_id: "transfer" }],
-      error: null,
-    }));
+    const rpc = vi.fn(async (name: string) =>
+      name === "claim_demo_invoice"
+        ? { data: [], error: null }
+        : {
+            data: [{ id: "invoice", transfer_id: "transfer" }],
+            error: null,
+          },
+    );
     const db = {
       rpc,
       from: (table: string) =>
@@ -282,10 +360,14 @@ describe("Billing worker integration boundaries", () => {
   });
   it("stores accepted beta artifacts without sending customer data or email", async () => {
     const update = vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) }));
-    const rpc = vi.fn(async () => ({
-      data: [{ id: "invoice", transfer_id: "transfer" }],
-      error: null,
-    }));
+    const rpc = vi.fn(async (name: string) =>
+      name === "claim_demo_invoice"
+        ? { data: [], error: null }
+        : {
+            data: [{ id: "invoice", transfer_id: "transfer" }],
+            error: null,
+          },
+    );
     const upload = vi.fn(async () => ({ error: null }));
     const db = {
       rpc,

@@ -32,6 +32,7 @@ beforeAll(async () => {
   await db.exec(readFileSync("supabase/migrations/202610100005_guest_exchange.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202610100006_safe_transfer_review.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202610100007_billing_preferences.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/202610120010_demo_receipts.sql", "utf8"));
 }, 20000);
 afterAll(async () => {
   await db.close();
@@ -245,6 +246,57 @@ describe("Database authorization and workflow", () => {
     expect((await db.query(`select status from transfers where id='${id}'`)).rows[0]).toMatchObject(
       { status: "paid_out" },
     );
+  });
+  it("retries only unsent beta jobs and recovers persisted acceptance without another submission", async () => {
+    const result = await act(
+      owner,
+      `select create_transfer('${rate}',300,'Owner','123','Recipient','456','Bank','1111') as id`,
+    );
+    const id = String((result.rows[0] as { id: string }).id);
+    await db.exec(
+      `update transfers set status='paid_out' where id='${id}'; insert into invoices(transfer_id) values('${id}')`,
+    );
+    const job = (await db.query("select * from claim_beta_invoice()")).rows[0] as {
+      id: string;
+      number: string;
+    };
+    await expect(act(owner, `select schedule_beta_retry('${job.id}')`)).rejects.toThrow(
+      /permission denied/,
+    );
+    expect((await db.query(`select schedule_beta_retry('${job.id}') as ok`)).rows[0]).toEqual({
+      ok: true,
+    });
+    expect((await db.query("select * from claim_beta_invoice()")).rows).toHaveLength(0);
+    await db.exec(
+      `update invoices set next_attempt_at=now()-interval '1 second' where id='${job.id}'`,
+    );
+    expect((await db.query("select * from claim_beta_invoice()")).rows[0]).toMatchObject({
+      id: job.id,
+      number: job.number,
+      beta_attempts: 2,
+    });
+    await db.exec(
+      `select claim_beta_submission('${job.id}','${id}','{"xml":"signed","pdfBase64":"pdf"}'); update invoices set status='beta_reconciliation_required' where id='${job.id}'`,
+    );
+    expect((await db.query(`select schedule_beta_retry('${job.id}') as ok`)).rows[0]).toEqual({
+      ok: false,
+    });
+    expect((await db.query("select * from claim_beta_invoice()")).rows).toHaveLength(0);
+    await db.exec(
+      `select record_beta_result('${job.id}','{"estado":"aceptado","codigo":"0","cdrBase64":"saved"}')`,
+    );
+    expect((await db.query("select * from claim_beta_invoice()")).rows[0]).toMatchObject({
+      id: job.id,
+      number: job.number,
+    });
+    expect(
+      (
+        await db.query(
+          `select claim_beta_submission('${job.id}','${id}','{"xml":"signed","pdfBase64":"pdf"}') as ok`,
+        )
+      ).rows[0],
+    ).toEqual({ ok: false });
+    await db.exec(`update invoices set status='beta_accepted' where id='${job.id}'`);
   });
   it("allows private guest transactions without confirmed email and preserves owner isolation", async () => {
     const guest = "00000000-0000-4000-8000-000000000006";
@@ -495,15 +547,35 @@ describe("Billing choices saved with transfers", () => {
     await db.exec(
       `update transfers set status='paid_out' where id='${id}'; insert into invoices(transfer_id) values('${id}')`,
     );
-    const job = (await db.query("select * from claim_beta_invoice()")).rows[0];
+    expect((await db.query("select * from claim_beta_invoice()")).rows).toHaveLength(0);
+    await expect(act(owner, "select * from claim_demo_invoice(true)")).rejects.toThrow(
+      /permission denied/,
+    );
+    const job = (await db.query("select * from claim_demo_invoice(true)")).rows[0] as {
+      id: string;
+      number: string;
+    };
+    expect(job.number).toMatch(/^DEMO-/);
     expect(job).toMatchObject({
       transfer_id: id,
       document_type: "03",
-      status: "blocked",
-      number: null,
+      environment: "demo",
+      status: "processing",
       beta_sent_at: null,
     });
-    expect((await db.query("select * from claim_beta_invoice()")).rows).toHaveLength(0);
+    await db.exec(`update invoices set status='queued' where id='${job.id}'`);
+    expect((await db.query("select * from claim_invoice()")).rows).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: job.id })]),
+    );
+    expect((await db.query("select * from claim_beta_invoice()")).rows).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: job.id })]),
+    );
+    expect((await db.query("select * from claim_demo_invoice(true)")).rows[0]).toMatchObject({
+      id: job.id,
+      number: job.number,
+    });
+    await db.exec(`update invoices set status='demo_generated' where id='${job.id}'`);
+    expect((await db.query("select * from claim_invoice_delivery()")).rows).toHaveLength(0);
   });
 
   it("rejects invalid billing and missing sessions atomically, without leaving extra transfers", async () => {

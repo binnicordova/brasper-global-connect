@@ -1,6 +1,7 @@
 // Deploy with verify_jwt=false: the scheduler must supply BILLING_WORKER_SECRET.
 // The fiscal gateway is a supported provider adapter, not an invented SUNAT API.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { buildDemoReceipt } from "../_shared/demo-receipt.ts";
 const env = (key: string) => Deno.env.get(key) ?? "";
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 Deno.serve(async (request: Request) => {
@@ -10,6 +11,46 @@ Deno.serve(async (request: Request) => {
   if (request.method !== "POST") return json({ error: "POST required" }, 405);
   const db = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"));
   const beta = env("BILLING_ENVIRONMENT") === "beta";
+  // In beta only boletas are simulated; an explicit demo environment also simulates facturas.
+  const demo = env("BILLING_ENVIRONMENT") === "demo";
+  if (beta || demo) {
+    const { data: demoJobs, error: demoClaimError } = await db.rpc("claim_demo_invoice", {
+      p_boleta_only: beta,
+    });
+    if (demoClaimError) return json({ error: demoClaimError.message }, 500);
+    const job = demoJobs?.[0];
+    if (job) {
+      try {
+        const { data: transfer, error } = await db
+          .from("transfers")
+          .select("*")
+          .eq("id", job.transfer_id)
+          .single();
+        if (error || !transfer || transfer.status !== "paid_out")
+          throw new Error("Envío no confirmado");
+        const bytes = await buildDemoReceipt(transfer, job.number, job.created_at);
+        const path = `${transfer.user_id}/${job.id}/demo.pdf`;
+        const { error: uploadError } = await db.storage
+          .from("invoice-documents")
+          .upload(path, bytes, { contentType: "application/pdf", upsert: true });
+        if (uploadError) throw uploadError;
+        const { error: saveError } = await db
+          .from("invoices")
+          .update({ status: "demo_generated", pdf_path: path, error: null })
+          .eq("id", job.id);
+        if (saveError) throw saveError;
+        return json({ status: "demo_generated", id: job.id });
+      } catch (error) {
+        // PDF generation is safe to retry with the reserved number and deterministic path.
+        await db
+          .from("invoices")
+          .update({ status: "queued", error: String(error).slice(0, 500) })
+          .eq("id", job.id);
+        return json({ status: "demo_retry_required", id: job.id }, 502);
+      }
+    }
+    if (demo) return json({ status: "idle" });
+  }
   // Email retries never reissue the fiscal document.
   let accepted = null;
   if (!beta && env("RESEND_API_KEY") && env("BILLING_FROM_EMAIL")) {
@@ -169,6 +210,10 @@ Deno.serve(async (request: Request) => {
             String(document.message || document.cdr_code || "Revisión requerida").slice(0, 400),
         })
         .eq("id", job.id);
+      if (status === "beta_reconciliation_required") {
+        const { data: retry } = await db.rpc("schedule_beta_retry", { p_invoice_id: job.id });
+        if (retry) return json({ status: "queued", id: job.id });
+      }
       return json({ status, id: job.id });
     }
     if (
@@ -196,7 +241,7 @@ Deno.serve(async (request: Request) => {
       const path = `${transfer.user_id}/${job.id}/${field}.${ext}`;
       const { error } = await db.storage
         .from("invoice-documents")
-        .upload(path, decoded, { contentType: mime, upsert: false });
+        .upload(path, decoded, { contentType: mime, upsert: beta });
       if (error) throw error;
       paths[field!] = path;
     }
@@ -222,6 +267,10 @@ Deno.serve(async (request: Request) => {
         error: String(error).slice(0, 500),
       })
       .eq("id", job.id);
+    if (beta) {
+      const { data: retry } = await db.rpc("schedule_beta_retry", { p_invoice_id: job.id });
+      if (retry) return json({ status: "queued", id: job.id }, 502);
+    }
     return json(
       { status: beta ? "beta_reconciliation_required" : "reconciliation_required", id: job.id },
       502,

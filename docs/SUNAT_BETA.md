@@ -1,3 +1,5 @@
+> Para el despliegue actual consultar `docs/BIG_UPDATE.md`: boletas en PDF demo, recuperación de facturas aceptadas y reintentos limitados si todavía no hubo envío a SUNAT.
+
 # SUNAT beta de Brasper
 
 El motor reutiliza los constructores UBL, firma XML, transporte SOAP y verificador CDR del proyecto local `ChatGPT/facturacion/facturacionhotljb`. El emisor de ensayo es RUC 20608550454; no reutiliza el RUC, base de datos, tasa hotelera ni credenciales productivas de HOTEL JB.
@@ -18,9 +20,9 @@ El handler `/api/billing-beta` se ejecuta en servidor, con Node crypto y librer�
 
 Tras verificar el ingreso y registrar manualmente el envío con constancia, la BD crea una solicitud única. El worker beta asigna una serie separada F902, prepara XML firmado y PDF, reserva el envío atómicamente antes de contactar SUNAT y guarda el resultado original antes de subir archivos. Una solicitud reservada no se reenvía automáticamente. F903 se reserva para pruebas independientes.
 
-Los documentos usan receptor y valores **ficticios fijos**: base PEN 100, impuesto de ensayo 18, total 118. No representan la operación, no determinan el IGV real de Brasper ni envían datos personales del cliente a SUNAT beta. El resultado aceptado queda en `beta_accepted` y los PDF/XML/CDR en Storage privado. El PDF y la interfaz indican «PRUEBA BETA - SIN VALIDEZ TRIBUTARIA». No envía correo automático al cliente ni marca la transferencia `completed`.
+Las facturas de la cola usan el receptor fiscal y la comisión guardados en la operación. El principal de la remesa no se factura. Para comisiones BRL se aplica la tasa de la operación para expresar el servicio en PEN; el ensayo desglosa IGV 18% incluido, pendiente de confirmar para producción. PDF y XML reflejan los mismos datos. El smoke sin `--operation-demo` conserva valores de ensayo fijos; con esa opción usa un registro sintético. El resultado aceptado queda en `beta_accepted` y los PDF/XML/CDR en Storage privado. Beta no envía correo automático ni marca la transferencia `completed`.
 
-Un timeout, crash o error de almacenamiento exige conciliación: consultar `beta_sent_at`, `beta_prepared` y `beta_result` con permisos administrativos. Si SUNAT ya respondió, recuperar los archivos desde el resultado conservado; no emitir otra vez. Solo un job bloqueado antes de reservar el envío (`beta_sent_at IS NULL`) puede volver a `queued` después de corregir configuración. No cambiar un job beta a producción.
+Con la migración 010, si no hubo reserva de envío (`beta_sent_at IS NULL`), se permiten hasta cinco intentos con espera creciente. Si existe una aceptación guardada en `beta_result`, se recuperan los archivos de `beta_prepared` y CDR sin reenviar a SUNAT. Una reserva sin respuesta válida exige conciliación; no cambiarla a producción ni emitir otra vez automáticamente.
 
 Los CDR se validan contra la referencia exacta y su estructura. La firma de demostración de SUNAT beta puede clasificarse como `no_disponible_beta`; nunca se considera una firma fiscal de producción ni se afirma confianza PKI por validar integridad.
 
@@ -32,4 +34,4 @@ Para desarrollo local: `npm run setup:billing-beta` crea el archivo privado desd
 
 Para producción faltan configuración fiscal propia de Brasper, credenciales SOL/certificado autorizado, tratamiento del servicio, series, receptor, adaptador productivo y correo verificado. Ninguna credencial productiva del hotel se copió.
 
-El flujo web recoge factura o boleta. El motor beta de este documento admite solo factura (`01`); las solicitudes de boleta (`03`) se conservan y bloquean sin consumir serie F902. Ver [BILLING_PREFERENCES_LOVABLE.md](BILLING_PREFERENCES_LOVABLE.md).
+El flujo web recoge factura o boleta. El motor SUNAT beta admite factura (`01`); las boletas (`03`) generan un PDF demo independiente sin consumir F902 ni contactar SUNAT. Ver [BILLING_PREFERENCES_LOVABLE.md](BILLING_PREFERENCES_LOVABLE.md).
