@@ -19,6 +19,7 @@ export type Database = {
           account_number: string
           active: boolean
           bank: string
+          country: string | null
           currency: string
           holder: string
           id: string
@@ -28,6 +29,7 @@ export type Database = {
           account_number: string
           active?: boolean
           bank: string
+          country?: string | null
           currency: string
           holder: string
           id?: string
@@ -37,6 +39,7 @@ export type Database = {
           account_number?: string
           active?: boolean
           bank?: string
+          country?: string | null
           currency?: string
           holder?: string
           id?: string
@@ -88,6 +91,7 @@ export type Database = {
           cdr_path: string | null
           created_at: string
           delivered_at: string | null
+          document_type: string
           email_attempted_at: string | null
           environment: string
           error: string | null
@@ -106,6 +110,7 @@ export type Database = {
           cdr_path?: string | null
           created_at?: string
           delivered_at?: string | null
+          document_type?: string
           email_attempted_at?: string | null
           environment?: string
           error?: string | null
@@ -124,6 +129,7 @@ export type Database = {
           cdr_path?: string | null
           created_at?: string
           delivered_at?: string | null
+          document_type?: string
           email_attempted_at?: string | null
           environment?: string
           error?: string | null
@@ -198,16 +204,29 @@ export type Database = {
       transfers: {
         Row: {
           amount: number
+          billing_document: string
+          billing_document_type: string
+          billing_email: string | null
+          billing_email_verified: boolean
+          billing_name: string
+          billing_type: string
           commission: number
           created_at: string
           customer_document: string
+          customer_document_type: string | null
           customer_email: string
           customer_email_verified: boolean
           customer_name: string
           customer_phone: string
+          deposit_bank_reference: string | null
           deposit_instructions: Json
+          destination_country: string | null
           from_currency: string
+          funds_declared_at: string | null
+          funds_detail: string | null
+          funds_origin: string | null
           id: string
+          origin_bank: string | null
           payout_at: string | null
           payout_path: string | null
           payout_reference: string | null
@@ -224,25 +243,41 @@ export type Database = {
           recipient_document: string
           recipient_name: string
           recipient_phone: string
+          recipient_relationship: string | null
+          source_country: string | null
           status: string
           to_currency: string
           transfer_note: string
+          transfer_purpose: string | null
           updated_at: string
           user_id: string
           verified_at: string | null
         }
         Insert: {
           amount: number
+          billing_document?: string
+          billing_document_type?: string
+          billing_email?: string | null
+          billing_email_verified?: boolean
+          billing_name?: string
+          billing_type?: string
           commission: number
           created_at?: string
           customer_document: string
+          customer_document_type?: string | null
           customer_email: string
           customer_email_verified?: boolean
           customer_name: string
           customer_phone?: string
+          deposit_bank_reference?: string | null
           deposit_instructions: Json
+          destination_country?: string | null
           from_currency: string
+          funds_declared_at?: string | null
+          funds_detail?: string | null
+          funds_origin?: string | null
           id?: string
+          origin_bank?: string | null
           payout_at?: string | null
           payout_path?: string | null
           payout_reference?: string | null
@@ -259,25 +294,41 @@ export type Database = {
           recipient_document: string
           recipient_name: string
           recipient_phone?: string
+          recipient_relationship?: string | null
+          source_country?: string | null
           status?: string
           to_currency: string
           transfer_note?: string
+          transfer_purpose?: string | null
           updated_at?: string
           user_id: string
           verified_at?: string | null
         }
         Update: {
           amount?: number
+          billing_document?: string
+          billing_document_type?: string
+          billing_email?: string | null
+          billing_email_verified?: boolean
+          billing_name?: string
+          billing_type?: string
           commission?: number
           created_at?: string
           customer_document?: string
+          customer_document_type?: string | null
           customer_email?: string
           customer_email_verified?: boolean
           customer_name?: string
           customer_phone?: string
+          deposit_bank_reference?: string | null
           deposit_instructions?: Json
+          destination_country?: string | null
           from_currency?: string
+          funds_declared_at?: string | null
+          funds_detail?: string | null
+          funds_origin?: string | null
           id?: string
+          origin_bank?: string | null
           payout_at?: string | null
           payout_path?: string | null
           payout_reference?: string | null
@@ -294,9 +345,12 @@ export type Database = {
           recipient_document?: string
           recipient_name?: string
           recipient_phone?: string
+          recipient_relationship?: string | null
+          source_country?: string | null
           status?: string
           to_currency?: string
           transfer_note?: string
+          transfer_purpose?: string | null
           updated_at?: string
           user_id?: string
           verified_at?: string | null
@@ -316,6 +370,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_transfer: {
+        Args: {
+          p_expected_status: string
+          p_note: string
+          p_transfer_id: string
+        }
+        Returns: undefined
+      }
       claim_beta_invoice: {
         Args: never
         Returns: {
@@ -325,6 +387,7 @@ export type Database = {
           cdr_path: string | null
           created_at: string
           delivered_at: string | null
+          document_type: string
           email_attempted_at: string | null
           environment: string
           error: string | null
@@ -356,6 +419,7 @@ export type Database = {
           cdr_path: string | null
           created_at: string
           delivered_at: string | null
+          document_type: string
           email_attempted_at: string | null
           environment: string
           error: string | null
@@ -383,6 +447,7 @@ export type Database = {
           cdr_path: string | null
           created_at: string
           delivered_at: string | null
+          document_type: string
           email_attempted_at: string | null
           environment: string
           error: string | null
@@ -473,9 +538,72 @@ export type Database = {
         }
         Returns: string
       }
+      create_transfer_with_billing: {
+        Args: {
+          p_amount: number
+          p_billing_document: string
+          p_billing_document_type: string
+          p_billing_email: string
+          p_billing_name: string
+          p_billing_type: string
+          p_customer_document: string
+          p_customer_name: string
+          p_customer_phone: string
+          p_rate_id: string
+          p_recipient_account: string
+          p_recipient_account_holder: string
+          p_recipient_account_holder_document: string
+          p_recipient_account_type: string
+          p_recipient_bank: string
+          p_recipient_bank_branch: string
+          p_recipient_document: string
+          p_recipient_name: string
+          p_recipient_phone: string
+          p_transfer_note: string
+        }
+        Returns: string
+      }
+      create_validated_transfer: {
+        Args: {
+          p_amount: number
+          p_billing_document: string
+          p_billing_document_type: string
+          p_billing_email: string
+          p_billing_name: string
+          p_billing_type: string
+          p_customer_document: string
+          p_customer_document_type: string
+          p_customer_name: string
+          p_customer_phone: string
+          p_declaration_accepted: boolean
+          p_destination_country: string
+          p_funds_detail: string
+          p_funds_origin: string
+          p_origin_bank: string
+          p_rate_id: string
+          p_recipient_account: string
+          p_recipient_account_holder: string
+          p_recipient_account_holder_document: string
+          p_recipient_account_type: string
+          p_recipient_bank: string
+          p_recipient_bank_branch: string
+          p_recipient_document: string
+          p_recipient_name: string
+          p_recipient_phone: string
+          p_recipient_relationship: string
+          p_source_country: string
+          p_transfer_note: string
+          p_transfer_purpose: string
+        }
+        Returns: string
+      }
       is_staff: { Args: never; Returns: boolean }
       record_beta_result: {
         Args: { p_invoice_id: string; p_result: Json }
+        Returns: undefined
+      }
+      restore_verified_transfer: {
+        Args: { p_note: string; p_transfer_id: string }
         Returns: undefined
       }
       review_transfer: {
@@ -491,6 +619,14 @@ export type Database = {
       staff_dashboard_summary: { Args: never; Returns: Json }
       submit_proof: {
         Args: { p_path: string; p_transfer_id: string }
+        Returns: undefined
+      }
+      submit_transfer_proof: {
+        Args: {
+          p_bank_reference: string
+          p_path: string
+          p_transfer_id: string
+        }
         Returns: undefined
       }
       verify_transfer_contact: { Args: never; Returns: undefined }
