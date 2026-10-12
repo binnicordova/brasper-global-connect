@@ -993,8 +993,22 @@ footer {
 }
 .exchange-navigation {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
+}
+.exchange-navigation > button:only-child:not(.exchange-back) {
+  margin-left: auto;
+}
+.exchange-navigation > button,
+.exchange-submit {
+  min-height: 44px;
+  height: auto;
+  border-radius: 12px;
+}
+.exchange-submit {
+  white-space: normal;
+  line-height: 1.4;
+  padding: 12px 16px;
 }
 .exchange-review,
 .exchange-intent {
@@ -1029,6 +1043,39 @@ footer {
   overflow-wrap: anywhere;
 }
 @media (max-width: 640px) {
+  .portal-main.wrap {
+    padding-inline: 16px;
+  }
+  .portal-main > .portal-card {
+    padding: 18px 16px;
+  }
+  .transfer-form {
+    min-width: 0;
+  }
+  .portal-card button {
+    max-width: 100%;
+    min-height: 44px;
+    height: auto;
+    white-space: normal;
+    line-height: 1.4;
+    padding-block: 12px;
+  }
+  .transfer-form input,
+  .transfer-form select {
+    font-size: 16px;
+  }
+  .exchange-navigation {
+    gap: 10px;
+  }
+  .exchange-navigation > button {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    padding: 12px;
+  }
+  .exchange-navigation > .exchange-back:only-child {
+    flex: 0 1 48%;
+  }
   .exchange-fieldset {
     grid-template-columns: 1fr;
   }

@@ -1198,6 +1198,7 @@ function TransferPortal() {
                         <Button
                           type="button"
                           variant="outline"
+                          className="exchange-back"
                           disabled={busy}
                           onClick={() => setStep((old) => old - 1)}
                         >
@@ -1218,7 +1219,7 @@ function TransferPortal() {
                     <Button
                       type="submit"
                       variant="brand"
-                      className="wide"
+                      className="wide exchange-submit"
                       hidden={step !== 3}
                       disabled={busy || !rate}
                     >
