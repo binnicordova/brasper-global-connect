@@ -32,6 +32,11 @@ import {
 } from "@/lib/transfers";
 import { Button } from "@/components/ui/button";
 import { ReceiptUpload } from "@/components/receipt-upload";
+import {
+  recipientFieldNames,
+  recipientOptionLabel,
+  type SavedRecipient,
+} from "@/lib/saved-recipients";
 import { EvidenceDetails } from "@/components/evidence-preview";
 import { TransferReview, type ReviewSubmission } from "@/components/transfer-review";
 import { TransferDetails } from "@/components/transfer-details";
@@ -131,6 +136,85 @@ function TransferPortal() {
   const sessionEmail = session?.user.email;
   const sessionAnonymous = session?.user.is_anonymous;
   const guest = sessionAnonymous === true;
+  const [savedRecipients, setSavedRecipients] = useState<SavedRecipient[]>([]);
+  const [savedAccountsReady, setSavedAccountsReady] = useState(false);
+  const [savedAccountsError, setSavedAccountsError] = useState("");
+  const [savedRecipientId, setSavedRecipientId] = useState("");
+  const [saveRecipient, setSaveRecipient] = useState(false);
+  const [recipientLabel, setRecipientLabel] = useState("");
+  const registered = !!sessionUserId && sessionAnonymous === false;
+  const loadSavedRecipients = useCallback(async () => {
+    if (!supabase || !sessionUserId || sessionAnonymous !== false) return;
+    const { data, error } = await supabase
+      .from("saved_recipients")
+      .select("*")
+      .eq("user_id", sessionUserId)
+      .order("updated_at", { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    return (data || []) as SavedRecipient[];
+  }, [sessionUserId, sessionAnonymous]);
+  useEffect(() => {
+    let active = true;
+    setSavedRecipients([]);
+    setSavedAccountsReady(false);
+    setSavedAccountsError("");
+    setSavedRecipientId("");
+    setSaveRecipient(false);
+    if (registered)
+      void loadSavedRecipients()
+        .then((accounts) => {
+          if (active) {
+            setSavedRecipients(accounts || []);
+            setSavedAccountsReady(true);
+          }
+        })
+        .catch((error) => {
+          if (active)
+            setSavedAccountsError(
+              ["42P01", "PGRST205"].includes(error.code)
+                ? "Las cuentas guardadas estarán disponibles al aplicar la actualización de la base de datos."
+                : "No se pudieron cargar tus cuentas guardadas. Puedes completar los datos manualmente.",
+            );
+        });
+    return () => {
+      active = false;
+    };
+  }, [registered, loadSavedRecipients]);
+  function chooseRecipient(id: string) {
+    const account = savedRecipients.find((a) => a.id === id && a.currency === rate?.to_currency);
+    if (id && !account) return;
+    for (const [name, key] of Object.entries(recipientFieldNames)) {
+      const field = formRef.current?.elements.namedItem(name) as HTMLInputElement | null;
+      if (field) field.value = account?.[key] || "";
+    }
+    setAccountType(account?.recipient_account_type || "bank_account");
+    setSavedRecipientId(id);
+    setSaveRecipient(false);
+    setRecipientLabel(account?.label || "");
+    setReviewData(null);
+  }
+  async function removeRecipient() {
+    const id = savedRecipientId;
+    await run(async () => {
+      const { data, error } = await supabase!.rpc("delete_saved_recipient", { p_id: id });
+      if (error || data !== true) throw error || new Error("La cuenta ya no está disponible.");
+      chooseRecipient("");
+      setSavedRecipients((await loadSavedRecipients()) || []);
+      setMessage("Cuenta quitada de tus guardadas. Las operaciones anteriores se conservan.");
+    });
+  }
+  async function saveExistingRecipient(t: Transfer) {
+    await run(async () => {
+      const { error } = await supabase!.rpc("save_transfer_recipient", {
+        p_transfer_id: t.id,
+        p_label: t.recipient_name.slice(0, 80),
+      });
+      if (error) throw error;
+      setSavedRecipients((await loadSavedRecipients()) || []);
+      setMessage("Cuenta guardada para tus próximos envíos.");
+    });
+  }
   useEffect(() => {
     if (newOperation) {
       const element = document.getElementById(`operacion-${newOperation}`);
@@ -403,6 +487,24 @@ function TransferPortal() {
         p_billing_document_type: v.billingType === "factura" ? "6" : v.billingDocumentType,
       });
       if (error) throw error;
+      let accountNote = "";
+      if (registered && saveRecipient) {
+        try {
+          const saved = await supabase.rpc("save_transfer_recipient", {
+            p_transfer_id: id,
+            p_label: recipientLabel.trim(),
+          });
+          if (saved.error) throw saved.error;
+          setSavedRecipients((await loadSavedRecipients()) || []);
+          accountNote = " Cuenta guardada para tus próximos envíos.";
+        } catch {
+          accountNote =
+            " La operación se registró, pero no se pudo guardar la cuenta. Puedes guardarla desde esta operación sin crear otra solicitud.";
+        }
+      }
+      setSaveRecipient(false);
+      setRecipientLabel("");
+      setSavedRecipientId("");
       form.reset();
       setStep(0);
       setReviewData(null);
@@ -442,10 +544,11 @@ function TransferPortal() {
         window.parent.postMessage({ type: "brasper:exchange-created" }, window.location.origin);
       }
       setMessage(
-        receiptError ||
+        (receiptError ||
           (file
             ? "Solicitud y comprobante enviados a revisión. El equipo verificará el ingreso bancario."
-            : "Datos registrados. Paso siguiente: realiza el pago a la cuenta indicada y envía tu comprobante a revisión."),
+            : "Datos registrados. Paso siguiente: realiza el pago a la cuenta indicada y envía tu comprobante a revisión.")) +
+          accountNote,
       );
     });
   }
@@ -786,6 +889,7 @@ function TransferPortal() {
                           value={selected}
                           required
                           onChange={(e) => {
+                            if (savedRecipientId) chooseRecipient("");
                             setSelected(e.target.value);
                             setAccountType("bank_account");
                           }}
@@ -1081,6 +1185,72 @@ function TransferPortal() {
                           </p>
                         </div>
                       </div>
+                      {registered && (
+                        <div className="wide saved-recipient-panel">
+                          <strong>Tus cuentas guardadas</strong>
+                          {savedAccountsError ? (
+                            <p role="status">{savedAccountsError}</p>
+                          ) : !savedAccountsReady ? (
+                            <p>Cargando tus cuentas…</p>
+                          ) : (
+                            <>
+                              <label>
+                                Usar una cuenta guardada
+                                <select
+                                  value={savedRecipientId}
+                                  onChange={(e) => chooseRecipient(e.target.value)}
+                                >
+                                  <option value="">Completar una nueva cuenta</option>
+                                  {savedRecipients
+                                    .filter((a) => a.currency === rate?.to_currency)
+                                    .map((account) => (
+                                      <option key={account.id} value={account.id}>
+                                        {recipientOptionLabel(account)}
+                                      </option>
+                                    ))}
+                                </select>
+                              </label>
+                              <p>
+                                {savedRecipientId
+                                  ? "Datos completados. Revisa el titular y la cuenta antes de continuar."
+                                  : "Guarda una cuenta al registrar tu cambio y úsala en tus próximos envíos."}
+                              </p>
+                              {savedRecipientId && (
+                                <button
+                                  type="button"
+                                  className="portal-text-button"
+                                  onClick={() => void removeRecipient()}
+                                >
+                                  Quitar de mis cuentas guardadas
+                                </button>
+                              )}
+                              <label className="saved-recipient-choice">
+                                <input
+                                  type="checkbox"
+                                  checked={saveRecipient}
+                                  onChange={(e) => setSaveRecipient(e.target.checked)}
+                                />
+                                {savedRecipientId
+                                  ? "Guardar los datos revisados de esta cuenta"
+                                  : "Guardar esta cuenta para futuros envíos"}
+                              </label>
+                              {saveRecipient && (
+                                <label>
+                                  Nombre para identificar la cuenta
+                                  <input
+                                    value={recipientLabel}
+                                    onChange={(e) => setRecipientLabel(e.target.value)}
+                                    required
+                                    minLength={2}
+                                    maxLength={80}
+                                    placeholder="Ej. Mi cuenta en Brasil"
+                                  />
+                                </label>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
                       {[
                         ["recipientName", "Nombre completo del destinatario"],
                         ["recipientDocument", "Documento del destinatario"],
@@ -1376,6 +1546,34 @@ function TransferPortal() {
                         {statusLabels[t.status]}
                       </span>
                     </div>
+                    {registered && !admin && savedAccountsReady && t.user_id === sessionUserId && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={
+                          busy ||
+                          savedRecipients.some(
+                            (a) =>
+                              a.currency === t.to_currency &&
+                              a.recipient_bank === t.recipient_bank &&
+                              a.recipient_account === t.recipient_account &&
+                              a.recipient_account_type === t.recipient_account_type,
+                          )
+                        }
+                        onClick={() => void saveExistingRecipient(t)}
+                      >
+                        {savedRecipients.some(
+                          (a) =>
+                            a.currency === t.to_currency &&
+                            a.recipient_bank === t.recipient_bank &&
+                            a.recipient_account === t.recipient_account &&
+                            a.recipient_account_type === t.recipient_account_type,
+                        )
+                          ? "Cuenta guardada"
+                          : "Guardar cuenta de destino"}
+                      </Button>
+                    )}
                     <ol className="operation-steps">
                       {[
                         "Solicitud",

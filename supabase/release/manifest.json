@@ -12,7 +12,8 @@
     "202610120009_pen_brl_only.sql",
     "202610120010_demo_receipts.sql",
     "202610120011_brazil_billing_worklists.sql",
-    "202610120012_mailersend_delivery.sql"
+    "202610120012_mailersend_delivery.sql",
+    "202610120013_saved_recipients.sql"
   ],
   "files": [
     {
@@ -62,6 +63,10 @@
     {
       "path": "supabase/migrations/202610120012_mailersend_delivery.sql",
       "sha256": "469f031a9ade39224a8417767a4dbc4b9f8d0207e1d95ef15434b22ca7430daf"
+    },
+    {
+      "path": "supabase/migrations/202610120013_saved_recipients.sql",
+      "sha256": "80c33f87e9829a77e2d9c1105f3066c794d81e57adb537ac544383fd043a27c8"
     },
     {
       "path": "supabase/functions/process-invoices/index.ts",

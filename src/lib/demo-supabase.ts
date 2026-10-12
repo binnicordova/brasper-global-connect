@@ -6,6 +6,7 @@ import {
   type DemoState as State,
 } from "./demo-fixtures";
 type DemoTransfer = State["transfers"][number];
+import type { SavedRecipient } from "./saved-recipients";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { recipientDetailsInput, quoteAmounts, validateProof, type Transfer } from "./transfers";
 
@@ -113,11 +114,16 @@ export function createDemoClient(): SupabaseClient {
   let staff =
     window.location.pathname === "/dashboard" || /^#operacion-/.test(window.location.hash);
   let signedIn = true;
+  let registered = sessionStorage.getItem("brasper-demo-registered") === "1";
   const listeners = new Set<(event: string, session: unknown) => void>();
   const uid = () => (staff ? STAFF : CLIENT);
   const user = () =>
     signedIn
-      ? { id: uid(), email: staff ? "equipo@example.test" : undefined, is_anonymous: !staff }
+      ? {
+          id: uid(),
+          email: staff ? "equipo@example.test" : registered ? "cliente@example.test" : undefined,
+          is_anonymous: !staff && !registered,
+        }
       : null;
   const session = () =>
     signedIn
@@ -149,11 +155,15 @@ export function createDemoClient(): SupabaseClient {
       },
       signInAnonymously: async () => {
         staff = false;
+        registered = false;
+        sessionStorage.removeItem("brasper-demo-registered");
         signedIn = true;
         authChanged();
         return success({ session: session(), user: user() });
       },
       signInWithPassword: async () => {
+        registered = true;
+        sessionStorage.setItem("brasper-demo-registered", "1");
         signedIn = true;
         authChanged();
         return success({ session: session(), user: user() });
@@ -182,6 +192,10 @@ export function createDemoClient(): SupabaseClient {
         let rows: Record<string, unknown>[] = [];
         if (table === "staff_members") rows = staff ? [{ user_id: STAFF }] : [];
         if (table === "fx_rates") rows = rates();
+        if (table === "saved_recipients" && (registered || staff))
+          rows = (state.savedRecipients || []).filter(
+            (a) => a.user_id === uid(),
+          ) as unknown as Record<string, unknown>[];
         if (table === "transfers")
           rows = state.transfers.filter((t) => staff || t.user_id === CLIENT) as unknown as Record<
             string,
@@ -202,6 +216,7 @@ export function createDemoClient(): SupabaseClient {
       };
       const query = {
         select: () => query,
+        returns: () => query,
         eq: (key: string, value: unknown) => {
           filters.push((r) => get(r, key) === value);
           return query;
@@ -259,6 +274,55 @@ export function createDemoClient(): SupabaseClient {
         if (!signedIn) throw new Error("Sesión demo requerida");
         const state = read();
         if (name === "verify_transfer_contact") return success();
+        if (name === "delete_saved_recipient") {
+          if (!registered && !staff) throw new Error("Inicia sesión con una cuenta registrada");
+          const old = state.savedRecipients || [];
+          state.savedRecipients = old.filter((a) => a.id !== p["p_id"] || a.user_id !== uid());
+          write(state);
+          return success(old.length !== state.savedRecipients.length);
+        }
+        if (name === "save_transfer_recipient") {
+          if (!registered && !staff) throw new Error("Inicia sesión con una cuenta registrada");
+          const transfer = state.transfers.find(
+            (t) => t.id === p["p_transfer_id"] && t.user_id === uid(),
+          );
+          if (!transfer) throw new Error("Operación no disponible");
+          const label = p["p_label"]?.trim() || "";
+          if (label.length < 2 || label.length > 80)
+            throw new Error("Indica un nombre para la cuenta (2 a 80 caracteres)");
+          const accounts = (state.savedRecipients ||= []);
+          const existing = accounts.find(
+            (a) =>
+              a.user_id === uid() &&
+              a.currency === transfer.to_currency &&
+              a.recipient_account_type === transfer.recipient_account_type &&
+              a.recipient_bank === transfer.recipient_bank &&
+              a.recipient_account === transfer.recipient_account,
+          );
+          if (!existing && accounts.filter((a) => a.user_id === uid()).length >= 50)
+            throw new Error("Puedes guardar hasta 50 cuentas");
+          const account: SavedRecipient = {
+            id: existing?.id || crypto.randomUUID(),
+            user_id: uid(),
+            label,
+            currency: transfer.to_currency,
+            country: transfer.to_currency === "PEN" ? "PE" : "BR",
+            recipient_name: transfer.recipient_name,
+            recipient_document: transfer.recipient_document,
+            recipient_bank: transfer.recipient_bank,
+            recipient_account: transfer.recipient_account,
+            recipient_account_type: transfer.recipient_account_type || "bank_account",
+            recipient_account_holder: transfer.recipient_account_holder || "",
+            recipient_account_holder_document: transfer.recipient_account_holder_document || "",
+            recipient_bank_branch: transfer.recipient_bank_branch || "",
+            recipient_phone: transfer.recipient_phone || "",
+            recipient_relationship: transfer.recipient_relationship || "",
+          };
+          if (existing) Object.assign(existing, account);
+          else accounts.unshift(account);
+          write(state);
+          return success(account.id);
+        }
         if (name === "staff_dashboard_summary") {
           if (!staff) throw new Error("Solo el equipo demo puede consultar el dashboard");
           const statuses: Record<string, number> = {},

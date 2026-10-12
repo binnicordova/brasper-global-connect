@@ -20,6 +20,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => ({
 }));
 const mock = vi.hoisted(() => ({
   rows: [] as Record<string, unknown>[],
+  accounts: [] as Record<string, unknown>[],
   rpc: vi.fn(),
   upload: vi.fn(),
   guest: false,
@@ -84,9 +85,11 @@ vi.mock("@/lib/supabase", () => ({
               ]
             : table === "transfers"
               ? mock.rows
-              : table === "staff_members" && mock.staff
-                ? [{ user_id: user }]
-                : [],
+              : table === "saved_recipients"
+                ? mock.accounts
+                : table === "staff_members" && mock.staff
+                  ? [{ user_id: user }]
+                  : [],
       });
       const q = {
         select: () => q,
@@ -106,6 +109,7 @@ const Portal = Route.options.component as ComponentType;
 beforeEach(() => {
   vi.clearAllMocks();
   mock.rows = [];
+  mock.accounts = [];
   mock.guest = false;
   mock.signedIn = true;
   mock.staff = false;
@@ -129,6 +133,7 @@ beforeEach(() => {
         {
           ...fields,
           id: operation,
+          user_id: user,
           customer_email: "client@example.test",
           from_currency: "PEN",
           to_currency: "BRL",
@@ -525,5 +530,99 @@ describe("Customer transfer submission", () => {
     );
     expect(screen.queryByLabelText("Elige una contraseña")).not.toBeInTheDocument();
     expect(mock.startGuest).not.toHaveBeenCalled();
+  });
+});
+
+describe("Private saved recipient shortcuts", () => {
+  const brAccount = {
+    id: "00000000-0000-4000-8000-000000000099",
+    user_id: user,
+    label: "Familia Brasil",
+    currency: "BRL",
+    country: "BR",
+    recipient_name: "Maria Santos",
+    recipient_document: "12345678901",
+    recipient_bank: "Banco Brasil",
+    recipient_account: "maria@example.test",
+    recipient_account_type: "pix",
+    recipient_account_holder: "Maria Santos",
+    recipient_account_holder_document: "12345678901",
+    recipient_bank_branch: "",
+    recipient_phone: "+5511999999999",
+    recipient_relationship: "Familia",
+  };
+  it("fills the account, filters by beneficiary currency, and still submits reviewed values", async () => {
+    mock.accounts = [
+      brAccount,
+      {
+        ...brAccount,
+        id: "pe",
+        label: "Soles privados",
+        currency: "PEN",
+        country: "PE",
+        recipient_account_type: "cci",
+      },
+    ];
+    await fillAndAttach(false, false);
+    fireEvent.click(screen.getByRole("button", { name: /Volver/ }));
+    const select = await screen.findByLabelText("Usar una cuenta guardada");
+    expect(screen.queryByRole("option", { name: /Soles privados/ })).not.toBeInTheDocument();
+    fireEvent.change(select, { target: { value: brAccount.id } });
+    expect(screen.getByLabelText("Nombre completo del destinatario")).toHaveValue("Maria Santos");
+    expect(screen.getByLabelText("Clave PIX del titular")).toHaveValue("maria@example.test");
+    expect(screen.getByLabelText("Teléfono del destinatario (opcional)")).toHaveValue(
+      "+5511999999999",
+    );
+    fireEvent.change(screen.getByLabelText("Clave PIX del titular"), {
+      target: { value: "reviewed@example.test" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Guardar datos y continuar al pago/ }));
+    await screen.findByText(/Datos registrados. Paso siguiente/);
+    expect(mock.rpc).toHaveBeenCalledWith(
+      "create_validated_transfer",
+      expect.objectContaining({
+        p_recipient_name: "Maria Santos",
+        p_recipient_account: "reviewed@example.test",
+        p_recipient_account_type: "pix",
+      }),
+    );
+    expect(mock.rpc.mock.calls.filter(([name]) => name === "save_transfer_recipient")).toHaveLength(
+      0,
+    );
+  });
+  it("saves only with consent and keeps a created operation when the shortcut cannot be saved", async () => {
+    await fillAndAttach(false, false);
+    fireEvent.click(screen.getByRole("button", { name: /Volver/ }));
+    fireEvent.click(await screen.findByLabelText("Guardar esta cuenta para futuros envíos"));
+    fireEvent.change(screen.getByLabelText("Nombre para identificar la cuenta"), {
+      target: { value: "Mi cuenta Brasil" },
+    });
+    const original = mock.rpc.getMockImplementation()!;
+    mock.rpc.mockImplementation(async (name, params) =>
+      name === "save_transfer_recipient"
+        ? { error: { message: "Database unavailable" } }
+        : original(name, params),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Guardar datos y continuar al pago/ }));
+    await screen.findByText(/La operación se registró, pero no se pudo guardar la cuenta/);
+    expect(mock.rpc).toHaveBeenCalledWith("save_transfer_recipient", {
+      p_transfer_id: operation,
+      p_label: "Mi cuenta Brasil",
+    });
+    expect(
+      mock.rpc.mock.calls.filter(([name]) => name === "create_validated_transfer"),
+    ).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Guardar cuenta de destino" })).toBeInTheDocument();
+  });
+  it("does not offer private account saving to anonymous users", async () => {
+    mock.guest = true;
+    await fillAndAttach(false, false);
+    fireEvent.click(screen.getByRole("button", { name: /Volver/ }));
+    expect(screen.queryByLabelText("Usar una cuenta guardada")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Guardar esta cuenta para futuros envíos"),
+    ).not.toBeInTheDocument();
   });
 });

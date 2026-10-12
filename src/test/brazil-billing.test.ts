@@ -17,7 +17,9 @@ beforeAll(async () => {
   const migrations = readdirSync("supabase/migrations")
     .filter((n) => n.endsWith(".sql"))
     .sort();
-  for (const n of migrations.filter((n) => !n.includes("0011") && !n.includes("0012")))
+  for (const n of migrations.filter(
+    (n) => !n.includes("0011") && !n.includes("0012") && !n.includes("0013"),
+  ))
     await db.exec(readFileSync("supabase/migrations/" + n, "utf8"));
   await db.exec(`insert into auth.users values('${owner}','client@example.test',now(),false);
  insert into fx_rates(id,from_currency,to_currency,rate,commission_percent,valid_until) values('${rateBR}','PEN','BRL',1.425,5,now()+interval '1 day'),('${ratePE}','BRL','PEN',0.69,3,now()+interval '1 day');
@@ -36,6 +38,7 @@ beforeAll(async () => {
     readFileSync("supabase/migrations/202610120011_brazil_billing_worklists.sql", "utf8"),
   );
   await db.exec(readFileSync("supabase/migrations/202610120012_mailersend_delivery.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/202610120013_saved_recipients.sql", "utf8"));
 }, 20000);
 afterAll(async () => {
   await db.close();
@@ -180,4 +183,42 @@ it("retries confirmed failures with backoff, but reconciles stale requests alrea
     (await db.query(`select email_status,email_attempts from invoices where id='${job.id}'`))
       .rows[0],
   ).toEqual({ email_status: "reconciliation_required", email_attempts: 2 });
+});
+
+it("keeps saved recipients private, rejects guests and deduplicates only the owner's account", async () => {
+  const id = await create("nfse", "BR");
+  const other = "00000000-0000-4000-8000-000000000099";
+  await db.exec(
+    `insert into auth.users values('${other}','other@example.test',now(),false);set role authenticated;`,
+  );
+  const saved = (await db.query(`select save_transfer_recipient('${id}','Familia Brasil') id`))
+    .rows[0] as { id: string };
+  expect(
+    (await db.query("select currency,country,recipient_name from saved_recipients")).rows,
+  ).toEqual([{ currency: "BRL", country: "BR", recipient_name: "Dest" }]);
+  expect((await db.query(`select save_transfer_recipient('${id}','Familia') id`)).rows[0]).toEqual(
+    saved,
+  );
+  await db.exec(`select set_config('test.uid','${other}',false)`);
+  expect((await db.query("select * from saved_recipients")).rows).toHaveLength(0);
+  await expect(db.query(`select save_transfer_recipient('${id}','Ajena')`)).rejects.toThrow(
+    /disponible/,
+  );
+  expect((await db.query(`select delete_saved_recipient('${saved.id}') ok`)).rows[0]).toEqual({
+    ok: false,
+  });
+  await db.exec(
+    `reset role;update auth.users set is_anonymous=true where id='${other}';set role authenticated;`,
+  );
+  await expect(db.query(`select save_transfer_recipient('${id}','Invitado')`)).rejects.toThrow(
+    /registrada/,
+  );
+  await db.exec(`select set_config('test.uid','${owner}',false)`);
+  await expect(db.query(`select save_transfer_recipient('${id}','X')`)).rejects.toThrow(/nombre/);
+  expect((await db.query(`select delete_saved_recipient('${saved.id}') ok`)).rows[0]).toEqual({
+    ok: true,
+  });
+  expect((await db.query("select * from saved_recipients")).rows).toHaveLength(0);
+  expect((await db.query(`select id from transfers where id='${id}'`)).rows).toHaveLength(1);
+  await db.exec("reset role");
 });

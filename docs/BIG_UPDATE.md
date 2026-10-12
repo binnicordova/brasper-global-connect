@@ -2,11 +2,13 @@
 
 ## 1. BD → SQL Editor
 
-- **Sin migraciones anteriores aplicadas:** ejecutar `supabase/release/database-update.sql` (incluye las doce).
+- **Sin migraciones anteriores aplicadas:** ejecutar `supabase/release/database-update.sql` (incluye las trece).
 - **Con migraciones aplicadas:** ejecutar únicamente los archivos pendientes de `supabase/migrations/`, en orden. No repetir el paquete completo.
 - **Catálogo demo opcional:** después ejecutar `supabase/demo/seed.sql`. No es necesario para `?demo=1`, que funciona localmente.
 
 La migración `202610120009_pen_brl_only.sql` deja solo PEN ↔ BRL para nuevos cambios y conserva el historial.
+
+La migración `202610120013_saved_recipients.sql` habilita cuentas de destino privadas para usuarios registrados: seleccionar por moneda, guardar opcionalmente al registrar una operación o desde el historial y quitar de guardadas. No requiere otra Edge Function. Los invitados siguen completando sus datos sin guardar cuentas.
 
 ## 2. Edge Functions → process-invoices
 
@@ -47,7 +49,7 @@ La migración `202610120009_pen_brl_only.sql` deja solo PEN ↔ BRL para nuevos 
 
 ## Prompt corto para Lovable
 
-> Aplica únicamente docs/BIG_UPDATE.md: ejecuta las migraciones SQL pendientes (incluida 012) y despliega process-invoices/index.ts, process-invoices/deno.json y _shared/demo-receipt.ts. Conserva BILLING_ENVIRONMENT=beta y los secretos existentes; asegúrate de que MAILERSEND_API_KEY esté disponible en la Edge Function. Usa el remitente y domain ID de prueba ya configurados, salvo valores explícitos de BILLING_FROM_EMAIL/MAILERSEND_DOMAIN_ID. Comprueba permisos de envío y activity_read de MailerSend sin imprimir la clave. Activa el gateway con las variables privadas indicadas. El correo y los estados/reintentos ya están implementados: no crees otro proveedor, puente, función ni rediseño. Comprueba migraciones, Auth anónimo y rechazo 401. No emitas ni envíes emails durante esta instalación. Configura cron autenticado cada minuto solo cuando gateway y Storage estén listos. Reporta estado de BD, función, gateway, MailerSend y bloqueo concreto; solicita únicamente datos faltantes.
+> Aplica únicamente docs/BIG_UPDATE.md: ejecuta las migraciones SQL pendientes (incluidas 012 y 013) y despliega process-invoices/index.ts, process-invoices/deno.json y _shared/demo-receipt.ts. Conserva BILLING_ENVIRONMENT=beta y los secretos existentes; asegúrate de que MAILERSEND_API_KEY esté disponible en la Edge Function. Usa el remitente y domain ID de prueba ya configurados, salvo valores explícitos de BILLING_FROM_EMAIL/MAILERSEND_DOMAIN_ID. Comprueba permisos de envío y activity_read de MailerSend sin imprimir la clave. Activa el gateway con las variables privadas indicadas. El correo y los estados/reintentos ya están implementados: no crees otro proveedor, puente, función ni rediseño. Comprueba migraciones, Auth anónimo y rechazo 401. No emitas ni envíes emails durante esta instalación. Configura cron autenticado cada minuto solo cuando gateway y Storage estén listos. Reporta estado de BD, función, gateway, MailerSend y bloqueo concreto; solicita únicamente datos faltantes.
 
 ## De dónde salen los secretos
 

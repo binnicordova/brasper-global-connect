@@ -223,6 +223,7 @@ export type Rate = {
   valid_until: string;
 };
 export type Transfer = {
+  user_id?: string;
   demo_meta?: { code: string; advisor: string; issuer: string };
   id: string;
   amount: number;

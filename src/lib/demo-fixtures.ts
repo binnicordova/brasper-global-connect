@@ -5,7 +5,13 @@ export const CLIENT = "00000000-0000-4000-8000-000000000902";
 export const RATE = "00000000-0000-4000-8000-000000000903";
 type Event = { transfer_id: string; action: string; note: string; created_at: string };
 type DemoTransfer = Transfer & { user_id: string };
-export type DemoState = { transfers: DemoTransfer[]; events: Event[]; nextInvoice?: number };
+import type { SavedRecipient } from "./saved-recipients";
+export type DemoState = {
+  savedRecipients?: SavedRecipient[];
+  transfers: DemoTransfer[];
+  events: Event[];
+  nextInvoice?: number;
+};
 
 export function createDemoFixtures(anchor = Date.now()): DemoState {
   const names = [
