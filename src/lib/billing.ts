@@ -27,8 +27,8 @@ export function billingState(invoice: Invoice | null) {
   if (s === "demo_delivered")
     return {
       tone: "demo",
-      label: "Demo · PDF generado",
-      delivery: "Envío demo registrado",
+      label: "Comprobante preparado",
+      delivery: "Entrega preparada",
       hint: "No se envió un correo real",
     };
   if (
@@ -73,9 +73,9 @@ export function billingState(invoice: Invoice | null) {
       tone: s === "demo_generated" ? "demo" : "generated",
       label:
         s === "beta_accepted"
-          ? "SUNAT beta · aceptado"
+          ? "Aceptado en SUNAT beta"
           : s === "demo_generated"
-            ? "Demo · PDF generado"
+            ? "Comprobante preparado"
             : "Comprobante generado",
       delivery: "Correo pendiente",
       hint:

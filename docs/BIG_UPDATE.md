@@ -65,3 +65,11 @@ Comprobación del 12/10/2026: factura con datos de operación demo `F903-9184117
 Aplicar `202610120011_brazil_billing_worklists.sql`: moneda **recibida por el destinatario** PEN → boleta/factura Perú; BRL → NFS-e Brasil. Conserva comprobantes históricos ya emitidos. Incluye índices para las bandejas. En beta/demo Brasil genera PDF demo en BRL; producción Brasil queda bloqueada hasta configurar el proveedor y emisor. No se envía una NFS-e a SUNAT.
 
 La web incorpora Pagos por revisar, Envíos pendientes, Todas las operaciones y Facturación. Generado y correo enviado son estados distintos. No activar correo ni cron hasta terminar la configuración pendiente.
+
+## Presentación pulida y RUC de beta
+
+La interfaz usa textos operativos y herramientas de presentación plegadas; los estados preparados no se confunden con correos enviados. Catálogo sintético actualizado en `supabase/demo/seed.sql`. Archivos de prueba conservan identificación discreta de su entorno.
+
+El gateway beta usa el RUC autorizado `10042049579` y las credenciales públicas de pruebas MODDATOS; esto no utiliza la clave SOL de producción. La denominación del emisor es de pruebas, pendiente de su identidad fiscal aprobada. Re-publicar la web para actualizar este motor; los secretos del servidor indicados arriba siguen siendo necesarios. No modificar comprobantes ya preparados o enviados bajo el RUC anterior: recuperarlos con su identificación original.
+
+Prueba del 12/10/2026: factura `F903-91844545`, por comisión de 31,05 PEN, aceptada directamente en SUNAT beta con código 0. PDF/XML/CDR guardados localmente. El gateway desplegado, cron y correo siguen pendientes del big update; esta comprobación no activa esos servicios. [Pautas oficiales SUNAT beta](https://orientacion.sunat.gob.pe/12-pautas-servicio-beta).

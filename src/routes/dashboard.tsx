@@ -506,7 +506,7 @@ function Dashboard() {
                     <span className="billing-tone-success">● Emitido y enviado</span>
                     <span className="billing-tone-warning">● Reintento</span>
                     <span className="billing-tone-danger">● Revisar</span>
-                    <span className="billing-tone-demo">● Demo</span>
+                    <span className="billing-tone-demo">● Documento preparado</span>
                   </div>
                 )}
                 <form className="ops-filters" onSubmit={filter}>
@@ -926,8 +926,7 @@ function Dashboard() {
                           {openedInvoice?.number && <strong>{openedInvoice.number}</strong>}
                           {openedInvoice?.demo_email && (
                             <p>
-                              Correo demo registrado para{" "}
-                              <strong>{openedInvoice.demo_email}</strong>
+                              Entrega preparada para <strong>{openedInvoice.demo_email}</strong>
                               {openedInvoice.demo_delivered_at &&
                                 ` · ${new Date(openedInvoice.demo_delivered_at).toLocaleString("es-PE")}`}
                               . No se envía a un servicio de correo real.
@@ -935,7 +934,7 @@ function Dashboard() {
                           )}
                           {openedInvoice?.environment === "beta" && <p>Entorno de prueba</p>}
                           {openedInvoice?.status === "demo_generated" && (
-                            <p>PDF demo disponible. Envío por correo pendiente de integración.</p>
+                            <p>PDF disponible. Envío por correo pendiente de integración.</p>
                           )}
                           {openedInvoice?.error && (
                             <p className="ops-alert">{openedInvoice.error}</p>

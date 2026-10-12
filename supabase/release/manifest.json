@@ -64,7 +64,7 @@
     },
     {
       "path": "supabase/functions/_shared/demo-receipt.ts",
-      "sha256": "9eda8ee56c9b461e00768e7021f6d72cc166b926ac4c285fe3402e2072d08b8d"
+      "sha256": "c6879f81617b7c3a5cad618d2a72bf1c7abaeec41e4f784725333eb10ab0e448"
     },
     {
       "path": "supabase/functions/process-invoices/deno.json",
@@ -84,11 +84,11 @@
     },
     {
       "path": "supabase/demo/catalog.json",
-      "sha256": "a35e45096467e35db44477a5d5bab43c0747df9cc11bb0d000ac790139e1603e"
+      "sha256": "b2abbc8d669e31d57e933fecd671bd58a7e47ac2355388a24e40def4c480d5fa"
     },
     {
       "path": "supabase/demo/seed.sql",
-      "sha256": "f0fd6268a7edec9eacc2bd059432a97a915d5639d1c9cdba85e9673c7ec808ce"
+      "sha256": "d40c05e51eed5ee9b84aa854ce24da3ec37eeef70cf6d43ff732c5b672b9912c"
     }
   ],
   "demoSeed": "supabase/demo/seed.sql",

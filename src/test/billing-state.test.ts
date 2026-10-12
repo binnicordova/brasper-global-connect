@@ -21,7 +21,7 @@ it("never equates a generated PDF or demo delivery with a real sent invoice", ()
   });
   expect(billingState(invoice("demo_delivered"))).toMatchObject({
     tone: "demo",
-    delivery: "Envío demo registrado",
+    delivery: "Entrega preparada",
   });
   expect(billingState(invoice("beta_accepted"))).toMatchObject({ delivery: "Correo pendiente" });
 });

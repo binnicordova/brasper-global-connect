@@ -27,9 +27,9 @@ export class BrasperBetaEngine {
     )
       throw new Error("Numeración o fecha beta no válida");
     const emisor: EmisorConfig = {
-      ruc: "20608550454",
-      razonSocial: "BRASPER 21 SAC - PRUEBA BETA",
-      direccionFiscal: "DOMICILIO DEMO PARA PRUEBAS BETA",
+      ruc: "10042049579",
+      razonSocial: "EMISOR DE PRUEBAS - INTEGRACION BRASPER",
+      direccionFiscal: "DOMICILIO DE PRUEBAS BETA",
       ubigeo: "150101",
       codigoLocal: "0000",
       certificadoBase64: TEST_P12_BASE64,
@@ -52,7 +52,7 @@ export class BrasperBetaEngine {
       (operation && !["PEN", "BRL"].includes(operation.from_currency))
     )
       throw new Error("Comisión beta inválida");
-    const name = operation?.billing_name || "CLIENTE DEMO BETA";
+    const name = operation?.billing_name || "CLIENTE DE PRUEBAS";
     const document = operation?.billing_document || "20100070970";
     if (!/^\d{11}$/.test(document) || (operation && operation.billing_type !== "factura"))
       throw new Error("Factura beta requiere razón social y RUC");
@@ -67,7 +67,7 @@ export class BrasperBetaEngine {
       receptor: { tipoDoc: "6", numDoc: document, razonSocial: name },
       lineas: [
         {
-          descripcion: "PRUEBA SIN VALIDEZ TRIBUTARIA: servicio de transferencia demo",
+          descripcion: "Servicio de transferencia internacional",
           cantidad: 1,
           valorUnitario: base,
           precioUnitario: gross,
@@ -101,8 +101,8 @@ export class BrasperBetaEngine {
       commission: 118,
       recipient_amount: 0,
       rate: 1,
-      recipient_name: "Destinatario demo",
-      recipient_bank: "Banco demo",
+      recipient_name: "Destinatario",
+      recipient_bank: "Banco de destino",
       created_at: `${date}T12:00:00Z`,
     };
     const pdf = await buildDemoReceipt(

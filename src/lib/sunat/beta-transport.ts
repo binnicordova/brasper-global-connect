@@ -132,7 +132,7 @@ export class BetaTransport {
       .ele("wsse:Security")
       .ele("wsse:UsernameToken")
       .ele("wsse:Username")
-      .txt("20608550454MODDATOS")
+      .txt("10042049579MODDATOS")
       .up()
       .ele("wsse:Password")
       .txt("MODDATOS")

@@ -15,7 +15,7 @@ const operation = process.argv.includes("--operation-demo")
   ? {
       ...createDemoFixtures().transfers[4]!,
       billing_document: "20100070970",
-      billing_name: "EMPRESA DEMO BETA",
+      billing_name: "COMERCIAL HORIZONTE - PRUEBAS",
     }
   : undefined;
 const prepared = await engine.prepare(number, date, "F903", operation);

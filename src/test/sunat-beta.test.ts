@@ -10,14 +10,14 @@ import { TEST_CERTIFICATE_PEM } from "../lib/sunat/public-test-certificate";
 describe("Brasper SUNAT beta boundaries", () => {
   it("builds a signed fictional Brasper invoice and test PDF", async () => {
     const prepared = await new BrasperBetaEngine().prepare(1, "2026-10-10");
-    expect(prepared.fileName).toBe("20608550454-01-F902-1");
-    expect(prepared.xml).toContain("CLIENTE DEMO BETA");
+    expect(prepared.fileName).toBe("10042049579-01-F902-1");
+    expect(prepared.xml).toContain("CLIENTE DE PRUEBAS");
     expect(prepared.xml).toContain("SIN VALIDEZ TRIBUTARIA");
-    expect(prepared.xml).not.toContain("10042049579");
+    expect(prepared.xml).toContain("10042049579");
     expect(new XmlSigner().verify(prepared.xml, TEST_CERTIFICATE_PEM)).toBe(true);
     expect(
       new XmlSigner().verify(
-        prepared.xml.replace("CLIENTE DEMO BETA", "ALTERADO"),
+        prepared.xml.replace("CLIENTE DE PRUEBAS", "ALTERADO"),
         TEST_CERTIFICATE_PEM,
       ),
     ).toBe(false);
@@ -48,7 +48,7 @@ describe("Brasper SUNAT beta boundaries", () => {
     expect(result.estado).toBe("incierto");
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(fetcher.mock.calls[0]?.[0]).toBe(BETA_ENDPOINT);
-    expect(String(fetcher.mock.calls[0]?.[1]?.body)).toContain("20608550454MODDATOS");
+    expect(String(fetcher.mock.calls[0]?.[1]?.body)).toContain("10042049579MODDATOS");
   });
   it("rejects CDRs for another invoice and XML entity expansion", async () => {
     const zip = new JSZip();

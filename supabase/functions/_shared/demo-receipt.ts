@@ -40,15 +40,15 @@ export async function buildDemoReceipt(
   fiscal?: ReceiptPresentation,
 ) {
   const brazil = t.billing_type === "nfse";
-  const serviceCurrency = fiscal?.serviceCurrency ?? (brazil ? "BRL" : t.from_currency);
+  const serviceCurrency = fiscal?.serviceCurrency ?? (brazil ? "BRL" : "PEN");
   const serviceTotal =
     fiscal?.serviceTotal ??
-    (brazil && t.from_currency !== "BRL"
+    (t.from_currency !== serviceCurrency
       ? Math.round(Number(t.commission) * Number(t.rate) * 100) / 100
       : t.commission);
   const pdf = await PDFDocument.create();
   pdf.setTitle(
-    `${brazil ? "NFS-e" : t.billing_type === "boleta" ? "Boleta" : "Factura"} demo ${number}`,
+    `${brazil ? "NFS-e" : t.billing_type === "boleta" ? "Boleta" : "Factura"} - pruebas ${number}`,
   );
   pdf.setAuthor("Brasper");
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
@@ -117,10 +117,10 @@ export async function buildDemoReceipt(
     true,
   );
   text(number, 345, 768, 13, rgb(1, 1, 1));
-  text(fiscal?.beta ? "SUNAT BETA" : "DEMO", 345, 744, 9, rgb(0.55, 0.87, 0.78), true);
+  text(fiscal?.beta ? "SUNAT BETA" : "VISTA PREVIA", 345, 744, 9, rgb(0.55, 0.87, 0.78), true);
   text("EMISOR", 40, 695, 8, muted, true);
   text("FECHA DE EMISIÓN", 345, 695, 8, muted, true);
-  wrap(t.demo_meta?.issuer || "Brasper - entorno demo", 40, 675, 285, 11, 2);
+  wrap(t.demo_meta?.issuer || "Brasper", 40, 675, 285, 11, 2);
   text(date, 345, 675, 11);
   page.drawRectangle({ x: 40, y: 510, width: 515, height: 128, color: pale });
   text("DATOS DEL CLIENTE", 55, 618, 9, teal, true);
@@ -192,8 +192,8 @@ export async function buildDemoReceipt(
     fiscal?.beta
       ? "Documento emitido en SUNAT beta. No tiene validez tributaria."
       : brazil
-        ? "Documento demo. Não representa uma NFS-e autorizada."
-        : "Documento demo. No constituye un comprobante emitido ante SUNAT.",
+        ? "Documento de testes. Não representa uma NFS-e autorizada."
+        : "Vista previa. Documento de pruebas, sin emisión ante SUNAT.",
     40,
     71,
     8,
@@ -204,7 +204,7 @@ export async function buildDemoReceipt(
       ? "Impuesto del 18% usado para el ensayo beta; no determina el tratamiento productivo."
       : brazil
         ? "Impostos não calculados nesta demonstração."
-        : "Detalle de impuestos no determinado en esta demostración.",
+        : "Detalle de impuestos pendiente de configuración.",
     40,
     56,
     8,

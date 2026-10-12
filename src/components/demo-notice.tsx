@@ -16,12 +16,10 @@ export function DemoNotice() {
   );
   if (!visible) return null;
   return (
-    <div className="demo-notice">
-      <strong>Modo demo</strong>
-      <span>
-        Prueba el registro, la revisión y la facturación. Sin movimientos ni envíos reales.
-      </span>
-      <nav aria-label="Acciones de demostración">
+    <details className="demo-notice presentation-tools">
+      <summary>Herramientas de presentación</summary>
+      <span>Sesión de presentación con datos de prueba.</span>
+      <nav aria-label="Herramientas de presentación">
         <Link to="/transferencias">Registrar cambio</Link>
         <Link to="/dashboard">Ver dashboard</Link>
         <a href="/demo/comprobante-ejemplo.pdf" download>
@@ -30,15 +28,15 @@ export function DemoNotice() {
         <button
           type="button"
           onClick={() => {
-            if (window.confirm("¿Reiniciar los datos de esta demo?")) resetDemo();
+            if (window.confirm("¿Reiniciar los datos de la presentación?")) resetDemo();
           }}
         >
-          Reiniciar demo
+          Reiniciar recorrido
         </button>
         <button type="button" onClick={exitDemo}>
-          Salir de demo
+          Salir de presentación
         </button>
       </nav>
-    </div>
+    </details>
   );
 }

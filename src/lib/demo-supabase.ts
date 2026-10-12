@@ -33,7 +33,27 @@ function read(): State {
   const saved = localStorage.getItem(STORE);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const state: State = JSON.parse(saved);
+      const fixtures = createDemoFixtures();
+      // Refresh only cosmetic fields of known seed records; preserve actions and files.
+      for (const t of state.transfers) {
+        const fixture = fixtures.transfers.find((f) => f.id === t.id);
+        if (!fixture || !t.customer_name.startsWith("Cliente Demo ")) continue;
+        for (const key of [
+          "customer_name",
+          "billing_name",
+          "recipient_name",
+          "recipient_account_holder",
+          "recipient_bank",
+          "origin_bank",
+          "funds_detail",
+          "demo_meta",
+          "deposit_instructions",
+        ] as const) {
+          Object.assign(t, { [key]: fixture[key] });
+        }
+      }
+      return state;
     } catch {
       /* Reset damaged demo data only. */
     }
@@ -76,7 +96,7 @@ async function demoPdf(t: Transfer, number?: string, issuedAt?: string) {
   const invoice = t.invoices?.[0];
   const bytes = await buildDemoReceipt(
     t,
-    number || invoice?.number || `DEMO-${t.id.slice(0, 8)}`,
+    number || invoice?.number || `VP-${t.id.slice(0, 8)}`,
     issuedAt || invoice?.demo_delivered_at || t.payout_at || t.created_at,
   );
   return new Blob([bytes], { type: "application/pdf" });
@@ -84,7 +104,7 @@ async function demoPdf(t: Transfer, number?: string, issuedAt?: string) {
 const placeholder = () =>
   new Blob(
     [
-      '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="360"><rect width="600" height="360" fill="#eef3fb"/><text x="300" y="170" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#284677">Comprobante demo</text><text x="300" y="210" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#61708a">No representa una transferencia bancaria</text></svg>',
+      '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="360"><rect width="600" height="360" fill="#eef3fb"/><text x="300" y="170" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#284677">Constancia de ingreso</text><text x="300" y="210" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#61708a">Archivo de ejemplo - entorno de pruebas</text></svg>',
     ],
     { type: "image/svg+xml" },
   );
@@ -312,9 +332,9 @@ export function createDemoClient(): SupabaseClient {
             id: crypto.randomUUID(),
             user_id: uid(),
             demo_meta: {
-              code: "DEMO-NUEVA",
-              advisor: "Equipo Demo",
-              issuer: country === "BR" ? "Emissor Demo Ltda." : "Emisor Demo S.A.C.",
+              code: "BRS-NUEVA",
+              advisor: "Equipo de operaciones",
+              issuer: country === "BR" ? "Brasper · Brasil" : "Brasper · Perú",
             },
             billing_country: country,
             from_currency: rate.from_currency,
@@ -333,14 +353,14 @@ export function createDemoClient(): SupabaseClient {
             invoices: [],
             deposit_instructions: [
               {
-                bank: "Banco Demo",
-                holder: "Brasper Demo",
-                account_number: "DEMO-NO-TRANSFERIR",
-                instructions: "Cuenta demo. No realizar depósitos.",
+                bank: "Cuenta de ingreso",
+                holder: "Brasper",
+                account_number: "CUENTA-DE-PRUEBA",
+                instructions: "Cuenta de prueba para presentación. No realizar depósitos.",
               },
             ],
           } as unknown as DemoTransfer;
-          t.demo_meta!.code = `DEMO-${t.id.slice(0, 8).toUpperCase()}`;
+          t.demo_meta!.code = `BRS-${t.id.slice(0, 8).toUpperCase()}`;
           state.transfers.unshift(t);
           event(state, t, "Solicitud registrada");
           write(state);
@@ -401,7 +421,7 @@ export function createDemoClient(): SupabaseClient {
                   error: null,
                 },
               ];
-              const number = `DEMO-${String(state.nextInvoice ?? 2).padStart(6, "0")}`;
+              const number = `VP-${String(state.nextInvoice ?? 2).padStart(6, "0")}`;
               state.nextInvoice = (state.nextInvoice ?? 2) + 1;
               write(state);
               const path = `demo/${t.id}/comprobante.pdf`;
@@ -426,11 +446,11 @@ export function createDemoClient(): SupabaseClient {
                 },
               ];
               latest.status = "completed";
-              event(fresh, latest, "Comprobante demo generado");
+              event(fresh, latest, "Comprobante preparado");
               event(
                 fresh,
                 latest,
-                "Correo demo registrado",
+                "Entrega preparada",
                 `Destinatario: ${t.billing_email || t.customer_email}`,
               );
               latest.updated_at = now();

@@ -9,12 +9,20 @@ export type DemoState = { transfers: DemoTransfer[]; events: Event[]; nextInvoic
 
 export function createDemoFixtures(anchor = Date.now()): DemoState {
   const names = [
-    "Cliente Demo A",
-    "Cliente Demo B",
-    "Cliente Demo C",
-    "Cliente Demo D",
-    "Cliente Demo E",
-    "Cliente Demo F",
+    "Camila Torres Mendoza",
+    "Lucas Almeida Costa",
+    "Valeria Rojas Salazar",
+    "Rafael Oliveira Santos",
+    "Mariana Vega Castillo",
+    "Gabriel Ferreira Lima",
+  ];
+  const recipients = [
+    "Beatriz Almeida Costa",
+    "Diego Torres Mendoza",
+    "Andrés Rojas Salazar",
+    "Fernanda Oliveira Santos",
+    "Lucía Vega Castillo",
+    "Thiago Ferreira Lima",
   ];
   const transfers = names.map((name, i): DemoTransfer => {
     const amount = [300, 500, 200, 850, 1500, 280][i]!;
@@ -35,9 +43,9 @@ export function createDemoFixtures(anchor = Date.now()): DemoState {
       id,
       user_id: CLIENT,
       demo_meta: {
-        code: `DEMO-${String(i + 1).padStart(6, "0")}`,
-        advisor: `Asesor Demo ${(i % 2) + 1}`,
-        issuer: brazil ? "Emissor Demo Ltda." : "Emisor Demo S.A.C.",
+        code: `BRS-${String(i + 1).padStart(6, "0")}`,
+        advisor: i % 2 ? "Sofía Navarro" : "Diego Martins",
+        issuer: brazil ? "Brasper · Brasil" : "Brasper · Perú",
       },
       amount,
       commission: q.commission,
@@ -54,38 +62,41 @@ export function createDemoFixtures(anchor = Date.now()): DemoState {
       billing_type: brazil ? "nfse" : i === 4 ? "factura" : "boleta",
       billing_country: brazil ? "BR" : "PE",
       billing_email: `cliente${i + 1}@example.test`,
-      billing_name: i === 4 ? "Empresa Demo S.A.C." : name,
+      billing_name: i === 4 ? "Comercial Horizonte S.A.C." : name,
       billing_document: i === 4 ? "20999999999" : `1234500${i}`,
       billing_document_type: brazil ? "foreign" : i === 4 ? "6" : "1",
-      recipient_name: `Destinatario Demo ${i + 1}`,
+      recipient_name: recipients[i]!,
       recipient_document: `8765400${i}`,
-      recipient_bank: brazil ? "Banco Demo Brasil" : "Banco Demo Perú",
+      recipient_bank: brazil ? "Banco de destino · Brasil" : "Banco de destino · Perú",
       recipient_account: `destino${i + 1}@example.test`,
       recipient_account_type: brazil ? "pix" : "bank_account",
-      recipient_account_holder: `Destinatario Demo ${i + 1}`,
+      recipient_account_holder: recipients[i]!,
       recipient_account_holder_document: `1234567890${i}`,
       recipient_relationship: "Familia",
-      origin_bank: brazil ? "Banco Demo Perú" : "Banco Demo Brasil",
+      origin_bank: brazil ? "Banco de destino · Perú" : "Banco de destino · Brasil",
       source_country: brazil ? "PE" : "BR",
       destination_country: brazil ? "BR" : "PE",
       funds_origin: "savings",
-      funds_detail: "Ahorros declarados para la demostración",
+      funds_detail: "Ahorros personales",
       transfer_purpose: "Apoyo a mi familia",
       status,
       deposit_instructions: [
         {
-          bank: brazil ? "Banco Demo Perú" : "Banco Demo Brasil",
-          holder: "Brasper Demo",
-          account_number: "DEMO-NO-TRANSFERIR",
-          instructions: "Cuenta de demostración. No realizar depósitos.",
+          bank: brazil ? "Banco de destino · Perú" : "Banco de destino · Brasil",
+          holder: "Brasper",
+          account_number: "CUENTA-DE-PRUEBA",
+          instructions: "Cuenta de prueba para presentación. No realizar depósitos.",
         },
       ],
       proof_path: status === "awaiting_payment" ? null : `${CLIENT}/${id}/deposit/demo.jpg`,
       payout_path: ["completed", "paid_out"].includes(status)
         ? `${STAFF}/${id}/payout/demo.jpg`
         : null,
-      payout_reference: ["completed", "paid_out"].includes(status) ? `DEMO-ENVIO-${i + 1}` : null,
-      deposit_bank_reference: status === "awaiting_payment" ? null : `DEMO-INGRESO-${i + 1}`,
+      payout_reference: ["completed", "paid_out"].includes(status)
+        ? `ENV-${String(i + 1).padStart(8, "0")}`
+        : null,
+      deposit_bank_reference:
+        status === "awaiting_payment" ? null : `ING-${String(i + 1).padStart(8, "0")}`,
       created_at: created,
       updated_at: created,
       verified_at: ["verified", "completed", "paid_out"].includes(status) ? created : null,
@@ -98,7 +109,7 @@ export function createDemoFixtures(anchor = Date.now()): DemoState {
                 document_type: brazil ? "NFSE" : "01",
                 status: "demo_delivered",
                 environment: "demo",
-                number: "DEMO-000001",
+                number: "VP-000001",
                 pdf_path: `${CLIENT}/${id}/invoice/DEMO-000001.pdf`,
                 xml_path: null,
                 cdr_path: null,
@@ -118,7 +129,7 @@ export function createDemoFixtures(anchor = Date.now()): DemoState {
                   pdf_path: null,
                   xml_path: null,
                   cdr_path: null,
-                  error: "Caso demo: revisión de datos del receptor.",
+                  error: "Revisar los datos fiscales del receptor.",
                 },
               ]
             : [],
@@ -132,8 +143,8 @@ export function createDemoFixtures(anchor = Date.now()): DemoState {
     if (t.payout_at) stages.push({ action: "Envío registrado", minute: 10 });
     if (t.status === "completed")
       stages.push(
-        { action: "Comprobante demo generado", minute: 14 },
-        { action: "Correo demo registrado", minute: 15 },
+        { action: "Comprobante preparado", minute: 14 },
+        { action: "Entrega preparada", minute: 15 },
       );
     const at = (minute: number) =>
       new Date(Date.parse(t.created_at) + minute * 60000).toISOString();
@@ -145,7 +156,7 @@ export function createDemoFixtures(anchor = Date.now()): DemoState {
       events.push({
         transfer_id: t.id,
         action: stage.action,
-        note: "Escenario demo",
+        note: "Registro de presentación",
         created_at: at(stage.minute),
       });
   }

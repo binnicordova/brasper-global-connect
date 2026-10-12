@@ -39,7 +39,7 @@ export function OperationOverview({ transfer: t }: { transfer: Transfer }) {
           <dl>
             {t.demo_meta && (
               <div>
-                <dt>Asesor demo</dt>
+                <dt>Asesor</dt>
                 <dd>{t.demo_meta.advisor}</dd>
               </div>
             )}
@@ -103,7 +103,7 @@ export function OperationOverview({ transfer: t }: { transfer: Transfer }) {
             </div>
             {t.demo_meta && (
               <div>
-                <dt>Empresa emisora demo</dt>
+                <dt>Empresa emisora</dt>
                 <dd>{t.demo_meta.issuer}</dd>
               </div>
             )}

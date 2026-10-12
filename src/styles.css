@@ -2764,3 +2764,20 @@ footer {
     min-width: 0;
   }
 }
+.presentation-tools {
+  display: block;
+  padding: 8px 24px;
+  color: var(--color-muted-foreground);
+  font-size: 11px;
+  background: var(--color-background);
+}
+.presentation-tools summary {
+  cursor: pointer;
+  width: fit-content;
+}
+.presentation-tools[open] summary {
+  margin-bottom: 12px;
+}
+.presentation-tools nav {
+  margin-top: 10px;
+}

@@ -188,7 +188,7 @@ describe("Explicit synthetic demo", () => {
       JSON.parse(localStorage.getItem("brasper-synthetic-demo-v1")!)
         .events.filter((e: { transfer_id: string; action: string }) => e.transfer_id === id)
         .map((e: { action: string }) => e.action),
-    ).toContain("Correo demo registrado");
+    ).toContain("Entrega preparada");
     expect(t.invoices[0].pdf_path).toBeTruthy();
     expect(
       (await staff.storage.from("invoice-documents").createSignedUrl(t.invoices[0].pdf_path, 60))
