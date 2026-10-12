@@ -10,7 +10,8 @@
     "202610100007_billing_preferences.sql",
     "202610100008_exchange_validation.sql",
     "202610120009_pen_brl_only.sql",
-    "202610120010_demo_receipts.sql"
+    "202610120010_demo_receipts.sql",
+    "202610120011_brazil_billing_worklists.sql"
   ],
   "files": [
     {
@@ -54,12 +55,16 @@
       "sha256": "0c8ceb74f7afb1ecb9677effcf1fd1fb6687f7f3be5ae46d3fb304580f61b7e6"
     },
     {
+      "path": "supabase/migrations/202610120011_brazil_billing_worklists.sql",
+      "sha256": "d6eca34322cda7d7cfbdf1e93b3189fb15457b25bd125a35f96cc3f5da43ca4d"
+    },
+    {
       "path": "supabase/functions/process-invoices/index.ts",
-      "sha256": "bf5a9aca42fac12e7582b0b9d90e15d401444424b612a86149a117df5c22bce8"
+      "sha256": "0d4f6f81867c42050faa1d7847a3d0eaad6245ca41369f8c18490cf0aac24603"
     },
     {
       "path": "supabase/functions/_shared/demo-receipt.ts",
-      "sha256": "59353dc954ba0da0ad8934d00ed922c29948bd1d072f26ebd1ced7d5d81f3239"
+      "sha256": "9eda8ee56c9b461e00768e7021f6d72cc166b926ac4c285fe3402e2072d08b8d"
     },
     {
       "path": "supabase/functions/process-invoices/deno.json",
@@ -79,11 +84,11 @@
     },
     {
       "path": "supabase/demo/catalog.json",
-      "sha256": "debfb600d040db3937b0d7857c63566cf8958f0f134e442cd6b4ea7d6e7c09b4"
+      "sha256": "a35e45096467e35db44477a5d5bab43c0747df9cc11bb0d000ac790139e1603e"
     },
     {
       "path": "supabase/demo/seed.sql",
-      "sha256": "4bc8da79aed6a71c62a270d1368e20f20ff3f19d8e8a1a414ef94bf5a79c9b8d"
+      "sha256": "f0fd6268a7edec9eacc2bd059432a97a915d5639d1c9cdba85e9673c7ec808ce"
     }
   ],
   "demoSeed": "supabase/demo/seed.sql",

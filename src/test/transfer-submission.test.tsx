@@ -1,6 +1,23 @@
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import { beforeEach, afterEach, describe, it, expect, vi } from "vitest";
 import type { ComponentType } from "react";
+vi.mock("@tanstack/react-router", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  Link: ({
+    to,
+    hash,
+    children,
+    ...props
+  }: {
+    to: string;
+    hash?: string;
+    children: import("react").ReactNode;
+  }) => (
+    <a href={to + (hash ? "#" + hash : "")} {...props}>
+      {children}
+    </a>
+  ),
+}));
 const mock = vi.hoisted(() => ({
   rows: [] as Record<string, unknown>[],
   rpc: vi.fn(),
@@ -50,6 +67,16 @@ vi.mock("@/lib/supabase", () => ({
                   to_currency: "BRL",
                   rate: 1.475,
                   commission_percent: 5,
+                  min_amount: 10,
+                  max_amount: 10000,
+                  valid_until: "2099-01-01T00:00:00Z",
+                },
+                {
+                  id: "00000000-0000-4000-8000-000000000004",
+                  from_currency: "BRL",
+                  to_currency: "PEN",
+                  rate: 0.69,
+                  commission_percent: 3,
                   min_amount: 10,
                   max_amount: 10000,
                   valid_until: "2099-01-01T00:00:00Z",
@@ -204,6 +231,10 @@ describe("Staff review integration", () => {
 async function fillAndAttach(submit = true, attach = true, invoice = false) {
   const rendered = render(<Portal />);
   await screen.findByText("Cotiza tu envío");
+  if (invoice)
+    fireEvent.change(screen.getByLabelText("Ruta"), {
+      target: { value: "00000000-0000-4000-8000-000000000004" },
+    });
   fireEvent.click(screen.getByRole("button", { name: /^Continuar$/ }));
   if (mock.guest)
     fireEvent.change(screen.getByLabelText("Correo para recibir el comprobante"), {
@@ -219,7 +250,7 @@ async function fillAndAttach(submit = true, attach = true, invoice = false) {
     fireEvent.change(screen.getByLabelText(label!), { target: { value } });
   fireEvent.change(screen.getByLabelText("Origen de los fondos"), { target: { value: "salary" } });
   if (invoice) {
-    fireEvent.change(screen.getByLabelText("Tipo de comprobante"), {
+    fireEvent.change(screen.getByLabelText(/Tipo de comprobante/), {
       target: { value: "factura" },
     });
     fireEvent.change(screen.getByLabelText("RUC para la factura"), {
@@ -227,6 +258,14 @@ async function fillAndAttach(submit = true, attach = true, invoice = false) {
     });
     fireEvent.change(screen.getByLabelText("Razón social para la factura"), {
       target: { value: "Empresa de prueba" },
+    });
+  }
+  if (!invoice) {
+    fireEvent.change(screen.getByLabelText("Nombre o razón social del receptor fiscal"), {
+      target: { value: "Cliente de prueba" },
+    });
+    fireEvent.change(screen.getByLabelText("Número del documento fiscal"), {
+      target: { value: "12345678" },
     });
   }
   fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
@@ -239,10 +278,16 @@ async function fillAndAttach(submit = true, attach = true, invoice = false) {
     ["Relación con el destinatario y el titular de la cuenta", "Familia"],
   ])
     fireEvent.change(screen.getByLabelText(label!), { target: { value } });
-  fireEvent.change(screen.getByLabelText("Tipo de cuenta o clave"), { target: { value: "pix" } });
-  fireEvent.change(screen.getByLabelText("Clave PIX del titular"), {
-    target: { value: "recipient@example.test" },
-  });
+  if (invoice) {
+    fireEvent.change(screen.getByLabelText("Número de cuenta receptora"), {
+      target: { value: "123456789" },
+    });
+  } else {
+    fireEvent.change(screen.getByLabelText("Tipo de cuenta o clave"), { target: { value: "pix" } });
+    fireEvent.change(screen.getByLabelText("Clave PIX del titular"), {
+      target: { value: "recipient@example.test" },
+    });
+  }
   fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
   expect(screen.getByText("Resumen de tu solicitud")).toBeVisible();
   const file = new File(["photo"], "comprobante.jpg", { type: "image/jpeg" });
@@ -269,7 +314,7 @@ async function fillAndAttach(submit = true, attach = true, invoice = false) {
   return file;
 }
 describe("Customer transfer submission", () => {
-  it("includes mandatory billing email and boleta with the same receiving-account submission", async () => {
+  it("routes a BRL destination to NFSE with billing email and foreign document", async () => {
     await fillAndAttach(true, false);
     await screen.findByText(/Datos registrados. Paso siguiente/);
     expect(mock.rpc).toHaveBeenCalledWith(
@@ -282,11 +327,11 @@ describe("Customer transfer submission", () => {
         p_transfer_purpose: "Apoyo a mi familia",
         p_recipient_relationship: "Familia",
         p_declaration_accepted: true,
-        p_billing_type: "boleta",
+        p_billing_type: "nfse",
         p_billing_email: "client@example.test",
         p_billing_name: "Cliente de prueba",
         p_billing_document: "12345678",
-        p_billing_document_type: "1",
+        p_billing_document_type: "foreign",
       }),
     );
     expect(screen.getByText("Datos del comprobante")).toBeInTheDocument();
@@ -333,7 +378,7 @@ describe("Customer transfer submission", () => {
     expect(screen.getByText("Empresa de prueba · RUC 20100070970")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Volver" }));
     fireEvent.click(screen.getByRole("button", { name: "Volver" }));
-    expect(screen.getByLabelText("Tipo de comprobante")).toHaveValue("factura");
+    expect(screen.getByLabelText(/Tipo de comprobante/)).toHaveValue("factura");
     expect(screen.getByLabelText("RUC para la factura")).toHaveValue("20100070970");
     fireEvent.change(screen.getByLabelText("Correo para recibir el comprobante"), {
       target: { value: "" },

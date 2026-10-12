@@ -25,11 +25,11 @@ const params = {
   p_funds_detail: "",
   p_transfer_purpose: "Apoyo familiar",
   p_recipient_relationship: "Familia",
-  p_billing_type: "boleta",
+  p_billing_type: "nfse",
   p_billing_email: "nuevo@example.test",
   p_billing_name: "Cliente nuevo demo",
   p_billing_document: "12345678",
-  p_billing_document_type: "1",
+  p_billing_document_type: "foreign",
   p_declaration_accepted: true,
 };
 beforeEach(() => {
@@ -98,7 +98,7 @@ describe("Explicit synthetic demo", () => {
     ).toMatchObject({
       amount: 300,
       status: "awaiting_payment",
-      billing_type: "boleta",
+      billing_type: "nfse",
       billing_email: "nuevo@example.test",
       funds_origin: "savings",
     });

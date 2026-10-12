@@ -39,8 +39,17 @@ export async function buildDemoReceipt(
   issuedAt: string,
   fiscal?: ReceiptPresentation,
 ) {
+  const brazil = t.billing_type === "nfse";
+  const serviceCurrency = fiscal?.serviceCurrency ?? (brazil ? "BRL" : t.from_currency);
+  const serviceTotal =
+    fiscal?.serviceTotal ??
+    (brazil && t.from_currency !== "BRL"
+      ? Math.round(Number(t.commission) * Number(t.rate) * 100) / 100
+      : t.commission);
   const pdf = await PDFDocument.create();
-  pdf.setTitle(`${t.billing_type === "boleta" ? "Boleta" : "Factura"} demo ${number}`);
+  pdf.setTitle(
+    `${brazil ? "NFS-e" : t.billing_type === "boleta" ? "Boleta" : "Factura"} demo ${number}`,
+  );
   pdf.setAuthor("Brasper");
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -100,10 +109,10 @@ export async function buildDemoReceipt(
   text("brasper.", 40, 790, 30, rgb(1, 1, 1), true);
   text("TRANSFERENCIAS PERÚ - BRASIL", 42, 766, 9, rgb(0.7, 0.84, 0.84));
   text(
-    t.billing_type === "boleta" ? "BOLETA DE VENTA" : "FACTURA",
+    brazil ? "NOTA FISCAL · NFS-e" : t.billing_type === "boleta" ? "BOLETA DE VENTA" : "FACTURA",
     345,
     793,
-    16,
+    brazil ? 14 : 16,
     rgb(1, 1, 1),
     true,
   );
@@ -117,7 +126,15 @@ export async function buildDemoReceipt(
   text("DATOS DEL CLIENTE", 55, 618, 9, teal, true);
   wrap(t.billing_name || t.customer_name, 55, 597, 480, 12, 2);
   const docType =
-    t.billing_document_type === "6" ? "RUC" : t.billing_document_type === "1" ? "DNI" : "Documento";
+    t.billing_document_type === "cpf"
+      ? "CPF"
+      : t.billing_document_type === "cnpj"
+        ? "CNPJ"
+        : t.billing_document_type === "6"
+          ? "RUC"
+          : t.billing_document_type === "1"
+            ? "DNI"
+            : "Documento";
   text(`${docType}: ${t.billing_document || t.customer_document}`, 55, 560, 10);
   wrap(t.billing_email || t.customer_email, 55, 541, 475, 10, 1);
   if (t.billing_address) wrap(t.billing_address, 55, 522, 475, 9, 1);
@@ -126,14 +143,14 @@ export async function buildDemoReceipt(
   text("DESCRIPCIÓN", 52, 452, 8, rgb(1, 1, 1), true);
   text("CANT.", 359, 452, 8, rgb(1, 1, 1), true);
   text("IMPORTE", 458, 452, 8, rgb(1, 1, 1), true);
-  text("Servicio de transferencia internacional", 52, 420, 10);
-  text("1", 371, 420, 10);
   text(
-    money(fiscal?.serviceTotal ?? t.commission, fiscal?.serviceCurrency ?? t.from_currency),
-    448,
+    brazil ? "Serviço de transferência internacional" : "Servicio de transferencia internacional",
+    52,
     420,
     10,
   );
+  text("1", 371, 420, 10);
+  text(money(serviceTotal, serviceCurrency), 448, 420, 10);
   text("El importe del comprobante corresponde a la comisión del servicio.", 52, 397, 8, muted);
   if (fiscal) {
     text(`Valor de venta: ${money(fiscal.taxBase, fiscal.serviceCurrency)}`, 52, 378, 8, muted);
@@ -147,14 +164,7 @@ export async function buildDemoReceipt(
   }
   page.drawRectangle({ x: 320, y: 337, width: 235, height: 43, color: pale });
   text("TOTAL DEL SERVICIO", 332, 362, 8, muted, true);
-  text(
-    money(fiscal?.serviceTotal ?? t.commission, fiscal?.serviceCurrency ?? t.from_currency),
-    332,
-    344,
-    15,
-    teal,
-    true,
-  );
+  text(money(serviceTotal, serviceCurrency), 332, 344, 15, teal, true);
   text("RESUMEN DE LA OPERACIÓN", 40, 309, 9, teal, true);
   const rows = [
     ["Operación", t.demo_meta?.code || t.id],
@@ -181,7 +191,9 @@ export async function buildDemoReceipt(
   text(
     fiscal?.beta
       ? "Documento emitido en SUNAT beta. No tiene validez tributaria."
-      : "Documento demo. No constituye un comprobante emitido ante SUNAT.",
+      : brazil
+        ? "Documento demo. Não representa uma NFS-e autorizada."
+        : "Documento demo. No constituye un comprobante emitido ante SUNAT.",
     40,
     71,
     8,
@@ -190,7 +202,9 @@ export async function buildDemoReceipt(
   text(
     fiscal?.beta
       ? "Impuesto del 18% usado para el ensayo beta; no determina el tratamiento productivo."
-      : "Detalle de impuestos no determinado en esta demostración.",
+      : brazil
+        ? "Impostos não calculados nesta demonstração."
+        : "Detalle de impuestos no determinado en esta demostración.",
     40,
     56,
     8,

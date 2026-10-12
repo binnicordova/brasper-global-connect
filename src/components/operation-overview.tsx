@@ -1,5 +1,10 @@
 import { ArrowRight, ArrowLeftRight, CalendarDays, Landmark, Users } from "lucide-react";
-import { accountTypeLabels, identityDocumentLabels, type Transfer } from "@/lib/transfers";
+import {
+  billingTypeLabels,
+  accountTypeLabels,
+  identityDocumentLabels,
+  type Transfer,
+} from "@/lib/transfers";
 const money = (value: number, currency: string) =>
   Number.isFinite(Number(value))
     ? `${Number(value).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
@@ -90,7 +95,7 @@ export function OperationOverview({ transfer: t }: { transfer: Transfer }) {
             </div>
             <div>
               <dt>Comprobante solicitado</dt>
-              <dd>{t.billing_type === "boleta" ? "Boleta" : "Factura"}</dd>
+              <dd>{billingTypeLabels[t.billing_type || "factura"]}</dd>
             </div>
             <div>
               <dt>Receptor fiscal</dt>

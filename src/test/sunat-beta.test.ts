@@ -30,13 +30,13 @@ describe("Brasper SUNAT beta boundaries", () => {
     const prepared = await new BrasperBetaEngine().prepare(9, "2026-10-12", "F902", operation);
     expect(prepared.xml).toContain(operation.billing_name!);
     expect(prepared.xml).toContain(operation.billing_document!);
-    expect(prepared.xml).toContain(">75.00</cbc:PayableAmount>");
+    expect(prepared.xml).toContain(">31.05</cbc:PayableAmount>");
     expect(prepared.xml).not.toContain(">1500.00</cbc:PayableAmount>");
     const changed = await new BrasperBetaEngine().prepare(10, "2026-10-12", "F902", {
       ...operation,
       commission: 15,
     });
-    expect(changed.xml).toContain(">15.00</cbc:PayableAmount>");
+    expect(changed.xml).toContain(">10.35</cbc:PayableAmount>");
     expect(new XmlSigner().verify(changed.xml, TEST_CERTIFICATE_PEM)).toBe(true);
   });
   it("sends only once to beta and treats a timeout as uncertain", async () => {

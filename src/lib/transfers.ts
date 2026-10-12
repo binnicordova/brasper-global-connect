@@ -32,11 +32,11 @@ export const recipientDetailsInput = transferInput
     fundsDetail: z.string().trim().max(500).default(""),
     transferPurpose: z.string().trim().max(500).default(""),
     recipientRelationship: z.string().trim().max(200).default(""),
-    billingType: z.enum(["factura", "boleta"]),
+    billingType: z.enum(["factura", "boleta", "nfse"]),
     billingEmail: z.string().trim().email("Escribe un correo válido para el comprobante").max(254),
     billingLegalName: z.string().trim().max(200).default(""),
-    billingRuc: z.string().trim().max(11).default(""),
-    billingDocumentType: z.enum(["1", "6", "4", "7", "0"]).default("1"),
+    billingRuc: z.string().trim().max(20).default(""),
+    billingDocumentType: z.enum(["1", "6", "4", "7", "0", "cpf", "cnpj", "foreign"]).default("1"),
   })
   .superRefine((v, ctx) => {
     if (!validIdentityDocument(v.customerDocumentType, v.customerDocument))
@@ -100,6 +100,22 @@ export const recipientDetailsInput = transferInput
           path: ["billingLegalName"],
           message: "Completa la razón social para la factura",
         });
+    } else if (v.billingType === "nfse") {
+      if (v.billingLegalName.length < 2)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["billingLegalName"],
+          message: "Completa el receptor de la nota fiscal",
+        });
+      if (
+        !["cpf", "cnpj", "foreign"].includes(v.billingDocumentType) ||
+        !validIdentityDocument(v.billingDocumentType, v.billingRuc)
+      )
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["billingRuc"],
+          message: "Revisa el CPF, CNPJ o documento extranjero",
+        });
     } else {
       const valid =
         v.billingDocumentType === "1"
@@ -141,8 +157,15 @@ export const identityDocumentLabels: Record<string, string> = {
   cnpj: "CNPJ",
   "0": "Otro documento",
 };
-export const billingTypeLabels: Record<string, string> = { factura: "Factura", boleta: "Boleta" };
+export const billingTypeLabels: Record<string, string> = {
+  factura: "Factura",
+  boleta: "Boleta",
+  nfse: "Nota fiscal de serviço (NFS-e)",
+};
 export const billingDocumentLabels: Record<string, string> = {
+  cpf: "CPF",
+  cnpj: "CNPJ",
+  foreign: "Documento extranjero",
   "1": "DNI",
   "6": "RUC",
   "4": "Carné de extranjería",
@@ -221,7 +244,8 @@ export type Transfer = {
   transfer_purpose?: string | null;
   recipient_relationship?: string | null;
   deposit_bank_reference?: string | null;
-  billing_type?: "factura" | "boleta";
+  billing_type?: "factura" | "boleta" | "nfse";
+  billing_country?: "PE" | "BR";
   billing_email?: string | null;
   billing_email_verified?: boolean;
   billing_name?: string;
@@ -253,6 +277,9 @@ export type Transfer = {
   verified_at?: string | null;
   payout_at?: string | null;
   invoices: {
+    issuer_country?: "PE" | "BR";
+    next_attempt_at?: string | null;
+    beta_attempts?: number;
     demo_email?: string;
     demo_delivered_at?: string;
     environment?: string;

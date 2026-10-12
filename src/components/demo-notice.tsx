@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { isDemoEnabled, resetDemo, exitDemo } from "@/lib/demo-supabase";
 export function DemoNotice() {
@@ -21,8 +22,8 @@ export function DemoNotice() {
         Prueba el registro, la revisión y la facturación. Sin movimientos ni envíos reales.
       </span>
       <nav aria-label="Acciones de demostración">
-        <a href="/transferencias?demo=1">Registrar cambio</a>
-        <a href="/dashboard?demo=1">Ver dashboard</a>
+        <Link to="/transferencias">Registrar cambio</Link>
+        <Link to="/dashboard">Ver dashboard</Link>
         <a href="/demo/comprobante-ejemplo.pdf" download>
           Archivo de ejemplo
         </a>

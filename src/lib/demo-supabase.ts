@@ -117,7 +117,11 @@ export function createDemoClient(): SupabaseClient {
   const urls = new Set<string>();
   const client = {
     auth: {
-      getSession: async () => success({ session: session() }),
+      getSession: async () => {
+        staff =
+          window.location.pathname === "/dashboard" || /^#operacion-/.test(window.location.hash);
+        return success({ session: session() });
+      },
       getUser: async () => success({ user: user() }),
       onAuthStateChange: (fn: (event: string, session: unknown) => void) => {
         listeners.add(fn);
@@ -268,7 +272,7 @@ export function createDemoClient(): SupabaseClient {
           );
           recipientDetailsInput.parse({
             ...input,
-            billingRuc: p["p_billing_type"]! === "factura" ? p["p_billing_document"]! : "",
+            billingRuc: p["p_billing_type"]! !== "boleta" ? p["p_billing_document"]! : "",
             billingLegalName: p["p_billing_name"]!,
           });
           if (p["p_declaration_accepted"]! !== "true")
@@ -292,6 +296,12 @@ export function createDemoClient(): SupabaseClient {
             (p["p_recipient_account_type"] === "pix" && rate.to_currency !== "BRL")
           )
             throw new Error("Tipo de cuenta incompatible con la moneda de destino");
+          const country = rate.to_currency === "BRL" ? "BR" : "PE";
+          if (
+            (country === "BR" && p["p_billing_type"] !== "nfse") ||
+            (country === "PE" && !["boleta", "factura"].includes(p["p_billing_type"]!))
+          )
+            throw new Error("El comprobante no corresponde al país de destino");
           const q = quoteAmounts(Number(p["p_amount"]), rate.rate, rate.commission_percent);
           const data = Object.fromEntries(
             Object.entries(p).map(([key, value]) => [key.replace(/^p_/, ""), value]),
@@ -301,7 +311,12 @@ export function createDemoClient(): SupabaseClient {
             amount: Number(p["p_amount"]),
             id: crypto.randomUUID(),
             user_id: uid(),
-            demo_meta: { code: "DEMO-NUEVA", advisor: "Equipo Demo", issuer: "Emisor Demo S.A.C." },
+            demo_meta: {
+              code: "DEMO-NUEVA",
+              advisor: "Equipo Demo",
+              issuer: country === "BR" ? "Emissor Demo Ltda." : "Emisor Demo S.A.C.",
+            },
+            billing_country: country,
             from_currency: rate.from_currency,
             to_currency: rate.to_currency,
             rate: rate.rate,
@@ -374,6 +389,9 @@ export function createDemoClient(): SupabaseClient {
               event(state, t, "payout", p["p_note"]!);
               t.invoices = [
                 {
+                  issuer_country: t.billing_country || (t.billing_type === "nfse" ? "BR" : "PE"),
+                  document_type:
+                    t.billing_type === "nfse" ? "NFSE" : t.billing_type === "boleta" ? "03" : "01",
                   environment: "demo",
                   status: "queued",
                   number: null,
@@ -393,6 +411,9 @@ export function createDemoClient(): SupabaseClient {
               const latest = fresh.transfers.find((item) => item.id === t.id)!;
               latest.invoices = [
                 {
+                  issuer_country: t.billing_country || (t.billing_type === "nfse" ? "BR" : "PE"),
+                  document_type:
+                    t.billing_type === "nfse" ? "NFSE" : t.billing_type === "boleta" ? "03" : "01",
                   environment: "demo",
                   status: "demo_delivered",
                   number,

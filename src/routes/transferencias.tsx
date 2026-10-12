@@ -1,5 +1,7 @@
+import { BillingStatus } from "@/components/billing-status";
+import { INVOICE_LIST_FIELDS } from "@/lib/billing";
 import { readExchangeIntent, exchangePath } from "@/lib/exchange-intent";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useRef, useCallback, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import {
@@ -15,6 +17,8 @@ import {
 import { supabase } from "@/lib/supabase";
 import {
   countryLabels,
+  billingTypeLabels,
+  billingDocumentLabels,
   fundsOriginLabels,
   identityDocumentLabels,
   quoteAmounts,
@@ -105,6 +109,7 @@ function TransferPortal() {
   const [initialBankReference, setInitialBankReference] = useState("");
   const [bankReferences, setBankReferences] = useState<Record<string, string>>({});
   const [billingType, setBillingType] = useState("boleta");
+  const [brazilDocumentType, setBrazilDocumentType] = useState("foreign");
   const [proofFiles, setProofFiles] = useState<Record<string, File | null>>({});
   const [newOperation, setNewOperation] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null),
@@ -142,6 +147,7 @@ function TransferPortal() {
     rate?.from_currency === "PEN" ? "PE" : rate?.from_currency === "BRL" ? "BR" : "";
   const destinationCountry =
     rate?.to_currency === "PEN" ? "PE" : rate?.to_currency === "BRL" ? "BR" : "";
+  const effectiveBillingType = destinationCountry === "BR" ? "nfse" : billingType;
   const involvesPeru = sourceCountry === "PE" || destinationCountry === "PE";
   const billingDocumentType = ["cpf", "cnpj"].includes(customerDocumentType)
     ? "0"
@@ -168,7 +174,7 @@ function TransferPortal() {
     const operation = window.location.hash.match(/^#operacion-([0-9a-f-]{36})$/i)?.[1];
     let transferQuery = supabase
       .from("transfers")
-      .select("*, invoices(*)")
+      .select(`*, invoices(${INVOICE_LIST_FIELDS})`)
       .order("created_at", { ascending: false })
       .limit(100);
     if (operation) transferQuery = transferQuery.eq("id", operation);
@@ -377,8 +383,8 @@ function TransferPortal() {
         p_transfer_note: v.transferNote,
         p_billing_type: v.billingType,
         p_billing_email: v.billingEmail,
-        p_billing_name: v.billingType === "factura" ? v.billingLegalName : v.customerName,
-        p_billing_document: v.billingType === "factura" ? v.billingRuc : v.customerDocument,
+        p_billing_name: v.billingType !== "boleta" ? v.billingLegalName : v.customerName,
+        p_billing_document: v.billingType !== "boleta" ? v.billingRuc : v.customerDocument,
         p_billing_document_type: v.billingType === "factura" ? "6" : v.billingDocumentType,
       });
       if (error) throw error;
@@ -505,7 +511,7 @@ function TransferPortal() {
   async function loadMore() {
     const { data, error } = await supabase!
       .from("transfers")
-      .select("*, invoices(*)")
+      .select(`*, invoices(${INVOICE_LIST_FIELDS})`)
       .order("created_at", { ascending: false })
       .range(transfers.length, transfers.length + 99);
     if (error) throw error;
@@ -533,16 +539,16 @@ function TransferPortal() {
       className={`portal-page${embedded ? " portal-embedded" : ""}${embeddedOperation ? " embed-created" : ""}`}
     >
       <header className="portal-header wrap">
-        <a href="/" className="brand">
+        <Link to="/" className="brand">
           brasper<span className="text-primary">.</span>
-        </a>
-        <a href="/" className="portal-back">
+        </Link>
+        <Link to="/" className="portal-back">
           <ArrowLeft size={16} /> Volver al inicio
-        </a>
+        </Link>
         {staff && (
-          <a href="/dashboard" className="portal-back">
+          <Link to="/dashboard" className="portal-back">
             Dashboard <ArrowRight size={16} />
-          </a>
+          </Link>
         )}
         {session && !guest && (
           <Button
@@ -816,7 +822,13 @@ function TransferPortal() {
                           ))}
                         </select>
                       </label>
-                      <input type="hidden" name="billingDocumentType" value={billingDocumentType} />
+                      {effectiveBillingType !== "nfse" && (
+                        <input
+                          type="hidden"
+                          name="billingDocumentType"
+                          value={billingDocumentType}
+                        />
+                      )}
                       {[
                         ["customerName", "Tu nombre completo"],
                         ["customerDocument", "Tu DNI, RUC o documento"],
@@ -850,18 +862,70 @@ function TransferPortal() {
                           placeholder="Ej. +51 …"
                         />
                       </label>
-                      <label>
-                        Tipo de comprobante
-                        <select
-                          name="billingType"
-                          value={billingType}
-                          onChange={(e) => setBillingType(e.target.value)}
-                        >
-                          <option value="boleta">Boleta</option>
-                          <option value="factura">Factura</option>
-                        </select>
-                      </label>
-                      {billingType === "factura" ? (
+                      {destinationCountry === "BR" ? (
+                        <div className="wide billing-jurisdiction">
+                          <strong>Brasil · Nota fiscal de serviço (NFS-e)</strong>
+                          <p>
+                            El destinatario recibe reales. La comisión se documentará en Brasil.
+                          </p>
+                          <input type="hidden" name="billingType" value="nfse" />
+                        </div>
+                      ) : (
+                        <label>
+                          Tipo de comprobante · Perú
+                          <select
+                            name="billingType"
+                            value={billingType}
+                            onChange={(e) => setBillingType(e.target.value)}
+                          >
+                            <option value="boleta">Boleta</option>
+                            <option value="factura">Factura</option>
+                          </select>
+                        </label>
+                      )}
+                      {effectiveBillingType === "nfse" && (
+                        <>
+                          <label>
+                            Nombre o razón social del receptor fiscal
+                            <input name="billingLegalName" required minLength={2} maxLength={200} />
+                          </label>
+                          <label>
+                            Documento fiscal
+                            <select
+                              name="billingDocumentType"
+                              value={brazilDocumentType}
+                              onChange={(e) => setBrazilDocumentType(e.target.value)}
+                            >
+                              <option value="foreign">Documento extranjero</option>
+                              <option value="cpf">CPF</option>
+                              <option value="cnpj">CNPJ</option>
+                            </select>
+                          </label>
+                          <label>
+                            Número del documento fiscal
+                            <input
+                              name="billingRuc"
+                              required
+                              minLength={2}
+                              maxLength={
+                                brazilDocumentType === "cnpj"
+                                  ? 14
+                                  : brazilDocumentType === "cpf"
+                                    ? 11
+                                    : 20
+                              }
+                              pattern={
+                                brazilDocumentType === "cnpj"
+                                  ? "[0-9]{14}"
+                                  : brazilDocumentType === "cpf"
+                                    ? "[0-9]{11}"
+                                    : "[A-Za-z0-9-]{2,20}"
+                              }
+                            />
+                          </label>
+                        </>
+                      )}
+                      {effectiveBillingType === "factura" ? (
                         <>
                           <label>
                             RUC para la factura
@@ -879,13 +943,13 @@ function TransferPortal() {
                             <input name="billingLegalName" required minLength={2} maxLength={200} />
                           </label>
                         </>
-                      ) : (
+                      ) : effectiveBillingType === "boleta" ? (
                         <>
                           <p className="wide">
                             La boleta usará tu nombre y documento indicados arriba.
                           </p>
                         </>
-                      )}
+                      ) : null}
                       <label>
                         Banco desde el que pagarás
                         <input name="originBank" required minLength={2} maxLength={200} />
@@ -1138,7 +1202,7 @@ function TransferPortal() {
                             )}
                             <div>
                               <dt>Tipo de comprobante</dt>
-                              <dd>{reviewData.billingType === "factura" ? "Factura" : "Boleta"}</dd>
+                              <dd>{billingTypeLabels[reviewData.billingType]}</dd>
                             </div>
                             <div>
                               <dt>Correo de entrega</dt>
@@ -1147,8 +1211,8 @@ function TransferPortal() {
                             <div>
                               <dt>Receptor del comprobante</dt>
                               <dd>
-                                {reviewData.billingType === "factura"
-                                  ? `${reviewData.billingLegalName} · RUC ${reviewData.billingRuc}`
+                                {reviewData.billingType !== "boleta"
+                                  ? `${reviewData.billingLegalName} · ${reviewData.billingType === "nfse" ? billingDocumentLabels[reviewData.billingDocumentType] : "RUC"} ${reviewData.billingRuc}`
                                   : `${reviewData.customerName} · ${reviewData.customerDocument}`}
                               </dd>
                             </div>
@@ -1230,9 +1294,9 @@ function TransferPortal() {
             )}
             <section className="portal-operations">
               <h2>{admin ? "Bandeja de revisión" : "Historial de operaciones"}</h2>
-              <a href="/transferencias" className="portal-start-link">
+              <Link to="/transferencias" className="portal-start-link">
                 Ver todo el historial <ArrowRight size={14} />
-              </a>
+              </Link>
               {!transfers.length && (
                 <div className="portal-card">
                   <p>Aún no hay operaciones registradas.</p>
@@ -1260,7 +1324,7 @@ function TransferPortal() {
                           Para {t.recipient_name} · {t.recipient_bank}
                         </p>
                         <p>
-                          {t.billing_type === "boleta" ? "Boleta" : "Factura"} ·{" "}
+                          {billingTypeLabels[t.billing_type || "factura"]} ·{" "}
                           {t.billing_email || t.customer_email}
                         </p>
                       </div>
@@ -1407,13 +1471,13 @@ function TransferPortal() {
                       )}
                     </div>
                     {invoice && (
-                      <p className="billing-status">
+                      <div className="billing-status">
                         {invoice.environment === "beta" && (
                           <strong>ENSAYO SIN VALIDEZ TRIBUTARIA · </strong>
                         )}
-                        {invoiceLabels[invoice.status]}
+                        <BillingStatus invoice={invoice} details={admin} />
                         {admin && invoice.error ? ` · ${invoice.error}` : ""}
-                      </p>
+                      </div>
                     )}
                     {admin && (
                       <>

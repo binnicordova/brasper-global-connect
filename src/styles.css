@@ -2693,3 +2693,74 @@ footer {
     padding: 12px 14px 24px;
   }
 }
+
+/* Independent document and delivery states. */
+.billing-status-group {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.45rem;
+}
+.billing-status-group small {
+  color: #5b697b;
+}
+.billing-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  padding: 0.85rem 0;
+  font-size: 0.78rem;
+}
+.billing-tone-neutral {
+  color: #526278;
+  background: #eef2f7;
+}
+.billing-tone-generated {
+  color: #075e62;
+  background: #e0f4f2;
+}
+.billing-tone-success {
+  color: #166534;
+  background: #dcfce7;
+}
+.billing-tone-warning {
+  color: #92400e;
+  background: #fef3c7;
+}
+.billing-tone-danger {
+  color: #991b1b;
+  background: #fee2e2;
+}
+.billing-tone-working {
+  color: #1e40af;
+  background: #dbeafe;
+}
+.billing-tone-demo {
+  color: #6b21a8;
+  background: #f3e8ff;
+}
+.billing-legend span {
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+}
+.billing-jurisdiction {
+  padding: 1rem;
+  background: #eef8f6;
+  border: 1px solid #d0e9e3;
+  border-radius: 12px;
+}
+.billing-jurisdiction p {
+  margin: 0.4rem 0 0;
+}
+/* Keep the wide operational table inside its own mobile scroll area. */
+@media (max-width: 580px) {
+  .ops-shell {
+    overflow-x: clip;
+  }
+  .ops-detail-tabs {
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .ops-operation-dialog .review-form {
+    min-width: 0;
+  }
+}

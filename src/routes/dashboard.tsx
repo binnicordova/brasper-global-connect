@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -19,6 +20,11 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { EvidencePreview } from "@/components/evidence-preview";
 import { OperationOverview } from "@/components/operation-overview";
 import { TransferDetails } from "@/components/transfer-details";
+import { TransferReview, type ReviewSubmission } from "@/components/transfer-review";
+import { validateProof } from "@/lib/transfers";
+import { BillingStatus } from "@/components/billing-status";
+import { INVOICE_LIST_FIELDS, billingIdentity } from "@/lib/billing";
+import { countryLabels } from "@/lib/transfers";
 import { supabase } from "@/lib/supabase";
 import { statusLabels, invoiceLabels, firstInvoice, type Transfer } from "@/lib/transfers";
 import plan from "../../MASTER_PLAN.json";
@@ -35,12 +41,19 @@ type Summary = {
 const money = (amount: number, currency: string) =>
   `${Number(amount).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
 function Dashboard() {
+  const queryClient = useQueryClient();
+  const authIdentity = useRef<string | null | undefined>(undefined);
+  const [staffId, setStaffId] = useState("");
   const [detailTab, setDetailTab] = useState("summary");
   const [currency, setCurrency] = useState("");
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const reviewLock = useRef(false);
+  const [reviewMessage, setReviewMessage] = useState("");
   const [fileBusy, setFileBusy] = useState(false);
   const [fileError, setFileError] = useState("");
   function openOperation(transfer: Transfer) {
     setDetailTab("summary");
+    setReviewMessage("");
     setFileError("");
     setOpened(transfer);
   }
@@ -67,124 +80,228 @@ function Dashboard() {
 
   const [opened, setOpened] = useState<Transfer | null>(null);
   const [access, setAccess] = useState<"loading" | "staff" | "denied">("loading");
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [rows, setRows] = useState<Transfer[]>([]);
+
   const [status, setStatus] = useState("proof_submitted");
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState("operations");
+  const [tab, setTab] = useState("deposits");
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [updated, setUpdated] = useState("");
+
   const [page, setPage] = useState(0);
-  const [count, setCount] = useState(0);
+
   const [query, setQuery] = useState({ status: "proof_submitted", search: "", currency: "" });
+  const summaryQuery = useQuery({
+    queryKey: ["staff", "summary", staffId],
+    enabled: access === "staff" && !!supabase,
+    staleTime: 15000,
+    gcTime: 60000,
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await supabase!.rpc("staff_dashboard_summary");
+      if (error) throw error;
+      return data as Summary;
+    },
+  });
+  const rowsQuery = useQuery({
+    queryKey: ["staff", "rows", staffId, query, page],
+    enabled: access === "staff" && !!supabase,
+    staleTime: 15000,
+    gcTime: 60000,
+    retry: false,
+    queryFn: async () => {
+      // Never transfer signed XML/PDF/CDR payloads just to render a worklist.
+      const join = query.status.startsWith("invoice_") ? "invoices!inner" : "invoices";
+      let request = supabase!
+        .from("transfers")
+        .select(`*, ${join}(${INVOICE_LIST_FIELDS})`, { count: "exact" })
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(page * 50, page * 50 + 49);
+      const billingFilters: Record<string, string[]> = {
+        invoice_attention: [
+          "blocked",
+          "reconciliation_required",
+          "beta_rejected",
+          "beta_reconciliation_required",
+        ],
+        invoice_generated: [
+          "accepted",
+          "beta_accepted",
+          "demo_generated",
+          "demo_delivered",
+          "delivered",
+        ],
+        invoice_delivered: ["delivered"],
+        invoice_pending: ["queued", "processing", "sending"],
+      };
+      if (billingFilters[query.status])
+        request = request.in("invoices.status", billingFilters[query.status]!);
+      else if (query.status === "pending_payout")
+        request = request.in("status", ["proof_submitted", "verified"]);
+      else if (query.status === "sent") request = request.in("status", ["paid_out", "completed"]);
+      else if (query.status) request = request.eq("status", query.status);
+      if (query.currency) request = request.eq("from_currency", query.currency);
+      if (query.search)
+        request = request.ilike(
+          /^[0-9]+$/.test(query.search) ? "customer_document" : "customer_name",
+          `%${query.search}%`,
+        );
+      const { data, error, count } = await request;
+      if (error) throw error;
+      return { rows: (data ?? []) as Transfer[], count: count ?? 0 };
+    },
+  });
+  const rows = access === "staff" ? (rowsQuery.data?.rows ?? []) : [];
+  const summary = access === "staff" ? (summaryQuery.data ?? null) : null;
+  const count = rowsQuery.data?.count ?? 0;
+  const busy = rowsQuery.isFetching;
+  const updated = rowsQuery.dataUpdatedAt
+    ? new Date(rowsQuery.dataUpdatedAt).toLocaleTimeString("es-PE")
+    : "";
+  const loadError = error || rowsQuery.error?.message || summaryQuery.error?.message;
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["staff"] });
+  };
+  async function reviewOperation(t: Transfer, data: ReviewSubmission): Promise<boolean> {
+    if (!supabase || access !== "staff" || reviewLock.current) return false;
+    reviewLock.current = true;
+    setReviewBusy(true);
+    setReviewMessage("");
+    try {
+      let path: string | null = null;
+      if (data.action === "payout") {
+        if (!data.payout) throw new Error("Adjunta la constancia de envío");
+        validateProof(data.payout);
+        const ext =
+          data.payout.type === "application/pdf"
+            ? "pdf"
+            : data.payout.type === "image/png"
+              ? "png"
+              : "jpg";
+        path = `${staffId}/${t.id}/payout/${crypto.randomUUID()}.${ext}`;
+        const uploaded = await supabase.storage
+          .from("transfer-proofs")
+          .upload(path, data.payout, { contentType: data.payout.type, upsert: false });
+        if (uploaded.error) throw uploaded.error;
+      }
+      const result =
+        data.action === "cancel"
+          ? await supabase.rpc("cancel_transfer", {
+              p_transfer_id: t.id,
+              p_expected_status: t.status,
+              p_note: data.note,
+            })
+          : data.action === "restore"
+            ? await supabase.rpc("restore_verified_transfer", {
+                p_transfer_id: t.id,
+                p_note: data.note,
+              })
+            : await supabase.rpc("review_transfer", {
+                p_transfer_id: t.id,
+                p_action: data.action,
+                p_note: data.note,
+                p_reference: data.reference || "",
+                p_payout_path: path,
+              });
+      if (result.error) throw result.error;
+      // Reset the submitted form even when the follow-up read fails.
+      let refreshNote = "";
+      try {
+        const current = await supabase
+          .from("transfers")
+          .select(`*, invoices(${INVOICE_LIST_FIELDS})`)
+          .eq("id", t.id)
+          .maybeSingle();
+        if (current.error || !current.data)
+          throw current.error || new Error("Operación no disponible");
+        setOpened(current.data as Transfer);
+      } catch {
+        setOpened(null);
+        refreshNote = " Actualiza y vuelve a abrir la operación para continuar.";
+      }
+      refresh();
+      setReviewMessage(
+        (data.action === "payout"
+          ? "Envío registrado. Facturación solicitada."
+          : "Revisión guardada.") + refreshNote,
+      );
+      return true;
+    } catch (cause) {
+      setReviewMessage(
+        cause instanceof Error
+          ? cause.message
+          : "No se pudo guardar. Revisa el estado y vuelve a intentarlo.",
+      );
+      return false;
+    } finally {
+      reviewLock.current = false;
+      setReviewBusy(false);
+    }
+  }
+  useEffect(() => {
+    setOpened((old) => (old ? (rowsQuery.data?.rows.find((t) => t.id === old.id) ?? old) : null));
+  }, [rowsQuery.data]);
   useEffect(() => {
     if (access !== "staff" || !supabase) return;
     let timer: number | undefined;
-    const refresh = () => {
+    const invalidate = () => {
       window.clearTimeout(timer);
-      timer = window.setTimeout(() => setQuery((q) => ({ ...q })), 500);
+      timer = window.setTimeout(() => {
+        void queryClient.invalidateQueries({ queryKey: ["staff"] });
+      }, 500);
     };
     const channel = supabase
       .channel("staff-dashboard-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "transfers" }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "transfers" }, invalidate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, invalidate)
       .subscribe();
     return () => {
       window.clearTimeout(timer);
       void supabase!.removeChannel(channel);
     };
-  }, [access]);
+  }, [access, queryClient]);
   useEffect(() => {
     if (!supabase) {
       setAccess("denied");
       return;
     }
     let active = true;
-    async function checkAccess() {
-      setSummary(null);
-      setRows([]);
+    async function checkUser(id: string | null) {
+      if (!active || authIdentity.current === id) return;
+      authIdentity.current = id;
       setOpened(null);
+      setStaffId(id ?? "");
       setAccess("loading");
-      const { data: user, error: authError } = await supabase!.auth.getUser();
-      if (!active) return;
-      if (authError || !user.user) {
+      setError("");
+      queryClient.removeQueries({
+        predicate: (q) => q.queryKey[0] === "staff" && q.queryKey[2] !== id,
+      });
+      if (!id) {
         setAccess("denied");
         return;
       }
-      const { data, error: roleError } = await supabase!
+      const { data, error } = await supabase!
         .from("staff_members")
         .select("user_id")
-        .eq("user_id", user.user.id)
+        .eq("user_id", id)
         .maybeSingle();
-      if (!active) return;
-      if (roleError) setError(roleError.message);
-      setAccess(data && !roleError ? "staff" : "denied");
+      if (!active || authIdentity.current !== id) return;
+      if (error) setError(error.message);
+      setAccess(data && !error ? "staff" : "denied");
     }
-    void checkAccess();
-    const { data } = supabase.auth.onAuthStateChange(() => {
-      void checkAccess();
+    // Session is local; the role request still enforces the backend's RLS rules.
+    void supabase.auth.getSession().then(({ data }) => checkUser(data.session?.user.id ?? null));
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Avoid calling Supabase inside its auth callback while the auth lock is held.
+      window.setTimeout(() => {
+        void checkUser(session?.user.id ?? null);
+      }, 0);
     });
     return () => {
       active = false;
+      authIdentity.current = undefined;
       data.subscription.unsubscribe();
     };
-  }, []);
-  useEffect(() => {
-    if (access !== "staff" || !supabase) return;
-    let active = true;
-    setBusy(true);
-    setError("");
-    let request = supabase
-      .from("transfers")
-      .select(query.status === "invoice_attention" ? "*, invoices!inner(*)" : "*, invoices(*)", {
-        count: "exact",
-      })
-      .order("created_at", { ascending: false })
-      .order("id")
-      .range(page * 50, page * 50 + 49);
-    if (query.status === "invoice_attention")
-      request = request.in("invoices.status", [
-        "blocked",
-        "reconciliation_required",
-        "beta_rejected",
-        "beta_reconciliation_required",
-      ]);
-    else if (query.status === "sent") request = request.in("status", ["paid_out", "completed"]);
-    else if (query.status) request = request.eq("status", query.status);
-    if (query.currency) request = request.eq("from_currency", query.currency);
-    if (query.search)
-      request = request.ilike(
-        /^[0-9]+$/.test(query.search) ? "customer_document" : "customer_name",
-        `%${query.search}%`,
-      );
-    void Promise.all([supabase.rpc("staff_dashboard_summary"), request])
-      .then(([s, t]) => {
-        if (!active) return;
-        if (s.error || t.error) {
-          setSummary(null);
-          setRows([]);
-          setCount(0);
-          setError(s.error?.message || t.error?.message || "No se pudo cargar.");
-        } else {
-          setSummary(s.data);
-          setRows(t.data ?? []);
-          setOpened((old) => (old ? (t.data?.find((item) => item.id === old.id) ?? old) : null));
-          setCount(t.count ?? 0);
-          setUpdated(new Date().toLocaleTimeString("es-PE"));
-        }
-        setBusy(false);
-      })
-      .catch((e: Error) => {
-        if (active) {
-          setError(e.message);
-          setBusy(false);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [access, query, page]);
+  }, [queryClient]);
   function filter(e: FormEvent) {
     e.preventDefault();
     setPage(0);
@@ -196,45 +313,42 @@ function Dashboard() {
   return (
     <div className="ops-shell">
       <aside className="ops-sidebar">
-        <a className="brand" href="/">
+        <Link className="brand" to="/">
           brasper<span className="text-primary">.</span>
-        </a>
+        </Link>
         <span className="ops-caption">BACKOFFICE · BRASPER</span>
-        <button
-          aria-pressed={tab === "operations"}
-          onClick={() => {
-            setTab("operations");
-            setStatus("proof_submitted");
-            setPage(0);
-            setQuery({ status: "proof_submitted", search: "", currency: "" });
-            setSearch("");
-            setCurrency("");
-          }}
-        >
-          <LayoutDashboard size={18} /> Operaciones
-        </button>
-        <button
-          aria-pressed={tab === "billing"}
-          onClick={() => {
-            setTab("billing");
-            setStatus("invoice_attention");
-            setSearch("");
-            setCurrency("");
-            setPage(0);
-            setQuery({ status: "invoice_attention", search: "", currency: "" });
-          }}
-        >
-          <FileText size={18} /> Comprobantes
-        </button>
+        {[
+          { id: "deposits", label: "Pagos por revisar", filter: "proof_submitted", icon: Image },
+          { id: "payouts", label: "Envíos pendientes", filter: "pending_payout", icon: Landmark },
+          { id: "operations", label: "Todas las operaciones", filter: "", icon: LayoutDashboard },
+          { id: "billing", label: "Facturación", filter: "sent", icon: FileText },
+        ].map((item) => (
+          <button
+            key={item.id}
+            aria-pressed={tab === item.id}
+            onClick={() => {
+              setTab(item.id);
+              setStatus(item.filter);
+              setSearch("");
+              setCurrency("");
+              setPage(0);
+              setOpened(null);
+              setQuery({ status: item.filter, search: "", currency: "" });
+            }}
+          >
+            <item.icon size={18} />
+            {item.label}
+          </button>
+        ))}
         <button aria-pressed={tab === "launch"} onClick={() => setTab("launch")}>
           <ShieldCheck size={18} /> Puesta en marcha
         </button>
-        <a href="/transferencias">
+        <Link to="/transferencias">
           Bandeja de revisión <ArrowUpRight size={16} />
-        </a>
-        <a href="/">
+        </Link>
+        <Link to="/">
           Página principal <ArrowUpRight size={16} />
-        </a>
+        </Link>
         <p>Verificación de ingresos y envíos bancarios a cargo del equipo.</p>
       </aside>
       <main className="ops-main">
@@ -245,14 +359,18 @@ function Dashboard() {
               ? "Puesta en marcha"
               : tab === "billing"
                 ? "Comprobantes"
-                : "Operaciones y transferencias"}
+                : tab === "deposits"
+                  ? "Pagos por revisar"
+                  : tab === "payouts"
+                    ? "Envíos pendientes"
+                    : "Operaciones y transferencias"}
           </span>
-          <a href="/transferencias">
+          <Link to="/transferencias">
             <span className="ops-avatar" aria-hidden="true">
               BR
             </span>{" "}
             Equipo de operaciones <ArrowRight size={15} />
-          </a>
+          </Link>
         </header>
         <div className="ops-heading">
           <div>
@@ -264,7 +382,11 @@ function Dashboard() {
                 ? "Preparar el servicio."
                 : tab === "billing"
                   ? "Facturación y documentos"
-                  : "Operaciones y transferencias"}
+                  : tab === "deposits"
+                    ? "Pagos por revisar"
+                    : tab === "payouts"
+                      ? "Envíos pendientes"
+                      : "Operaciones y transferencias"}
             </h1>
             <p>
               {tab !== "launch"
@@ -273,14 +395,14 @@ function Dashboard() {
             </p>
           </div>
           {access === "staff" && (
-            <Button variant="outline" disabled={busy} onClick={() => setQuery((q) => ({ ...q }))}>
+            <Button variant="outline" disabled={busy} onClick={refresh}>
               <RefreshCw size={16} /> {busy ? "Cargando…" : "Actualizar"}
             </Button>
           )}
         </div>
-        {error && (
+        {loadError && (
           <p role="alert" className="ops-alert">
-            {error}
+            {loadError}
           </p>
         )}
         {access === "loading" ? (
@@ -297,9 +419,9 @@ function Dashboard() {
             </p>
             <StaffLogin />
             <Button asChild variant="outline">
-              <a href="/transferencias">
+              <Link to="/transferencias">
                 Soy cliente <ArrowRight />
-              </a>
+              </Link>
             </Button>
           </section>
         ) : tab !== "launch" ? (
@@ -362,19 +484,42 @@ function Dashboard() {
                     <h2>
                       {tab === "billing"
                         ? "Comprobantes y estado fiscal"
-                        : "Bandeja de operaciones"}
+                        : tab === "payouts"
+                          ? "Depósitos recibidos · envío pendiente"
+                          : tab === "deposits"
+                            ? "Comprobantes de depósito por validar"
+                            : "Bandeja de operaciones"}
                     </h2>
-                    <p>Abre una operación para verificar el pago o registrar el envío.</p>
+                    <p>
+                      {tab === "payouts"
+                        ? "Pruebas recibidas e ingresos confirmados. Valida el depósito y registra el envío desde esta bandeja."
+                        : tab === "billing"
+                          ? "Operaciones enviadas: estado del documento y entrega por correo, por separado."
+                          : "Abre una operación para verificar el pago o registrar el envío."}
+                    </p>
                   </div>
                   <span className="ops-count">{count} resultados</span>
                 </div>
+                {tab === "billing" && (
+                  <div className="billing-legend" aria-label="Leyenda de facturación">
+                    <span className="billing-tone-generated">● Generado · correo pendiente</span>
+                    <span className="billing-tone-success">● Emitido y enviado</span>
+                    <span className="billing-tone-warning">● Reintento</span>
+                    <span className="billing-tone-danger">● Revisar</span>
+                    <span className="billing-tone-demo">● Demo</span>
+                  </div>
+                )}
                 <form className="ops-filters" onSubmit={filter}>
                   <label>
                     Estado
                     <select value={status} onChange={(e) => setStatus(e.target.value)}>
                       <option value="">Todos los estados</option>
                       <option value="sent">Todos los envíos registrados</option>
-                      <option value="invoice_attention">Facturación a revisar</option>
+                      <option value="pending_payout">Depósito recibido · pendiente de envío</option>
+                      <option value="invoice_attention">Facturación con errores</option>
+                      <option value="invoice_generated">Comprobante generado</option>
+                      <option value="invoice_delivered">Comprobante enviado por correo</option>
+                      <option value="invoice_pending">En cola / en proceso</option>
                       {Object.entries(statusLabels).map(([value, label]) => (
                         <option value={value} key={value}>
                           {label}
@@ -422,6 +567,7 @@ function Dashboard() {
                     <tbody>
                       {rows.map((t) => {
                         const invoice = firstInvoice(t.invoices);
+                        const identity = billingIdentity(t);
                         return (
                           <tr key={t.id}>
                             <td>
@@ -463,13 +609,10 @@ function Dashboard() {
                               </span>
                             </td>
                             <td>
-                              <strong>{t.billing_type === "boleta" ? "Boleta" : "Factura"}</strong>
+                              <strong>{identity.label}</strong>
+                              <small>{countryLabels[identity.country]}</small>
                               <small>{t.billing_email || t.customer_email}</small>
-                              <span className={`ops-fiscal state-${invoice?.status || "none"}`}>
-                                {invoice
-                                  ? invoiceLabels[invoice.status] || invoice.status
-                                  : "Aún no solicitado"}
-                              </span>
+                              <BillingStatus invoice={invoice} details />
                               {invoice?.number && <small>{invoice.number}</small>}
                               {invoice?.environment === "beta" && <small>Entorno de prueba</small>}
                             </td>
@@ -500,9 +643,13 @@ function Dashboard() {
                               )}
                             </td>
                             <td>
-                              <a className="ops-open" href={`/transferencias#operacion-${t.id}`}>
+                              <Link
+                                className="ops-open"
+                                to="/transferencias"
+                                hash={`operacion-${t.id}`}
+                              >
                                 Abrir <ArrowRight size={14} />
-                              </a>
+                              </Link>
                             </td>
                           </tr>
                         );
@@ -687,6 +834,7 @@ function Dashboard() {
                       { id: "summary", label: "Resumen" },
                       { id: "data", label: "Datos y fondos" },
                       { id: "documents", label: "Archivos" },
+                      { id: "review", label: "Gestionar" },
                     ].map((item) => (
                       <button
                         key={item.id}
@@ -696,7 +844,7 @@ function Dashboard() {
                         aria-selected={detailTab === item.id}
                         tabIndex={detailTab === item.id ? 0 : -1}
                         onKeyDown={(e) => {
-                          const ids = ["summary", "data", "documents"];
+                          const ids = ["summary", "data", "documents", "review"];
                           let next: string | undefined;
                           if (e.key === "ArrowRight")
                             next = ids[(ids.indexOf(item.id) + 1) % ids.length];
@@ -724,6 +872,24 @@ function Dashboard() {
                   >
                     {detailTab === "summary" && <OperationOverview transfer={opened} />}
                     {detailTab === "data" && <TransferDetails transfer={opened} />}
+                    {detailTab === "review" && (
+                      <div className="ops-detail-card">
+                        {reviewMessage && <p role="status">{reviewMessage}</p>}
+                        {opened.proof_path && (
+                          <EvidencePreview
+                            path={opened.proof_path}
+                            label="Comprobante de ingreso a verificar"
+                          />
+                        )}
+                        <TransferReview
+                          key={`${opened.id}:${opened.status}`}
+                          id={opened.id}
+                          status={opened.status}
+                          busy={reviewBusy}
+                          onReview={(data) => reviewOperation(opened, data)}
+                        />
+                      </div>
+                    )}
                     {detailTab === "documents" && (
                       <div className="ops-files-grid">
                         <section className="ops-detail-card">
@@ -756,11 +922,7 @@ function Dashboard() {
                           <h3>
                             <FileText size={16} /> Comprobante fiscal
                           </h3>
-                          <p>
-                            {openedInvoice
-                              ? invoiceLabels[openedInvoice.status] || openedInvoice.status
-                              : "Aún no solicitado"}
-                          </p>
+                          <BillingStatus invoice={openedInvoice} details />
                           {openedInvoice?.number && <strong>{openedInvoice.number}</strong>}
                           {openedInvoice?.demo_email && (
                             <p>
@@ -802,9 +964,9 @@ function Dashboard() {
                     )}
                   </div>
                   <Button asChild variant="brand">
-                    <a href={`/transferencias#operacion-${opened.id}`}>
+                    <Link to="/transferencias" hash={`operacion-${opened.id}`}>
                       Revisar esta operación <ArrowRight size={16} />
-                    </a>
+                    </Link>
                   </Button>
                 </>
               )}

@@ -38,17 +38,21 @@ describe("Billing worker integration boundaries", () => {
   it("generates a data-specific demo boleta in beta without fiscal or email calls", async () => {
     const upload = vi.fn(async () => ({ error: null }));
     const update = vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) }));
-    const rpc = vi.fn(async () => ({
-      data: [
-        {
-          id: "demo-invoice",
-          transfer_id: "operation",
-          number: "DEMO-42",
-          created_at: "2026-10-12T12:00:00Z",
-        },
-      ],
-      error: null,
-    }));
+    const rpc = vi.fn(async (name: string) =>
+      name === "claim_brazil_invoice"
+        ? { data: [], error: null }
+        : {
+            data: [
+              {
+                id: "demo-invoice",
+                transfer_id: "operation",
+                number: "DEMO-42",
+                created_at: "2026-10-12T12:00:00Z",
+              },
+            ],
+            error: null,
+          },
+    );
     const transfer = {
       id: "operation",
       user_id: "owner",
@@ -111,7 +115,7 @@ describe("Billing worker integration boundaries", () => {
       { BILLING_WORKER_SECRET: "secret", BILLING_ENVIRONMENT: "beta" },
       {
         rpc: async (name: string) =>
-          name === "claim_demo_invoice"
+          ["claim_demo_invoice", "claim_brazil_invoice"].includes(name)
             ? { data: [], error: null }
             : {
                 data: [{ id: "boleta", status: "blocked", document_type: "03" }],
@@ -145,10 +149,13 @@ describe("Billing worker integration boundaries", () => {
       billing_document_type: "1",
     };
     const db = {
-      rpc: async () => ({
-        data: [{ id: "invoice", transfer_id: "transfer", document_type: "03" }],
-        error: null,
-      }),
+      rpc: async (name: string) =>
+        name === "claim_brazil_invoice"
+          ? { data: [], error: null }
+          : {
+              data: [{ id: "invoice", transfer_id: "transfer", document_type: "03" }],
+              error: null,
+            },
       storage: { from: () => ({ upload }) },
       from: (table: string) =>
         table === "transfers"
@@ -205,19 +212,23 @@ describe("Billing worker integration boundaries", () => {
     );
   });
   it("sends an accepted production document to its chosen billing email instead of account email", async () => {
-    const rpc = vi.fn(async () => ({
-      data: [
-        {
-          id: "invoice",
-          transfer_id: "transfer",
-          document_type: "03",
-          pdf_path: "private/doc.pdf",
-          number: "B001-1",
-          email_attempted_at: new Date().toISOString(),
-        },
-      ],
-      error: null,
-    }));
+    const rpc = vi.fn(async (name: string) =>
+      name === "claim_brazil_invoice"
+        ? { data: [], error: null }
+        : {
+            data: [
+              {
+                id: "invoice",
+                transfer_id: "transfer",
+                document_type: "03",
+                pdf_path: "private/doc.pdf",
+                number: "B001-1",
+                email_attempted_at: new Date().toISOString(),
+              },
+            ],
+            error: null,
+          },
+    );
     const db = {
       rpc,
       storage: {
@@ -270,7 +281,7 @@ describe("Billing worker integration boundaries", () => {
   it("blocks a job before contacting a provider when configuration is absent", async () => {
     const update = vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) }));
     const rpc = vi.fn(async (name: string) =>
-      name === "claim_demo_invoice"
+      ["claim_demo_invoice", "claim_brazil_invoice"].includes(name)
         ? { data: [], error: null }
         : {
             data: [{ id: "invoice", transfer_id: "transfer" }],
@@ -313,7 +324,10 @@ describe("Billing worker integration boundaries", () => {
   it("requires reconciliation after an ambiguous fiscal timeout without retrying", async () => {
     const update = vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) }));
     const db = {
-      rpc: async () => ({ data: [{ id: "invoice", transfer_id: "transfer" }], error: null }),
+      rpc: async (name: string) =>
+        name === "claim_brazil_invoice"
+          ? { data: [], error: null }
+          : { data: [{ id: "invoice", transfer_id: "transfer" }], error: null },
       from: (table: string) =>
         table === "transfers"
           ? {
@@ -361,7 +375,7 @@ describe("Billing worker integration boundaries", () => {
   it("stores accepted beta artifacts without sending customer data or email", async () => {
     const update = vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) }));
     const rpc = vi.fn(async (name: string) =>
-      name === "claim_demo_invoice"
+      ["claim_demo_invoice", "claim_brazil_invoice"].includes(name)
         ? { data: [], error: null }
         : {
             data: [{ id: "invoice", transfer_id: "transfer" }],

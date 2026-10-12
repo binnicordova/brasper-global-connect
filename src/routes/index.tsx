@@ -1,5 +1,5 @@
 import { exchangePath } from "@/lib/exchange-intent";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import {
   ArrowRight,
@@ -122,9 +122,9 @@ function Index() {
             <a href="#seguimiento" onClick={closeMenu}>
               Seguimiento
             </a>
-            <a href="/transferencias" onClick={closeMenu}>
+            <Link to="/transferencias" onClick={closeMenu}>
               Mis transferencias
-            </a>
+            </Link>
             <a href="#contacto" onClick={closeMenu}>
               Contacto
             </a>
@@ -177,9 +177,9 @@ function Index() {
                 envío.
               </p>
               <Button variant="brand" size="lg" className="hero-cta" asChild>
-                <a href="/transferencias">
+                <Link to="/transferencias">
                   Iniciar mi transferencia <ArrowRight />
-                </a>
+                </Link>
               </Button>
               <button className="hero-help" onClick={() => openContact()}>
                 <MessageCircle size={16} /> Prefiero hablar con el equipo
@@ -334,9 +334,9 @@ function Index() {
                 comprobante cuando esté disponible.
               </p>
               <Button variant="brand" asChild>
-                <a href="/transferencias">
+                <Link to="/transferencias">
                   Ver mis transferencias <ArrowRight />
-                </a>
+                </Link>
               </Button>
             </div>
             <ol className="tracking-steps" aria-label="Etapas de una transferencia">

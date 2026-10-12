@@ -18,7 +18,9 @@ export function createDemoFixtures(anchor = Date.now()): DemoState {
   ];
   const transfers = names.map((name, i): DemoTransfer => {
     const amount = [300, 500, 200, 850, 1500, 280][i]!;
-    const q = quoteAmounts(amount, 1.425, 5);
+    const brazil = i === 0 || i === 3;
+    const route = demoRates(anchor)[brazil ? 0 : 1]!;
+    const q = quoteAmounts(amount, route.rate, route.commission_percent);
     const status = [
       "proof_submitted",
       "proof_submitted",
@@ -35,43 +37,44 @@ export function createDemoFixtures(anchor = Date.now()): DemoState {
       demo_meta: {
         code: `DEMO-${String(i + 1).padStart(6, "0")}`,
         advisor: `Asesor Demo ${(i % 2) + 1}`,
-        issuer: "Emisor Demo S.A.C.",
+        issuer: brazil ? "Emissor Demo Ltda." : "Emisor Demo S.A.C.",
       },
       amount,
       commission: q.commission,
       recipient_amount: q.received,
-      rate: 1.425,
-      from_currency: "PEN",
-      to_currency: "BRL",
+      rate: route.rate,
+      from_currency: route.from_currency,
+      to_currency: route.to_currency,
       customer_name: name,
       customer_document: `1234500${i}`,
       customer_document_type: "1",
       customer_phone: "+51900000000",
       customer_email: `cliente${i + 1}@example.test`,
       customer_email_verified: false,
-      billing_type: i === 4 ? "factura" : "boleta",
+      billing_type: brazil ? "nfse" : i === 4 ? "factura" : "boleta",
+      billing_country: brazil ? "BR" : "PE",
       billing_email: `cliente${i + 1}@example.test`,
       billing_name: i === 4 ? "Empresa Demo S.A.C." : name,
       billing_document: i === 4 ? "20999999999" : `1234500${i}`,
-      billing_document_type: i === 4 ? "6" : "1",
+      billing_document_type: brazil ? "foreign" : i === 4 ? "6" : "1",
       recipient_name: `Destinatario Demo ${i + 1}`,
       recipient_document: `8765400${i}`,
-      recipient_bank: "Banco Demo Brasil",
+      recipient_bank: brazil ? "Banco Demo Brasil" : "Banco Demo Perú",
       recipient_account: `destino${i + 1}@example.test`,
-      recipient_account_type: "pix",
+      recipient_account_type: brazil ? "pix" : "bank_account",
       recipient_account_holder: `Destinatario Demo ${i + 1}`,
       recipient_account_holder_document: `1234567890${i}`,
       recipient_relationship: "Familia",
-      origin_bank: "Banco Demo Perú",
-      source_country: "PE",
-      destination_country: "BR",
+      origin_bank: brazil ? "Banco Demo Perú" : "Banco Demo Brasil",
+      source_country: brazil ? "PE" : "BR",
+      destination_country: brazil ? "BR" : "PE",
       funds_origin: "savings",
       funds_detail: "Ahorros declarados para la demostración",
       transfer_purpose: "Apoyo a mi familia",
       status,
       deposit_instructions: [
         {
-          bank: "Banco Demo Perú",
+          bank: brazil ? "Banco Demo Perú" : "Banco Demo Brasil",
           holder: "Brasper Demo",
           account_number: "DEMO-NO-TRANSFERIR",
           instructions: "Cuenta de demostración. No realizar depósitos.",
@@ -91,6 +94,8 @@ export function createDemoFixtures(anchor = Date.now()): DemoState {
         status === "completed"
           ? [
               {
+                issuer_country: brazil ? "BR" : "PE",
+                document_type: brazil ? "NFSE" : "01",
                 status: "demo_delivered",
                 environment: "demo",
                 number: "DEMO-000001",
@@ -105,6 +110,8 @@ export function createDemoFixtures(anchor = Date.now()): DemoState {
           : status === "paid_out"
             ? [
                 {
+                  issuer_country: brazil ? "BR" : "PE",
+                  document_type: brazil ? "NFSE" : "03",
                   status: "blocked",
                   environment: "demo",
                   number: null,

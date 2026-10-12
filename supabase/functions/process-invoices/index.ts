@@ -117,6 +117,11 @@ Deno.serve(async (request: Request) => {
       return json({ status: "email_retry_required" }, 502);
     }
   }
+  if (!beta && !demo) {
+    const { data: brazilJobs, error } = await db.rpc("claim_brazil_invoice");
+    if (error) return json({ error: error.message }, 500);
+    if (brazilJobs?.[0]) return json({ status: "blocked", id: brazilJobs[0].id });
+  }
   const { data: jobs, error: claimError } = await db.rpc(
     beta ? "claim_beta_invoice" : "claim_invoice",
   );

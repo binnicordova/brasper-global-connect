@@ -2,7 +2,7 @@
 
 ## 1. BD → SQL Editor
 
-- **Sin migraciones anteriores aplicadas:** ejecutar `supabase/release/database-update.sql` (incluye las diez).
+- **Sin migraciones anteriores aplicadas:** ejecutar `supabase/release/database-update.sql` (incluye las once).
 - **Con migraciones aplicadas:** ejecutar únicamente los archivos pendientes de `supabase/migrations/`, en orden. No repetir el paquete completo.
 - **Catálogo demo opcional:** después ejecutar `supabase/demo/seed.sql`. No es necesario para `?demo=1`, que funciona localmente.
 
@@ -24,7 +24,7 @@ La migración `202610120009_pen_brl_only.sql` deja solo PEN ↔ BRL para nuevos 
 
 `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` los proporciona Supabase; no copiarlos al frontend.
 
-**El gateway `/api/billing-beta` requiere servidor Node:** configurar allí `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BILLING_BETA_ENABLED=true` y el mismo `BILLING_GATEWAY_TOKEN`. Subir solo la Edge Function no activa ese gateway. No activar el scheduler hasta comprobar que el servidor y sus secretos están disponibles. Beta envía facturas al gateway; las boletas generan un PDF demo independiente con los datos de la operación, sin llamar a SUNAT ni enviar correo. La migración `202610120010_demo_receipts.sql` habilita este camino. No modifica boletas antiguas bloqueadas.
+**El gateway `/api/billing-beta` requiere servidor Node:** configurar allí `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BILLING_BETA_ENABLED=true` y el mismo `BILLING_GATEWAY_TOKEN`. Subir solo la Edge Function no activa ese gateway. No activar el scheduler hasta comprobar que el servidor y sus secretos están disponibles. Beta envía facturas al gateway; las boletas peruanas y NFS-e brasileñas generan un PDF demo independiente con los datos de la operación, sin llamar a SUNAT ni enviar correo. La migración `202610120010_demo_receipts.sql` habilita este camino. No modifica boletas antiguas bloqueadas.
 
 ## 3. Configuración y comprobación
 
@@ -59,3 +59,9 @@ En el servidor de la web (además de Secrets de la Edge Function): configurar `B
 - Correo: el circuito beta no envía emails. El envío nativo de Lovable sigue pendiente; debe consumir el documento ya generado y tener su propio estado/reintento, sin emitir nuevamente.
 
 Comprobación del 12/10/2026: factura con datos de operación demo `F903-91841179` aceptada directamente por SUNAT beta, CDR código `0`. Gateway web publicado responde `503 Beta disabled` a una llamada autenticada sin datos de emisión. Activar las variables del servidor antes del scheduler. Esta prueba no certifica el despliegue completo.
+
+## Regla de país y bandejas (migración 011)
+
+Aplicar `202610120011_brazil_billing_worklists.sql`: moneda **recibida por el destinatario** PEN → boleta/factura Perú; BRL → NFS-e Brasil. Conserva comprobantes históricos ya emitidos. Incluye índices para las bandejas. En beta/demo Brasil genera PDF demo en BRL; producción Brasil queda bloqueada hasta configurar el proveedor y emisor. No se envía una NFS-e a SUNAT.
+
+La web incorpora Pagos por revisar, Envíos pendientes, Todas las operaciones y Facturación. Generado y correo enviado son estados distintos. No activar correo ni cron hasta terminar la configuración pendiente.
