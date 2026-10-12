@@ -507,6 +507,7 @@
                 Compara el recorrido con su versión nativa: bienvenida, cotización, tus datos,
                 cuenta de destino, revisión y comprobante.
               </p>
+              <button class="human" type="button" id="reload-flow">Reiniciar Flow</button>
             </div>
             <iframe
               id="native-frame"
@@ -544,6 +545,9 @@
       let currentStep = 0,
         mode = "web",
         created = false;
+      document.getElementById("reload-flow").addEventListener("click", () => {
+        nativeFrame.src = nativeFrame.dataset.src;
+      });
       function selectMode(next) {
         mode = next;
         for (const button of document.querySelectorAll("[data-mode]")) {

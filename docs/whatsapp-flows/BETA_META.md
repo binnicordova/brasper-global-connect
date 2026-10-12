@@ -24,7 +24,7 @@ No se generó ni guardó un token de acceso de Graph API. No se configuraron pag
 
 ## Qué contiene el Flow
 
-1. **START:** elección IA o asesor, como modalidad de demostración. No inicia una IA ni asigna una persona.
+1. **START:** elección con opciones de radio visibles (sin desplegable) entre asistente o asesor, como modalidad de demostración. No inicia una IA ni asigna una persona.
 2. **REQUEST:** ruta e importe sintéticos y factura/boleta ficticia. No calcula una cotización vinculante.
 3. **CONTACT:** nombre y correo de prueba, origen y motivo de fondos.
 4. **DESTINATION:** destinatario y cuenta ficticios. No pide identificadores de personas ni números reales de cuenta.
@@ -75,3 +75,5 @@ Esta entrega crea una app y un Flow de demostración. No activa una operación d
 La pestaña web registra operaciones sintéticas en el almacenamiento local de este navegador y permite revisarlas en el dashboard demo. La guía recibe solamente el paso y la señal de creación mediante mensajes del iframe; valida el origen y la ventana emisora. No recibe los documentos ni los datos bancarios. El formulario conserva sus validaciones existentes.
 
 Por decisión del usuario, no se aplican migraciones, no se despliegan funciones y no se usa el editor de Lovable durante esta entrega. La sincronización de Git puede publicar el frontend; no demuestra que la BD, SUNAT, correo o WhatsApp estén conectados. La activación del agente queda descrita en `AGENTE_IA_ACTIVACION.md` para una actualización manual posterior.
+
+Se comprobó el avance con «Empezar mi cambio» desde `START` a `REQUEST` en la vista previa interactiva y dentro del iframe web. También se verificó `REQUEST → CONTACT`. La página incluye «Reiniciar Flow» para volver a cargar la vista previa guardada en Meta. La elección de atención humana sigue siendo demostrativa.

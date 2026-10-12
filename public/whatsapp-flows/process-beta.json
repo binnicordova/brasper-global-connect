@@ -21,7 +21,7 @@
                 "text": "Te acompaño para completar tu cambio. Esta es una demo: usa únicamente datos de ejemplo."
               },
               {
-                "type": "Dropdown",
+                "type": "RadioButtonsGroup",
                 "name": "attention",
                 "label": "Tipo de atención",
                 "required": true,
