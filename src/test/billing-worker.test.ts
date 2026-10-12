@@ -28,6 +28,7 @@ function worker(vars: Record<string, string>, db: unknown, fetchMock = vi.fn()) 
     Date,
     Uint8Array,
     TextDecoder,
+    URLSearchParams,
     atob,
     btoa,
     fetch: fetchMock,
@@ -448,5 +449,209 @@ describe("Billing worker integration boundaries", () => {
     expect(sent).toEqual({ operation_id: "transfer", invoice_request_id: "invoice" });
     expect(upload).toHaveBeenCalledTimes(3);
     expect(update).toHaveBeenCalledWith(expect.objectContaining({ status: "beta_accepted" }));
+  });
+});
+
+describe("MailerSend PDF delivery", () => {
+  function setup(
+    network = vi.fn(
+      async () => new Response(null, { status: 202, headers: { "x-message-id": "msg123" } }),
+    ),
+    to = "client@brasper.test",
+  ) {
+    const job = {
+      id: "invoice",
+      transfer_id: "transfer",
+      status: "beta_accepted",
+      environment: "beta",
+      document_type: "01",
+      number: "F902-1",
+      pdf_path: "private.pdf",
+      email_attempts: 1,
+    };
+    const rpc = vi.fn(async (name: string) =>
+      name === "claim_mailersend_delivery"
+        ? { data: [job], error: null }
+        : { data: true, error: null },
+    );
+    const db = {
+      rpc,
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({
+              data: {
+                status: "paid_out",
+                customer_name: "Cliente <script>",
+                billing_email: to,
+                customer_email: "wrong@brasper.test",
+                amount: 300,
+                from_currency: "BRL",
+                recipient_amount: 200,
+                to_currency: "PEN",
+                recipient_name: "Destinatario",
+                payout_reference: "ENV123",
+              },
+              error: null,
+            }),
+          }),
+        }),
+      }),
+      storage: {
+        from: () => ({ download: async () => ({ data: new Blob(["%PDF-test"]), error: null }) }),
+      },
+    };
+    const handle = worker(
+      {
+        BILLING_WORKER_SECRET: "secret",
+        BILLING_ENVIRONMENT: "beta",
+        MAILERSEND_API_KEY: "private-key",
+      },
+      db,
+      network,
+    );
+    const invoke = () =>
+      handle(
+        new Request("https://local.test", {
+          method: "POST",
+          headers: { Authorization: "Bearer secret" },
+        }),
+      );
+    return { rpc, network, invoke };
+  }
+  it("uses the configured key and approved test sender, existing PDF and billing recipient without fiscal calls", async () => {
+    const { rpc, network, invoke } = setup();
+    expect(await (await invoke()).json()).toMatchObject({ status: "email_submitted" });
+    expect(network).toHaveBeenCalledTimes(1);
+    const [url, init] = network.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://api.mailersend.com/v1/email");
+    expect(init.headers).toMatchObject({ Authorization: "Bearer private-key" });
+    const payload = JSON.parse(String(init.body));
+    expect(payload.from.email).toBe("noreply@test-vz9dlemdwjp4kj50.mlsender.net");
+    expect(payload.to).toEqual([{ email: "client@brasper.test" }]);
+    expect(payload.attachments[0]).toMatchObject({
+      content: btoa("%PDF-test"),
+      disposition: "attachment",
+    });
+    expect(payload.html).toContain("Cliente &lt;script&gt;");
+    expect(payload.html).not.toContain("Cliente <script>");
+    expect(rpc).toHaveBeenCalledWith(
+      "record_mailersend_result",
+      expect.objectContaining({ p_state: "submitted", p_message_id: "msg123" }),
+    );
+    expect(rpc).not.toHaveBeenCalledWith("claim_beta_invoice");
+  });
+  it.each([429, 422, 500])("classifies HTTP %s without reissuing", async (status) => {
+    const { rpc, invoke } = setup(vi.fn(async () => new Response(null, { status })));
+    await invoke();
+    expect(rpc).toHaveBeenCalledWith(
+      "record_mailersend_result",
+      expect.objectContaining({
+        p_state: status === 429 ? "retry" : status === 422 ? "blocked" : "reconciliation_required",
+      }),
+    );
+  });
+  it("does not retry a network timeout or pretend a suppressed 202 was sent", async () => {
+    for (const network of [
+      vi.fn(async () => {
+        throw new Error("timeout");
+      }),
+      vi.fn(async () => new Response(null, { status: 202 })),
+    ]) {
+      const { rpc, invoke } = setup(network);
+      await invoke();
+      expect(rpc).toHaveBeenCalledWith(
+        "record_mailersend_result",
+        expect.objectContaining({ p_state: "reconciliation_required" }),
+      );
+    }
+  });
+  it("blocks synthetic recipients without contacting the provider", async () => {
+    const { rpc, network, invoke } = setup(undefined, "client@example.test");
+    await invoke();
+    expect(network).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenCalledWith(
+      "record_mailersend_result",
+      expect.objectContaining({ p_state: "blocked" }),
+    );
+  });
+  it("does not repost when MailerSend accepted but the database save failed", async () => {
+    const { rpc, network, invoke } = setup();
+    rpc.mockImplementation(async (name: string) =>
+      name === "record_mailersend_result"
+        ? { data: false, error: null }
+        : name === "claim_mailersend_delivery"
+          ? {
+              data: [
+                {
+                  id: "invoice",
+                  transfer_id: "transfer",
+                  environment: "beta",
+                  status: "beta_accepted",
+                  document_type: "01",
+                  number: "F902-1",
+                  pdf_path: "private.pdf",
+                  email_attempts: 1,
+                },
+              ],
+              error: null,
+            }
+          : { data: true, error: null },
+    );
+    expect(await (await invoke()).json()).toMatchObject({
+      status: "email_reconciliation_required",
+      message_id: "msg123",
+    });
+    expect(network).toHaveBeenCalledTimes(1);
+  });
+  it("confirms provider status with GET, preserves fiscal environment and never sends another POST", async () => {
+    const rpc = vi.fn(async (name: string) =>
+      name === "claim_mailersend_delivery"
+        ? { data: [], error: null }
+        : name === "claim_mailersend_status"
+          ? {
+              data: [
+                {
+                  id: "invoice",
+                  email_provider_id: "msg123",
+                  email_recipient: "client@brasper.test",
+                  email_request_started_at: new Date().toISOString(),
+                },
+              ],
+              error: null,
+            }
+          : { data: true, error: null },
+    );
+    const network = vi.fn(async () =>
+      Response.json({
+        data: [{ message_id: "msg123", to: "client@brasper.test", status: "sent" }],
+      }),
+    );
+    const handle = worker(
+      {
+        BILLING_WORKER_SECRET: "secret",
+        BILLING_ENVIRONMENT: "beta",
+        MAILERSEND_API_KEY: "private-key",
+      },
+      { rpc },
+      network,
+    );
+    expect(
+      await (
+        await handle(
+          new Request("https://local.test", {
+            method: "POST",
+            headers: { Authorization: "Bearer secret" },
+          }),
+        )
+      ).json(),
+    ).toMatchObject({ status: "email_sent" });
+    expect(rpc).toHaveBeenCalledWith(
+      "confirm_mailersend_status",
+      expect.objectContaining({ p_state: "sent", p_message_id: "msg123" }),
+    );
+    const [url, init] = network.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toContain("message_id=msg123");
+    expect(init.method).toBeUndefined();
   });
 });

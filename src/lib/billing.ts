@@ -1,6 +1,20 @@
 import { firstInvoice, billingTypeLabels, type Transfer, type Invoice } from "./transfers";
-export const INVOICE_LIST_FIELDS =
+const LEGACY_INVOICE_FIELDS =
   "id,status,number,pdf_path,xml_path,cdr_path,environment,document_type,error,email_attempted_at,created_at";
+export const INVOICE_LIST_FIELDS = `${LEGACY_INVOICE_FIELDS},email_status,email_error,email_sent_at,email_next_attempt_at`;
+// Git sync can precede the manual database update. Only retry missing delivery columns.
+export async function readBillingCompatible<
+  T extends { error: { code?: string; message: string } | null },
+>(query: (fields: string, legacy: boolean) => PromiseLike<T>): Promise<T> {
+  const result = await query(INVOICE_LIST_FIELDS, false);
+  if (
+    result.error &&
+    ["42703", "PGRST204"].includes(result.error.code || "") &&
+    /email_(status|error|sent_at|next_attempt_at)/.test(result.error.message)
+  )
+    return await query(LEGACY_INVOICE_FIELDS, true);
+  return result;
+}
 export const billingCountry = (currency: string): "PE" | "BR" => (currency === "BRL" ? "BR" : "PE");
 export function billingIdentity(t: Transfer) {
   const invoice = firstInvoice(t.invoices);
@@ -17,6 +31,42 @@ export function billingState(invoice: Invoice | null) {
       hint: "Se genera después de registrar el envío del dinero",
     };
   const s = invoice.status;
+  const test = invoice.environment === "beta" || invoice.environment === "demo";
+  if (invoice.email_status === "sent")
+    return {
+      tone: "success",
+      label: test ? "Documento de pruebas enviado" : "Emitido y enviado",
+      delivery: "Correo enviado",
+      hint: "MailerSend confirmó el envío; no confirma lectura.",
+    };
+  if (["blocked", "reconciliation_required"].includes(invoice.email_status || ""))
+    return {
+      tone: "danger",
+      label: "Documento generado · revisar correo",
+      delivery: "Correo requiere revisión",
+      hint: invoice.email_error || "Revisar en MailerSend antes de reenviar.",
+    };
+  if (invoice.email_status === "retry")
+    return {
+      tone: "warning",
+      label: "Documento generado · reintentar correo",
+      delivery: "Reintento de correo",
+      hint: invoice.email_error || "Esperando el próximo intento.",
+    };
+  if (invoice.email_status === "submitted")
+    return {
+      tone: "working",
+      label: "Documento generado",
+      delivery: "En cola en MailerSend",
+      hint: invoice.email_error || "El proveedor aceptó el mensaje; pendiente de confirmar envío.",
+    };
+  if (invoice.email_status === "sending")
+    return {
+      tone: "working",
+      label: "Documento generado",
+      delivery: "Enviando correo",
+      hint: "Envío reservado por el worker.",
+    };
   if (s === "delivered")
     return {
       tone: "success",

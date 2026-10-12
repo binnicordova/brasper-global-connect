@@ -71,6 +71,7 @@ vi.mock("@/lib/supabase", () => ({
       });
       const query = {
         select: () => query,
+        returns: () => query,
         order: () => query,
         range: () => query,
         eq: (...args: unknown[]) => {

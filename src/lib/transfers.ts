@@ -278,6 +278,10 @@ export type Transfer = {
   payout_at?: string | null;
   invoices: {
     issuer_country?: "PE" | "BR";
+    email_status?: string;
+    email_error?: string | null;
+    email_sent_at?: string | null;
+    email_next_attempt_at?: string | null;
     next_attempt_at?: string | null;
     beta_attempts?: number;
     demo_email?: string;

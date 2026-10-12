@@ -90,6 +90,7 @@ vi.mock("@/lib/supabase", () => ({
       });
       const q = {
         select: () => q,
+        returns: () => q,
         eq: () => q,
         gt: () => q,
         order: () => q,

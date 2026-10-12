@@ -17,7 +17,7 @@ beforeAll(async () => {
   const migrations = readdirSync("supabase/migrations")
     .filter((n) => n.endsWith(".sql"))
     .sort();
-  for (const n of migrations.filter((n) => !n.includes("0011")))
+  for (const n of migrations.filter((n) => !n.includes("0011") && !n.includes("0012")))
     await db.exec(readFileSync("supabase/migrations/" + n, "utf8"));
   await db.exec(`insert into auth.users values('${owner}','client@example.test',now(),false);
  insert into fx_rates(id,from_currency,to_currency,rate,commission_percent,valid_until) values('${rateBR}','PEN','BRL',1.425,5,now()+interval '1 day'),('${ratePE}','BRL','PEN',0.69,3,now()+interval '1 day');
@@ -35,6 +35,7 @@ beforeAll(async () => {
   await db.exec(
     readFileSync("supabase/migrations/202610120011_brazil_billing_worklists.sql", "utf8"),
   );
+  await db.exec(readFileSync("supabase/migrations/202610120012_mailersend_delivery.sql", "utf8"));
 }, 20000);
 afterAll(async () => {
   await db.close();
@@ -117,4 +118,66 @@ it("blocks a real Brazil request for configuration without claiming it in SUNAT"
     status: "blocked",
   });
   expect((await db.query("select * from claim_beta_invoice()")).rows).toHaveLength(0);
+});
+it("leases MailerSend jobs once, persists provider identity and preserves fiscal test status", async () => {
+  const id = await create("nfse", "BR");
+  await db.exec(
+    `update invoices set email_status='blocked';update transfers set status='paid_out' where id='${id}';insert into invoices(transfer_id,status,environment,pdf_path) values('${id}','demo_generated','demo','private.pdf');`,
+  );
+  const jobs = (await db.query("select * from claim_mailersend_delivery('beta')")).rows as {
+    id: string;
+    email_attempts: number;
+  }[];
+  expect(jobs).toHaveLength(1);
+  const job = jobs[0]!;
+  expect(job.email_attempts).toBe(1);
+  expect((await db.query("select * from claim_mailersend_delivery('beta')")).rows).toHaveLength(0);
+  expect(
+    (await db.query(`select start_mailersend_request('${job.id}',1,'client@brasper.test') as ok`))
+      .rows[0],
+  ).toEqual({ ok: true });
+  expect(
+    (await db.query(`select start_mailersend_request('${job.id}',1,'client@brasper.test') as ok`))
+      .rows[0],
+  ).toEqual({ ok: false });
+  await db.query(`select record_mailersend_result('${job.id}',1,'submitted','msg123',null,60)`);
+  expect((await db.query("select * from claim_mailersend_delivery('beta')")).rows).toHaveLength(0);
+  await db.query(`select confirm_mailersend_status('${job.id}','msg123','sent',null)`);
+  expect(
+    (await db.query(`select status,email_status from invoices where id='${job.id}'`)).rows[0],
+  ).toEqual({ status: "demo_generated", email_status: "sent" });
+  expect((await db.query(`select status from transfers where id='${id}'`)).rows[0]).toEqual({
+    status: "completed",
+  });
+  await db.exec("set role authenticated");
+  await expect(db.query("select * from claim_mailersend_delivery('beta')")).rejects.toThrow(
+    /permission/,
+  );
+  await db.exec("reset role");
+});
+it("retries confirmed failures with backoff, but reconciles stale requests already sent to the provider", async () => {
+  const id = await create("boleta", "PE");
+  await db.exec(
+    `update transfers set status='paid_out' where id='${id}';insert into invoices(transfer_id,status,environment,pdf_path) values('${id}','demo_generated','demo','private.pdf')`,
+  );
+  let job = (await db.query("select * from claim_mailersend_delivery('demo')")).rows[0] as {
+    id: string;
+  };
+  await db.query(`select record_mailersend_result('${job.id}',1,'retry',null,'HTTP 429',60)`);
+  expect((await db.query("select * from claim_mailersend_delivery('demo')")).rows).toHaveLength(0);
+  await db.query(
+    `update invoices set email_next_attempt_at=now()-interval '1 minute' where id='${job.id}'`,
+  );
+  job = (await db.query("select * from claim_mailersend_delivery('demo')")).rows[0] as {
+    id: string;
+  };
+  await db.query(`select start_mailersend_request('${job.id}',2,'client@brasper.test')`);
+  await db.query(
+    `update invoices set email_processing_at=now()-interval '6 minutes' where id='${job.id}'`,
+  );
+  expect((await db.query("select * from claim_mailersend_delivery('demo')")).rows).toHaveLength(0);
+  expect(
+    (await db.query(`select email_status,email_attempts from invoices where id='${job.id}'`))
+      .rows[0],
+  ).toEqual({ email_status: "reconciliation_required", email_attempts: 2 });
 });

@@ -1,5 +1,5 @@
 import { BillingStatus } from "@/components/billing-status";
-import { INVOICE_LIST_FIELDS } from "@/lib/billing";
+import { readBillingCompatible } from "@/lib/billing";
 import { readExchangeIntent, exchangePath } from "@/lib/exchange-intent";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useRef, useCallback, type FormEvent } from "react";
@@ -172,12 +172,15 @@ function TransferPortal() {
       if (error) throw error;
     }
     const operation = window.location.hash.match(/^#operacion-([0-9a-f-]{36})$/i)?.[1];
-    let transferQuery = supabase
-      .from("transfers")
-      .select(`*, invoices(${INVOICE_LIST_FIELDS})`)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (operation) transferQuery = transferQuery.eq("id", operation);
+    const transferQuery = readBillingCompatible((fields) => {
+      let request = supabase!
+        .from("transfers")
+        .select(`*, invoices(${fields})`)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (operation) request = request.eq("id", operation);
+      return request.returns<Transfer[]>();
+    });
     const [r, t, e, s] = await Promise.all([
       supabase
         .from("fx_rates")
@@ -509,11 +512,14 @@ function TransferPortal() {
     });
   }
   async function loadMore() {
-    const { data, error } = await supabase!
-      .from("transfers")
-      .select(`*, invoices(${INVOICE_LIST_FIELDS})`)
-      .order("created_at", { ascending: false })
-      .range(transfers.length, transfers.length + 99);
+    const { data, error } = await readBillingCompatible((fields) =>
+      supabase!
+        .from("transfers")
+        .select(`*, invoices(${fields})`)
+        .order("created_at", { ascending: false })
+        .range(transfers.length, transfers.length + 99)
+        .returns<Transfer[]>(),
+    );
     if (error) throw error;
     setTransfers((old) => [...old, ...(data ?? [])]);
     if (!data?.length) setMessage("No hay más operaciones.");

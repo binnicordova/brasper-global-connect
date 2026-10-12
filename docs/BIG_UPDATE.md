@@ -2,7 +2,7 @@
 
 ## 1. BD → SQL Editor
 
-- **Sin migraciones anteriores aplicadas:** ejecutar `supabase/release/database-update.sql` (incluye las once).
+- **Sin migraciones anteriores aplicadas:** ejecutar `supabase/release/database-update.sql` (incluye las doce).
 - **Con migraciones aplicadas:** ejecutar únicamente los archivos pendientes de `supabase/migrations/`, en orden. No repetir el paquete completo.
 - **Catálogo demo opcional:** después ejecutar `supabase/demo/seed.sql`. No es necesario para `?demo=1`, que funciona localmente.
 
@@ -24,19 +24,20 @@ La migración `202610120009_pen_brl_only.sql` deja solo PEN ↔ BRL para nuevos 
 
 `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` los proporciona Supabase; no copiarlos al frontend.
 
-**El gateway `/api/billing-beta` requiere servidor Node:** configurar allí `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BILLING_BETA_ENABLED=true` y el mismo `BILLING_GATEWAY_TOKEN`. Subir solo la Edge Function no activa ese gateway. No activar el scheduler hasta comprobar que el servidor y sus secretos están disponibles. Beta envía facturas al gateway; las boletas peruanas y NFS-e brasileñas generan un PDF demo independiente con los datos de la operación, sin llamar a SUNAT ni enviar correo. La migración `202610120010_demo_receipts.sql` habilita este camino. No modifica boletas antiguas bloqueadas.
+**El gateway `/api/billing-beta` requiere servidor Node:** configurar allí `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BILLING_BETA_ENABLED=true` y el mismo `BILLING_GATEWAY_TOKEN`. Subir solo la Edge Function no activa ese gateway. No activar el scheduler hasta comprobar que el servidor y sus secretos están disponibles. Beta envía facturas al gateway; las boletas peruanas y NFS-e brasileñas generan un PDF demo independiente con los datos de la operación, sin llamar a SUNAT; MailerSend puede enviar esos PDF una vez aplicada la migración 012 y configurado un destinatario real. La migración `202610120010_demo_receipts.sql` habilita este camino. No modifica boletas antiguas bloqueadas.
 
-## 3. Correo automático → Lovable Emails
+## 3. Correo automático → MailerSend (ya implementado)
 
-**Esta parte requiere implementación en Lovable:** el worker actual solo tiene Resend para producción y no envía correos beta. Configurar Emails sin conectar este circuito no envía los comprobantes.
+1. Aplicar `supabase/migrations/202610120012_mailersend_delivery.sql` y desplegar los mismos tres archivos del paso 2. No desarrollar otro servicio de correo ni un puente de servidor.
+2. En **Secrets de `process-invoices`** conservar `MAILERSEND_API_KEY`, ya guardado. Si el secreto está solo en el servidor web de Lovable, habilitarlo también para esta Edge Function sin copiarlo al frontend ni mostrarlo en el chat.
+3. Remitente beta por defecto: `noreply@test-vz9dlemdwjp4kj50.mlsender.net`, nombre Brasper. Para cambiarlo, configurar `BILLING_FROM_EMAIL` y opcionalmente `BILLING_FROM_NAME`. Producción exige `BILLING_FROM_EMAIL` explícito de un dominio verificado. No requiere Resend ni Lovable Emails.
+4. Dominio de prueba para consulta: `yxj6ljnoyk0gdo2r`, ya configurado como respaldo. Si cambia el dominio, configurar `MAILERSEND_DOMAIN_ID`. El token necesita permiso de envío y **`activity_read`** para confirmar el resultado. [API oficial MailerSend](https://developers.mailersend.com/api/v1/email).
+5. Al invocar el worker: envía el PDF existente de una operación `paid_out`, fiscal `accepted`, `beta_accepted` o `demo_generated`, a `billing_email` (respaldo: `customer_email`). No vuelve a emitir; los documentos de pruebas conservan su entorno. Bloquea correos sintéticos `example.test`.
+6. `202` con `x-message-id` → **en cola en MailerSend**; otra ejecución consulta su estado → **correo enviado** cuando el proveedor confirma `sent`/`delivered`. Mensajes pausados/suprimidos no se marcan enviados. Sin lectura permitida, queda pendiente de consulta y el worker informa el permiso faltante.
+7. Hasta 5 intentos para errores confirmados reintentables (HTTP 429 o fallo previo al envío), con espera creciente. Timeout, HTTP 5xx o fallo al guardar después del POST → conciliación, sin reenviar a ciegas. Las reservas atómicas impiden dos envíos concurrentes. No hay botón de reenvío automático para resultados inciertos; revisar en MailerSend antes de intervenir.
+8. Cron: ejecutar `process-invoices` por POST cada minuto con `Authorization: Bearer BILLING_WORKER_SECRET`, almacenado de forma privada. Una ejecución procesa un trabajo; las siguientes generan/envían/confirman. Activarlo cuando gateway y Storage estén listos. Verificar primero con mocks y, solo con destinatario aprobado por el usuario, una operación beta real. No enviar al catálogo sintético ni emitir durante la instalación.
 
-1. En Lovable: **More → Cloud → Emails**, seleccionar el dominio ya verificado del workspace y activar Emails para este proyecto. Si falta dominio/remitente aprobado, pedir únicamente ese dato y completar la implementación mientras se verifica. No inventar una dirección de envío. [Documentación oficial](https://docs.lovable.dev/features/custom-emails).
-2. Usar **Lovable Emails desde el servidor de esta app TanStack Start**. No exigir `RESEND_API_KEY` para esta opción ni cambiar los cuatro secretos de facturación. Crear `src/routes/api.billing-email.ts` como puente privado del worker al correo del servidor; autenticación con un token propio compartido, guardado en Secrets del worker y variables privadas del servidor. El worker necesita la URL pública de ese puente. Nunca usar `VITE_*` ni permitir envío anónimo desde el navegador.
-3. Conectar el envío **después de generar y guardar el PDF**, solo con transferencia `paid_out` y documento `accepted`, `beta_accepted` o `demo_generated`. Destino: `billing_email`, con respaldo en `customer_email`. Descargar desde Storage privado y adjuntar el PDF existente; si el servicio no admite adjuntos, implementar acceso privado autenticado para descargarlo. No publicar el bucket ni usar enlaces firmados que caduquen antes de abrir el correo. No llamar a SUNAT ni regenerar el comprobante para enviarlo.
-4. Añadir una migración pendiente **012** con estado de entrega independiente del estado fiscal, identificador del proveedor, número de intentos, próximo intento, último error y fecha de envío. Reservar trabajos de forma atómica con lease; guardar el resultado antes de completar. Hasta 5 reintentos con espera creciente para errores confirmados. Ante timeout o respuesta incierta: conciliar con el proveedor antes de reenviar; usar su idempotencia si la soporta. Un doble clic o dos workers no deben producir dos correos.
-5. Plantilla Brasper: asunto con número de operación/comprobante; nombre del cliente, monedas, montos, destinatario, referencia y PDF correspondiente. Los documentos beta/vista previa conservan su identificación de pruebas. No adjuntar datos de otra operación ni enviar marketing.
-6. Dashboard: mostrar generado/correo pendiente, enviando, enviado, reintento y revisión. **“Correo enviado” solo tras aceptación del proveedor**; no equivale a lectura ni entrega en bandeja. Conservar el estado fiscal original de beta y vista previa. Reenviar solo mediante acción explícita de staff, auditada y sin nueva emisión.
-7. Verificar destinatario/adjunto, envío único, fallo con reintento y resultado incierto con mocks. No enviar a los correos sintéticos `example.test`. Dejar preparado el ensayo con un correo de prueba aprobado; no enviar durante el big update sin que el usuario indique ese destinatario. Activar el cron autenticado solo cuando gateway, almacenamiento y correo estén listos. Desplegar también el puente de servidor y cualquier función/migración nueva; actualizar `supabase/release/manifest.json` y la lista de pendientes.
+**La API key guardada no despliega el código ni la migración.** Confirmar: migración 012 aplicada, worker actualizado y secreto disponible dentro de esa función.
 
 ## 4. Configuración y comprobación
 
@@ -46,7 +47,7 @@ La migración `202610120009_pen_brl_only.sql` deja solo PEN ↔ BRL para nuevos 
 
 ## Prompt corto para Lovable
 
-> Implementa docs/BIG_UPDATE.md en una sola actualización: aplica SQL pendiente, despliega process-invoices con su archivo compartido y activa el gateway del servidor según las variables indicadas. Implementa la sección 3 de correo con Lovable Emails y el dominio/remitente aprobado disponible: puente privado desde el worker al servidor TanStack Start, PDF existente de Storage, destinatario fiscal, estado de entrega separado, reserva atómica, control de errores, reintentos e idempotencia/conciliación. Conecta documentos accepted, beta_accepted y demo_generated sin cambiar su entorno fiscal. Actualiza los indicadores del dashboard y los archivos de release. No uses Resend salvo autorización expresa; conserva los secretos existentes y solicita solo configuración realmente faltante. Comprueba Auth anónimo, rechazos 401 y envío/reintento con mocks. No rediseñes la web ni desarrolles IA/WhatsApp. No emitas ni envíes correos durante esta actualización; prepara la prueba posterior con un destinatario aprobado. Activa cron únicamente cuando gateway y correo estén operativos. Responde con estado de BD, funciones, gateway, correo y bloqueo concreto.
+> Aplica únicamente docs/BIG_UPDATE.md: ejecuta las migraciones SQL pendientes (incluida 012) y despliega process-invoices/index.ts, process-invoices/deno.json y _shared/demo-receipt.ts. Conserva BILLING_ENVIRONMENT=beta y los secretos existentes; asegúrate de que MAILERSEND_API_KEY esté disponible en la Edge Function. Usa el remitente y domain ID de prueba ya configurados, salvo valores explícitos de BILLING_FROM_EMAIL/MAILERSEND_DOMAIN_ID. Comprueba permisos de envío y activity_read de MailerSend sin imprimir la clave. Activa el gateway con las variables privadas indicadas. El correo y los estados/reintentos ya están implementados: no crees otro proveedor, puente, función ni rediseño. Comprueba migraciones, Auth anónimo y rechazo 401. No emitas ni envíes emails durante esta instalación. Configura cron autenticado cada minuto solo cuando gateway y Storage estén listos. Reporta estado de BD, función, gateway, MailerSend y bloqueo concreto; solicita únicamente datos faltantes.
 
 ## De dónde salen los secretos
 
@@ -55,7 +56,7 @@ La migración `202610120009_pen_brl_only.sql` deja solo PEN ↔ BRL para nuevos 
 - `BILLING_GATEWAY_TOKEN`: token propio compartido entre Edge Function y gateway. Ya está definido en el archivo local privado `.env.billing-beta`; copiarlo a Secrets, nunca al chat o Git.
 - `BILLING_WORKER_SECRET`: secreto propio para autorizar al scheduler. También está definido en `.env.billing-beta`; copiarlo a Secrets y usarlo en la cabecera del scheduler.
 
-Para probar ambos tipos sin gateway, usar `BILLING_ENVIRONMENT=demo`: genera PDF demo de boleta y factura. Mantener `beta` si se desea probar facturas en SUNAT beta. Los PDF demo quedan privados en Storage con estado `demo_generated`; el correo real requiere implementar la sección 3.
+Para probar ambos tipos sin gateway, usar `BILLING_ENVIRONMENT=demo`: genera PDF demo de boleta y factura. Mantener `beta` si se desea probar facturas en SUNAT beta. Los PDF demo quedan privados en Storage con estado `demo_generated`; el correo real requiere aplicar la sección 3.
 
 Estos tokens son de nuestra integración, no credenciales entregadas por SUNAT. Mantener los valores actuales para que ambos servicios coincidan. El worker devuelve 401 si falta su secreto o si la llamada no lleva el valor correcto.
 
@@ -68,7 +69,7 @@ En el servidor de la web (además de Secrets de la Edge Function): configurar `B
 - Reintento automático solo si BD confirma `beta_sent_at IS NULL`: hasta 5 intentos con espera creciente. Requiere invocar periódicamente el worker autenticado.
 - SUNAT ya aceptó pero falló la devolución/Storage: recuperar PDF, XML y CDR guardados, usando el mismo número; no volver a emitir.
 - Respuesta incierta sin resultado guardado: conciliación; no reenviar a ciegas. Rechazo SUNAT: conservar diagnóstico y corregirlo antes de una nueva emisión.
-- Correo: el circuito beta no envía emails. El big update debe implementar el envío nativo de Lovable descrito en la sección 3, consumiendo el documento ya generado, con estado/reintento independiente y sin emitir nuevamente.
+- Correo: con MailerSend, el circuito beta envía el PDF ya generado; la migración 012 separa estado/reintento de correo y estado fiscal. Ver sección 3.
 
 Comprobación del 12/10/2026: factura con datos de operación demo `F903-91841179` aceptada directamente por SUNAT beta, CDR código `0`. Gateway web publicado responde `503 Beta disabled` a una llamada autenticada sin datos de emisión. Activar las variables del servidor antes del scheduler. Esta prueba no certifica el despliegue completo.
 
@@ -76,7 +77,7 @@ Comprobación del 12/10/2026: factura con datos de operación demo `F903-9184117
 
 Aplicar `202610120011_brazil_billing_worklists.sql`: moneda **recibida por el destinatario** PEN → boleta/factura Perú; BRL → NFS-e Brasil. Conserva comprobantes históricos ya emitidos. Incluye índices para las bandejas. En beta/demo Brasil genera PDF demo en BRL; producción Brasil queda bloqueada hasta configurar el proveedor y emisor. No se envía una NFS-e a SUNAT.
 
-La web incorpora Pagos por revisar, Envíos pendientes, Todas las operaciones y Facturación. Generado y correo enviado son estados distintos. No activar correo ni cron hasta terminar la configuración pendiente.
+La web incorpora Pagos por revisar, Envíos pendientes, Todas las operaciones y Facturación. Generado y correo enviado son estados distintos. Activar correo y cron después de aplicar 012 y completar la configuración indicada en la sección 3.
 
 ## Presentación pulida y RUC de beta
 

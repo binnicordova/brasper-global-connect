@@ -23,7 +23,7 @@ import { TransferDetails } from "@/components/transfer-details";
 import { TransferReview, type ReviewSubmission } from "@/components/transfer-review";
 import { validateProof } from "@/lib/transfers";
 import { BillingStatus } from "@/components/billing-status";
-import { INVOICE_LIST_FIELDS, billingIdentity } from "@/lib/billing";
+import { readBillingCompatible, billingIdentity } from "@/lib/billing";
 import { countryLabels } from "@/lib/transfers";
 import { supabase } from "@/lib/supabase";
 import { statusLabels, invoiceLabels, firstInvoice, type Transfer } from "@/lib/transfers";
@@ -109,43 +109,60 @@ function Dashboard() {
     retry: false,
     queryFn: async () => {
       // Never transfer signed XML/PDF/CDR payloads just to render a worklist.
-      const join = query.status.startsWith("invoice_") ? "invoices!inner" : "invoices";
-      let request = supabase!
-        .from("transfers")
-        .select(`*, ${join}(${INVOICE_LIST_FIELDS})`, { count: "exact" })
-        .order("created_at", { ascending: false })
-        .order("id")
-        .range(page * 50, page * 50 + 49);
-      const billingFilters: Record<string, string[]> = {
-        invoice_attention: [
-          "blocked",
-          "reconciliation_required",
-          "beta_rejected",
-          "beta_reconciliation_required",
-        ],
-        invoice_generated: [
-          "accepted",
-          "beta_accepted",
-          "demo_generated",
-          "demo_delivered",
-          "delivered",
-        ],
-        invoice_delivered: ["delivered"],
-        invoice_pending: ["queued", "processing", "sending"],
-      };
-      if (billingFilters[query.status])
-        request = request.in("invoices.status", billingFilters[query.status]!);
-      else if (query.status === "pending_payout")
-        request = request.in("status", ["proof_submitted", "verified"]);
-      else if (query.status === "sent") request = request.in("status", ["paid_out", "completed"]);
-      else if (query.status) request = request.eq("status", query.status);
-      if (query.currency) request = request.eq("from_currency", query.currency);
-      if (query.search)
-        request = request.ilike(
-          /^[0-9]+$/.test(query.search) ? "customer_document" : "customer_name",
-          `%${query.search}%`,
-        );
-      const { data, error, count } = await request;
+      const join =
+        query.status.startsWith("invoice_") || query.status.startsWith("email_")
+          ? "invoices!inner"
+          : "invoices";
+      const { data, error, count } = await readBillingCompatible((fields, legacy) => {
+        let request = supabase!
+          .from("transfers")
+          .select(`*, ${join}(${fields})`, { count: "exact" })
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range(page * 50, page * 50 + 49);
+        const billingFilters: Record<string, string[]> = {
+          invoice_attention: [
+            "blocked",
+            "reconciliation_required",
+            "beta_rejected",
+            "beta_reconciliation_required",
+          ],
+          invoice_generated: [
+            "accepted",
+            "beta_accepted",
+            "demo_generated",
+            "demo_delivered",
+            "delivered",
+          ],
+          invoice_delivered: ["delivered"],
+          invoice_pending: ["queued", "processing", "sending"],
+        };
+        if (legacy && query.status.startsWith("email_"))
+          throw new Error("Aplica la migración 012 para consultar los estados de correo.");
+        if (query.status === "invoice_delivered")
+          request = legacy
+            ? request.eq("invoices.status", "delivered")
+            : request.eq("invoices.email_status", "sent");
+        else if (query.status === "email_attention")
+          request = request.in("invoices.email_status", ["blocked", "reconciliation_required"]);
+        else if (query.status === "email_retry")
+          request = request.eq("invoices.email_status", "retry");
+        else if (query.status === "email_pending")
+          request = request.in("invoices.email_status", ["sending", "submitted"]);
+        else if (billingFilters[query.status])
+          request = request.in("invoices.status", billingFilters[query.status]!);
+        else if (query.status === "pending_payout")
+          request = request.in("status", ["proof_submitted", "verified"]);
+        else if (query.status === "sent") request = request.in("status", ["paid_out", "completed"]);
+        else if (query.status) request = request.eq("status", query.status);
+        if (query.currency) request = request.eq("from_currency", query.currency);
+        if (query.search)
+          request = request.ilike(
+            /^[0-9]+$/.test(query.search) ? "customer_document" : "customer_name",
+            `%${query.search}%`,
+          );
+        return request.returns<Transfer[]>();
+      });
       if (error) throw error;
       return { rows: (data ?? []) as Transfer[], count: count ?? 0 };
     },
@@ -206,11 +223,14 @@ function Dashboard() {
       // Reset the submitted form even when the follow-up read fails.
       let refreshNote = "";
       try {
-        const current = await supabase
-          .from("transfers")
-          .select(`*, invoices(${INVOICE_LIST_FIELDS})`)
-          .eq("id", t.id)
-          .maybeSingle();
+        const current = await readBillingCompatible((fields) =>
+          supabase!
+            .from("transfers")
+            .select(`*, invoices(${fields})`)
+            .eq("id", t.id)
+            .returns<Transfer[]>()
+            .maybeSingle(),
+        );
         if (current.error || !current.data)
           throw current.error || new Error("Operación no disponible");
         setOpened(current.data as Transfer);
@@ -520,6 +540,9 @@ function Dashboard() {
                       <option value="invoice_generated">Comprobante generado</option>
                       <option value="invoice_delivered">Comprobante enviado por correo</option>
                       <option value="invoice_pending">En cola / en proceso</option>
+                      <option value="email_pending">Correo enviando / en proveedor</option>
+                      <option value="email_retry">Correo por reintentar</option>
+                      <option value="email_attention">Correo requiere revisión</option>
                       {Object.entries(statusLabels).map(([value, label]) => (
                         <option value={value} key={value}>
                           {label}
