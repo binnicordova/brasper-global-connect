@@ -23,7 +23,7 @@
               {
                 "type": "Dropdown",
                 "name": "attention",
-                "label": "¿Cómo prefieres continuar?",
+                "label": "Tipo de atención",
                 "required": true,
                 "data-source": [
                   {
@@ -81,7 +81,7 @@
               {
                 "type": "Dropdown",
                 "name": "route",
-                "label": "Monedas que vas a cambiar",
+                "label": "Monedas del cambio",
                 "required": true,
                 "data-source": [
                   {
@@ -199,7 +199,7 @@
               {
                 "type": "TextInput",
                 "name": "billing_email",
-                "label": "Correo del comprobante",
+                "label": "Correo de envío",
                 "input-type": "email",
                 "required": true
               },
@@ -232,7 +232,7 @@
               },
               {
                 "type": "Footer",
-                "label": "Elegir cuenta de destino",
+                "label": "Elegir cuenta",
                 "on-click-action": {
                   "name": "navigate",
                   "next": {
@@ -598,7 +598,7 @@
               {
                 "type": "DocumentPicker",
                 "name": "proof",
-                "label": "Comprobante de ejemplo",
+                "label": "Comprobante demo",
                 "description": "Vista previa: carga simulada y opcional. Usa solo documentos ficticios.",
                 "min-uploaded-documents": 0,
                 "max-uploaded-documents": 1,
@@ -606,7 +606,7 @@
               },
               {
                 "type": "Footer",
-                "label": "Enviar solicitud de prueba",
+                "label": "Enviar solicitud",
                 "on-click-action": {
                   "name": "complete",
                   "payload": {
