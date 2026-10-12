@@ -3,7 +3,7 @@
   "screens": [
     {
       "id": "START",
-      "title": "Brasper demo",
+      "title": "Asistente Brasper",
       "data": {},
       "layout": {
         "type": "SingleColumnLayout",
@@ -14,31 +14,31 @@
             "children": [
               {
                 "type": "TextHeading",
-                "text": "Prueba privada de pantallas"
+                "text": "Hola, soy tu asistente Brasper."
               },
               {
                 "type": "TextBody",
-                "text": "Usa solo opciones ficticias. No se registran pagos ni operaciones reales."
+                "text": "Te acompaño para completar tu cambio. Esta es una demo: usa únicamente datos de ejemplo."
               },
               {
                 "type": "Dropdown",
                 "name": "attention",
-                "label": "Atención de prueba",
+                "label": "¿Cómo prefieres continuar?",
                 "required": true,
                 "data-source": [
                   {
                     "id": "ai",
-                    "title": "Asistente IA demo"
+                    "title": "Con el asistente Brasper"
                   },
                   {
                     "id": "human",
-                    "title": "Asesor humano demo"
+                    "title": "Con una persona (demo)"
                   }
                 ]
               },
               {
                 "type": "Footer",
-                "label": "Continuar",
+                "label": "Empezar mi cambio",
                 "on-click-action": {
                   "name": "navigate",
                   "next": {
@@ -60,7 +60,7 @@
     },
     {
       "id": "REQUEST",
-      "title": "Solicitud ficticia",
+      "title": "Cotización",
       "data": {
         "attention": {
           "type": "string",
@@ -76,12 +76,12 @@
             "children": [
               {
                 "type": "TextBody",
-                "text": "Escenario sintético. No muestra una cotización ni solicita depósito."
+                "text": "Elige las monedas y el monto. En la web verás la tasa vigente y la comisión antes de aceptar. Aquí probamos el recorrido con opciones ficticias."
               },
               {
                 "type": "Dropdown",
                 "name": "route",
-                "label": "Escenario demo",
+                "label": "Monedas que vas a cambiar",
                 "required": true,
                 "data-source": [
                   {
@@ -97,7 +97,7 @@
               {
                 "type": "Dropdown",
                 "name": "amount",
-                "label": "Importe de ejemplo",
+                "label": "Monto que entregas",
                 "required": true,
                 "data-source": [
                   {
@@ -117,7 +117,7 @@
               {
                 "type": "Dropdown",
                 "name": "billing_type",
-                "label": "Comprobante demo",
+                "label": "Tu comprobante",
                 "required": true,
                 "data-source": [
                   {
@@ -132,7 +132,7 @@
               },
               {
                 "type": "Footer",
-                "label": "Continuar",
+                "label": "Completar mis datos",
                 "on-click-action": {
                   "name": "navigate",
                   "next": {
@@ -159,7 +159,7 @@
     },
     {
       "id": "CONTACT",
-      "title": "Contacto y fondos demo",
+      "title": "Tus datos",
       "data": {
         "attention": {
           "type": "string",
@@ -187,26 +187,26 @@
             "children": [
               {
                 "type": "TextBody",
-                "text": "Usa Cliente Demo y demo@example.test. No ingreses datos de personas reales."
+                "text": "¿A qué correo quieres recibir tu comprobante? Completa tus datos de ejemplo y cuéntanos el origen y motivo del dinero."
               },
               {
                 "type": "TextInput",
                 "name": "customer_name",
-                "label": "Nombre ficticio",
+                "label": "Nombre de prueba",
                 "input-type": "text",
                 "required": true
               },
               {
                 "type": "TextInput",
                 "name": "billing_email",
-                "label": "Correo de prueba",
+                "label": "Correo del comprobante",
                 "input-type": "email",
                 "required": true
               },
               {
                 "type": "Dropdown",
                 "name": "funds_origin",
-                "label": "Origen de fondos demo",
+                "label": "Origen de tus fondos",
                 "required": true,
                 "data-source": [
                   {
@@ -226,13 +226,13 @@
               {
                 "type": "TextInput",
                 "name": "purpose",
-                "label": "Motivo ficticio",
+                "label": "Motivo de tu cambio",
                 "input-type": "text",
                 "required": true
               },
               {
                 "type": "Footer",
-                "label": "Continuar",
+                "label": "Elegir cuenta de destino",
                 "on-click-action": {
                   "name": "navigate",
                   "next": {
@@ -264,7 +264,7 @@
     },
     {
       "id": "DESTINATION",
-      "title": "Destino de prueba",
+      "title": "Cuenta de destino",
       "data": {
         "attention": {
           "type": "string",
@@ -308,12 +308,12 @@
             "children": [
               {
                 "type": "TextBody",
-                "text": "Elige un destino sintético. Los documentos y cuentas reales se completarían en la web privada."
+                "text": "Indica quién recibe el dinero y su cuenta. En esta demo elegimos destinos ficticios; los datos bancarios completos se registran en la web privada."
               },
               {
                 "type": "Dropdown",
                 "name": "recipient",
-                "label": "Destinatario demo",
+                "label": "Persona que recibe",
                 "required": true,
                 "data-source": [
                   {
@@ -329,7 +329,7 @@
               {
                 "type": "Dropdown",
                 "name": "account_type",
-                "label": "Tipo de cuenta demo",
+                "label": "Tipo de cuenta",
                 "required": true,
                 "data-source": [
                   {
@@ -349,7 +349,7 @@
               {
                 "type": "Dropdown",
                 "name": "account",
-                "label": "Cuenta ficticia",
+                "label": "Cuenta de ejemplo",
                 "required": true,
                 "data-source": [
                   {
@@ -360,7 +360,7 @@
               },
               {
                 "type": "Footer",
-                "label": "Continuar",
+                "label": "Revisar mi solicitud",
                 "on-click-action": {
                   "name": "navigate",
                   "next": {
@@ -394,7 +394,7 @@
     },
     {
       "id": "REVIEW",
-      "title": "Resumen de prueba",
+      "title": "Revisión y pago",
       "data": {
         "attention": {
           "type": "string",
@@ -450,7 +450,7 @@
             "children": [
               {
                 "type": "TextHeading",
-                "text": "Revisa antes de continuar"
+                "text": "¿Está todo correcto?"
               },
               {
                 "type": "TextSubheading",
@@ -502,11 +502,11 @@
               },
               {
                 "type": "TextCaption",
-                "text": "Este ensayo no cotiza ni transfiere. El equipo confirma ingreso y registra envío; después sigue la facturación."
+                "text": "Después de recibir tu comprobante, el equipo confirma el ingreso bancario y registra el envío. La factura o boleta sigue después del envío. En esta demo no movemos dinero."
               },
               {
                 "type": "Footer",
-                "label": "Continuar",
+                "label": "Añadir comprobante",
                 "on-click-action": {
                   "name": "navigate",
                   "next": {
@@ -535,7 +535,7 @@
     },
     {
       "id": "PROOF",
-      "title": "Prueba de comprobante",
+      "title": "Tu comprobante",
       "terminal": true,
       "success": true,
       "data": {
@@ -593,20 +593,20 @@
             "children": [
               {
                 "type": "TextBody",
-                "text": "En el teléfono de pruebas puedes adjuntar el PDF ficticio de la demo. En la vista previa web puedes finalizar sin adjunto. No uses comprobantes reales."
+                "text": "Añade un comprobante de ejemplo desde tu teléfono de pruebas. En la vista previa puedes continuar sin archivo. El ingreso siempre lo confirma el equipo."
               },
               {
                 "type": "DocumentPicker",
                 "name": "proof",
-                "label": "Archivo de prueba (opcional)",
-                "description": "La vista previa genera archivos simulados; no acredita una carga real.",
+                "label": "Comprobante de ejemplo",
+                "description": "Vista previa: carga simulada y opcional. Usa solo documentos ficticios.",
                 "min-uploaded-documents": 0,
                 "max-uploaded-documents": 1,
                 "max-file-size-kb": 5120
               },
               {
                 "type": "Footer",
-                "label": "Finalizar prueba",
+                "label": "Enviar solicitud de prueba",
                 "on-click-action": {
                   "name": "complete",
                   "payload": {

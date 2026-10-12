@@ -2,90 +2,632 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
-    <title>Brasper · WhatsApp Flows Beta</title>
+    <title>Brasper · Tu cambio, acompañado</title>
     <style>
+      :root {
+        --ink: #122344;
+        --muted: #66758d;
+        --green: #008575;
+        --line: #e0e7ef;
+        --paper: #fff;
+        --canvas: #f2f6f9;
+      }
       * {
         box-sizing: border-box;
       }
       body {
         margin: 0;
-        background: #f4f7fb;
-        color: #12234b;
-        font-family: system-ui, sans-serif;
+        color: var(--ink);
+        background: var(--canvas);
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
       }
-      main {
-        max-width: 1240px;
-        margin: auto;
-        padding: 32px 20px;
-      }
-      h1 {
-        margin: 0 0 12px;
-        font-size: clamp(26px, 4vw, 40px);
-      }
-      p {
-        max-width: 850px;
-        line-height: 1.6;
+      button {
+        font: inherit;
+        cursor: pointer;
       }
       a {
-        color: #1754c4;
+        color: var(--green);
+        text-underline-offset: 3px;
       }
-      nav {
+      button:focus-visible,
+      a:focus-visible {
+        outline: 3px solid #80cfc6;
+        outline-offset: 4px;
+      }
+      .topbar {
+        background: var(--paper);
+        border-bottom: 1px solid var(--line);
+      }
+      .topbar-inner {
+        max-width: 1400px;
+        padding: 22px 32px;
+        margin: auto;
         display: flex;
-        gap: 18px;
-        flex-wrap: wrap;
-        margin: 20px 0;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      .brand {
+        color: var(--ink);
+        font-size: 29px;
+        font-weight: 850;
+        letter-spacing: -1.7px;
+        text-decoration: none;
+      }
+      .brand span {
+        color: var(--green);
+      }
+      .topnav {
+        display: flex;
+        gap: 24px;
+        font-size: 13px;
+      }
+      .topnav a {
+        color: var(--muted);
+        text-decoration: none;
+      }
+      .demo {
+        color: #007264;
+        background: #e3f4ef;
+        font-size: 12px;
+        font-weight: 650;
+        padding: 8px 12px;
+        border-radius: 30px;
+      }
+      main {
+        max-width: 1400px;
+        margin: auto;
+        padding: 36px 32px 48px;
+      }
+      .intro {
+        margin-bottom: 28px;
+      }
+      .eyebrow {
+        color: var(--green);
+        font-size: 11px;
+        letter-spacing: 1.8px;
+        text-transform: uppercase;
+        font-weight: 750;
+      }
+      h1 {
+        margin: 10px 0;
+        font-size: clamp(27px, 3vw, 40px);
+        letter-spacing: -1.5px;
+        font-weight: 750;
+      }
+      .intro p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+        max-width: 700px;
+        font-size: 15px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 26px;
+        align-items: start;
+      }
+      .assistant {
+        position: sticky;
+        top: 22px;
+        overflow: hidden;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        box-shadow: 0 10px 30px #12234405;
+      }
+      .assistant-head {
+        padding: 25px 23px;
+        background: var(--ink);
+        color: white;
+        display: flex;
+        gap: 13px;
+        align-items: center;
+      }
+      .avatar {
+        display: grid;
+        place-items: center;
+        width: 46px;
+        height: 46px;
+        border-radius: 15px;
+        background: #1f3b57;
+        color: #7ae3ca;
+        font-size: 25px;
+        font-weight: 850;
+      }
+      .assistant-head h2 {
+        font-size: 16px;
+        margin: 0 0 5px;
+      }
+      .assistant-head p {
+        font-size: 12px;
+        color: #b9ced9;
+        margin: 0;
+      }
+      .assistant-body {
+        padding: 24px 22px;
+      }
+      .assistant-label {
+        color: var(--green);
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .bubble {
+        background: #f0f7f6;
+        border-radius: 0 16px 16px;
+        padding: 17px;
+        margin: 12px 0 20px;
+        font-size: 14px;
+        line-height: 1.65;
+      }
+      .helper-title {
+        color: var(--muted);
+        font-size: 12px;
+        margin: 20px 0 10px;
+      }
+      .quick {
+        display: grid;
+        gap: 8px;
+      }
+      .quick button {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        color: var(--ink);
+        padding: 12px 14px;
+        text-align: left;
+        border-radius: 11px;
+        font-size: 13px;
+      }
+      .quick button:hover {
+        border-color: #88c9bd;
+        background: #f5faf8;
+      }
+      .help-reply {
+        margin-top: 15px;
+        padding: 14px;
+        border-left: 3px solid var(--green);
+        font-size: 13px;
+        line-height: 1.65;
+        color: #42536b;
+      }
+      .human {
+        display: block;
+        width: 100%;
+        padding: 13px;
+        margin-top: 24px;
+        border: 0;
+        border-radius: 12px;
+        color: var(--green);
+        background: #e8f5f0;
+        font-size: 13px;
+        font-weight: 650;
+      }
+      .assistant-foot {
+        padding: 18px 22px;
+        font-size: 11px;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+        line-height: 1.6;
+      }
+      .workspace {
+        min-width: 0;
+      }
+      .mode-tabs {
+        display: flex;
+        gap: 5px;
+        background: #e8eef3;
+        padding: 5px;
+        border-radius: 13px;
+        width: fit-content;
+        margin-bottom: 18px;
+      }
+      .mode-tabs button {
+        padding: 11px 18px;
+        border: 0;
+        border-radius: 9px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 650;
+      }
+      .mode-tabs button[aria-selected="true"] {
+        background: var(--paper);
+        color: var(--ink);
+        box-shadow: 0 2px 6px #12234409;
+      }
+      .flow-panel {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        overflow: hidden;
+      }
+      .panel-head {
+        padding: 25px 27px 0;
+      }
+      .panel-head h2 {
+        margin: 0 0 7px;
+        font-size: 21px;
+        letter-spacing: -0.6px;
+      }
+      .panel-head p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+        margin: 0;
+      }
+      .steps {
+        display: flex;
+        gap: 12px;
+        list-style: none;
+        padding: 0;
+        margin: 23px 0;
+      }
+      .steps li {
+        flex: 1;
+        font-size: 11px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .steps span {
+        flex-shrink: 0;
+        width: 25px;
+        height: 25px;
+        display: grid;
+        place-items: center;
+        background: #edf1f5;
+        border-radius: 50%;
+        font-weight: 700;
+      }
+      .steps li[aria-current="step"] {
+        color: var(--green);
+        font-weight: 700;
+      }
+      .steps li[aria-current="step"] span {
+        color: white;
+        background: var(--green);
       }
       iframe {
         display: block;
         width: 100%;
-        height: 900px;
-        border: 1px solid #d5dfec;
+        height: 960px;
+        border: 0;
         background: white;
-        border-radius: 14px;
       }
-      .footnote {
-        color: #54627a;
+      #native-frame {
+        height: 1020px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .completion {
+        border-top: 1px solid var(--line);
+        padding: 17px 27px;
+        background: #eff9f4;
+        line-height: 1.6;
         font-size: 14px;
       }
-      @media (max-width: 600px) {
+      .resources {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin: 20px 2px;
+        font-size: 12px;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.7;
+        margin: 18px 2px;
+      }
+      @media (max-width: 1050px) {
+        .layout {
+          grid-template-columns: 260px minmax(0, 1fr);
+          gap: 18px;
+        }
         main {
-          padding: 24px 12px;
+          padding: 28px 20px;
+        }
+        .steps {
+          gap: 7px;
+        }
+        .steps li {
+          font-size: 10px;
+        }
+      }
+      @media (max-width: 760px) {
+        .topbar-inner {
+          padding: 18px;
+        }
+        .topnav {
+          display: none;
+        }
+        main {
+          padding: 24px 14px;
+        }
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .assistant {
+          position: static;
+        }
+        .assistant-head {
+          padding: 18px;
+        }
+        .assistant-body {
+          padding: 18px;
+        }
+        .quick {
+          grid-template-columns: 1fr 1fr;
+        }
+        .human {
+          margin-top: 15px;
+        }
+        .bubble {
+          margin-bottom: 12px;
+        }
+        .intro {
+          margin-bottom: 20px;
+        }
+        .panel-head {
+          padding: 20px 16px 0;
+        }
+        .steps {
+          flex-wrap: wrap;
+        }
+        .steps li {
+          flex-basis: 42%;
+          font-size: 12px;
+        }
+        .mode-tabs {
+          width: 100%;
+        }
+        .mode-tabs button {
+          flex: 1;
+          padding: 11px 8px;
         }
         iframe {
-          height: 1000px;
+          height: 1100px;
         }
       }
     </style>
   </head>
   <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/">brasper<span>.</span></a>
+        <nav class="topnav" aria-label="Navegación">
+          <a href="/">Inicio</a
+          ><a href="/dashboard?demo=1" target="_blank" rel="noopener">Dashboard</a>
+        </nav>
+        <span class="demo">Demo con datos sintéticos</span>
+      </div>
+    </header>
     <main>
-      <h1>Brasper · WhatsApp Flows Beta</h1>
-      <p>
-        Prueba el formulario nativo de Meta con datos ficticios: modalidad de atención, solicitud,
-        contacto y fondos, destino, resumen y documento de prueba. Los campos se pueden editar.
-      </p>
-      <p>
-        Esta vista previa no registra operaciones en el dashboard ni envía dinero, comprobantes
-        fiscales o correos. La carga de documentos en el emulador es simulada y opcional.
-      </p>
-      <nav aria-label="Recursos de la beta">
-        <a href="./process-beta.json" download>Descargar Flow JSON</a>
-        <a href="../demo/comprobante-ejemplo.pdf" download>Descargar PDF sintético</a>
-        <a href="/dashboard?demo=1">Probar dashboard demo</a>
-      </nav>
-      <iframe
-        title="Vista previa interactiva del Flow Brasper"
-        src="https://business.facebook.com/wa/manage/flows/1746368663111217/preview/?token=a5692a42-100f-49bc-8a90-25ec598a59c0&amp;interactive=true&amp;flow_action=navigate&amp;flow_action_payload=%7B%22screen%22%3A%22START%22%2C%22data%22%3A%7B%7D%7D"
-        loading="lazy"
-        referrerpolicy="no-referrer"
-      ></iframe>
-      <p class="footnote">
-        Meta aloja esta vista previa. Su enlace caduca y puede requerir renovación desde Compartir
-        en el editor del Flow. El registro web y esta beta mantienen datos separados hasta conectar
-        el backend.
-      </p>
+      <div class="intro">
+        <span class="eyebrow">Tu dinero más cerca</span>
+        <h1>Tu cambio, acompañado.</h1>
+        <p>
+          Completa tu solicitud a tu ritmo. Brasper te guía en cada paso, desde la cotización hasta
+          el comprobante.
+        </p>
+      </div>
+      <div class="layout">
+        <aside class="assistant" aria-label="Asistente Brasper">
+          <div class="assistant-head">
+            <div class="avatar" aria-hidden="true">b.</div>
+            <div>
+              <h2>Asistente Brasper</h2>
+              <p>Tu guía para este cambio</p>
+            </div>
+          </div>
+          <div class="assistant-body">
+            <span class="assistant-label">Vamos paso a paso</span>
+            <div class="bubble" id="guide" aria-live="polite">
+              Hola, soy tu guía Brasper. Empieza eligiendo cuánto quieres cambiar y la moneda que
+              vas a recibir. Después completaremos tus datos y la cuenta de destino.
+            </div>
+            <p class="helper-title">Te ayudo con lo que necesites</p>
+            <div class="quick">
+              <button type="button" data-help="requirements">¿Qué datos necesito?</button
+              ><button type="button" data-help="billing">Factura o boleta</button
+              ><button type="button" data-help="proof">Mi comprobante de pago</button>
+            </div>
+            <div class="help-reply" id="help-reply" role="status" hidden></div>
+            <button class="human" id="human" type="button">Prefiero hablar con una persona</button>
+          </div>
+          <div class="assistant-foot">
+            En esta beta, el asistente es una guía interactiva. La atención por IA y la derivación a
+            un asesor se conectarán en el siguiente paso.
+          </div>
+        </aside>
+        <section class="workspace" aria-label="Tu solicitud de cambio">
+          <div class="mode-tabs" role="tablist" aria-label="Forma de completar la solicitud">
+            <button
+              id="web-tab"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="web-panel"
+              data-mode="web"
+            >
+              Proceso de la web</button
+            ><button
+              id="native-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="native-panel"
+              tabindex="-1"
+              data-mode="native"
+            >
+              Flow de WhatsApp
+            </button>
+          </div>
+          <div class="flow-panel" id="web-panel" role="tabpanel" aria-labelledby="web-tab">
+            <div class="panel-head">
+              <h2>Hagamos tu cambio</h2>
+              <p>El mismo formulario de Brasper, integrado en esta experiencia.</p>
+              <ol class="steps" aria-label="Progreso de tu cambio">
+                <li aria-current="step"><span>1</span>Cotización</li>
+                <li><span>2</span>Tus datos</li>
+                <li><span>3</span>Cuenta de destino</li>
+                <li><span>4</span>Revisión y pago</li>
+              </ol>
+            </div>
+            <iframe
+              id="web-frame"
+              title="Formulario de cambio Brasper"
+              src="/transferencias?demo=1&amp;embed=1"
+            ></iframe>
+            <div class="completion" id="completion" role="status" hidden>
+              Tu solicitud demo quedó registrada. Puedes revisar el ingreso y registrar el envío en
+              el <a href="/dashboard?demo=1" target="_blank" rel="noopener">dashboard demo</a>.
+            </div>
+          </div>
+          <div
+            class="flow-panel"
+            id="native-panel"
+            role="tabpanel"
+            aria-labelledby="native-tab"
+            hidden
+          >
+            <div class="panel-head">
+              <h2>Brasper dentro de WhatsApp</h2>
+              <p>
+                Compara el recorrido con su versión nativa: bienvenida, cotización, tus datos,
+                cuenta de destino, revisión y comprobante.
+              </p>
+            </div>
+            <iframe
+              id="native-frame"
+              title="Flow nativo Brasper en Meta"
+              data-src="https://business.facebook.com/wa/manage/flows/1746368663111217/preview/?token=a5692a42-100f-49bc-8a90-25ec598a59c0&amp;interactive=true&amp;flow_action=navigate&amp;flow_action_payload=%7B%22screen%22%3A%22START%22%2C%22data%22%3A%7B%7D%7D"
+              referrerpolicy="no-referrer"
+            ></iframe>
+          </div>
+          <nav class="resources" aria-label="Recursos de la demo">
+            <a href="/demo/comprobante-ejemplo.pdf" download>Descargar comprobante ficticio</a
+            ><a href="/transferencias?demo=1" target="_blank" rel="noopener"
+              >Abrir formulario completo</a
+            ><a href="./process-beta.json" download>Descargar Flow JSON</a>
+          </nav>
+          <p class="note">
+            La web registra solicitudes sintéticas en este navegador y comparte esos datos con el
+            dashboard demo. El Flow nativo prueba sus pantallas en Meta y todavía no comparte
+            operaciones con esa base. Ambos recorridos simulan el cambio.
+          </p>
+        </section>
+      </div>
     </main>
+    <script>
+      const webFrame = document.getElementById("web-frame"),
+        nativeFrame = document.getElementById("native-frame"),
+        guide = document.getElementById("guide"),
+        reply = document.getElementById("help-reply"),
+        steps = Array.from(document.querySelectorAll(".steps li"));
+      const guidance = [
+        "Empecemos por tu cotización. Elige el monto y la moneda que vas a recibir. Verás la tasa, la comisión y el importe antes de continuar.",
+        "Ahora vamos con tus datos. Indica tu contacto y el correo donde quieres recibir el comprobante. También elegiremos factura o boleta y declararemos los fondos.",
+        "Revisemos la cuenta de destino. Completa el banco, el titular y la cuenta que recibirá el dinero. Comprueba cada dato antes de continuar.",
+        "Todo listo para revisar. Confirma el resumen y adjunta tu comprobante si ya hiciste el depósito. El equipo verificará el ingreso antes de registrar el envío.",
+      ];
+      let currentStep = 0,
+        mode = "web",
+        created = false;
+      function selectMode(next) {
+        mode = next;
+        for (const button of document.querySelectorAll("[data-mode]")) {
+          const active = button.dataset.mode === next;
+          button.setAttribute("aria-selected", String(active));
+          button.tabIndex = active ? 0 : -1;
+        }
+        document.getElementById("web-panel").hidden = next !== "web";
+        document.getElementById("native-panel").hidden = next !== "native";
+        if (next === "native" && !nativeFrame.getAttribute("src"))
+          nativeFrame.src = nativeFrame.dataset.src;
+        guide.textContent =
+          next === "native"
+            ? "Esta es la versión nativa de WhatsApp. Conserva el orden del cambio, con preguntas y datos de ejemplo. Puedes recorrerla sin salir de esta página."
+            : created
+              ? "Tu solicitud demo ya está registrada. El siguiente paso es revisar el ingreso en el dashboard y registrar el envío."
+              : guidance[currentStep];
+      }
+      for (const button of document.querySelectorAll("[data-mode]")) {
+        button.addEventListener("click", () => selectMode(button.dataset.mode));
+        button.addEventListener("keydown", (event) => {
+          if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+            event.preventDefault();
+            const next =
+              event.key === "Home"
+                ? "web"
+                : event.key === "End"
+                  ? "native"
+                  : mode === "web"
+                    ? "native"
+                    : "web";
+            selectMode(next);
+            document.getElementById(next + "-tab").focus();
+          }
+        });
+      }
+      window.addEventListener("message", (event) => {
+        if (
+          event.origin !== window.location.origin ||
+          event.source !== webFrame.contentWindow ||
+          !event.data ||
+          typeof event.data !== "object"
+        )
+          return;
+        if (
+          event.data.type === "brasper:exchange-step" &&
+          Number.isInteger(event.data.step) &&
+          event.data.step >= 0 &&
+          event.data.step < 4
+        ) {
+          currentStep = event.data.step;
+          steps.forEach((step, index) =>
+            index === currentStep
+              ? step.setAttribute("aria-current", "step")
+              : step.removeAttribute("aria-current"),
+          );
+          if (mode === "web" && !created) guide.textContent = guidance[currentStep];
+        }
+        if (event.data.type === "brasper:exchange-created") {
+          created = true;
+          document.getElementById("completion").hidden = false;
+          if (mode === "web")
+            guide.textContent =
+              "Tu solicitud demo quedó registrada. El equipo revisará el ingreso y, después, registrará el envío. Puedes continuar la prueba desde el dashboard.";
+        }
+      });
+      const help = {
+        requirements:
+          "Para esta prueba necesitas datos ficticios del remitente, correo, banco de origen, origen y motivo de fondos y la cuenta de destino. Puedes descargar el comprobante de ejemplo al pie del formulario.",
+        billing:
+          "Elige boleta para un comprobante personal o factura con RUC y razón social del receptor. El comprobante se generará después de registrar el envío. En la demo el PDF y el correo son simulados.",
+        proof:
+          "Sube una foto JPG/PNG o un PDF de hasta 5 MB y escribe la referencia bancaria. La captura se recibe para revisión: no confirma automáticamente que el dinero ingresó.",
+      };
+      for (const button of document.querySelectorAll("[data-help]"))
+        button.addEventListener("click", () => {
+          reply.hidden = false;
+          reply.textContent = help[button.dataset.help];
+        });
+      document.getElementById("human").addEventListener("click", () => {
+        reply.hidden = false;
+        reply.textContent =
+          "En la experiencia real, el asesor retomará tu solicitud y los datos ya enviados. Esta demo todavía no conecta con una persona; puedes continuar con el formulario sin perder lo que completaste.";
+      });
+    </script>
   </body>
 </html>

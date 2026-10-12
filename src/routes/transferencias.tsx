@@ -40,6 +40,18 @@ const money = (n: number, c: string) =>
 function TransferPortal() {
   const formRef = useRef<HTMLFormElement>(null);
   const [step, setStep] = useState(0);
+  const [embedded, setEmbedded] = useState(false);
+  const [embeddedOperation, setEmbeddedOperation] = useState<string | null>(null);
+  useEffect(() => {
+    setEmbedded(
+      window.self !== window.top &&
+        new URLSearchParams(window.location.search).get("embed") === "1",
+    );
+  }, []);
+  useEffect(() => {
+    if (embedded)
+      window.parent.postMessage({ type: "brasper:exchange-step", step }, window.location.origin);
+  }, [embedded, step]);
   const [saveGuestAccess, setSaveGuestAccess] = useState(false);
   const [reviewData, setReviewData] = useState<ReturnType<
     typeof recipientDetailsInput.parse
@@ -115,11 +127,11 @@ function TransferPortal() {
     if (newOperation) {
       const element = document.getElementById(`operacion-${newOperation}`);
       if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (!embedded) element.scrollIntoView({ behavior: "smooth", block: "start" });
         setNewOperation(null);
       }
     }
-  }, [newOperation, transfers]);
+  }, [embedded, newOperation, transfers]);
   const rate = rates.find((r) => r.id === selected),
     amounts = rate
       ? quoteAmounts(Number(amount), Number(rate.rate), Number(rate.commission_percent))
@@ -384,9 +396,20 @@ function TransferPortal() {
             "Los datos quedaron guardados, pero no se pudo adjuntar el comprobante. Vuelve a subirlo en esta operación; no registres otra solicitud.";
         }
       }
-      window.history.replaceState(null, "", window.location.pathname);
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname +
+          (embedded
+            ? `?embed=1${new URLSearchParams(window.location.search).get("demo") === "1" ? "&demo=1" : ""}`
+            : ""),
+      );
       await load();
       setNewOperation(id);
+      if (embedded) {
+        setEmbeddedOperation(id);
+        window.parent.postMessage({ type: "brasper:exchange-created" }, window.location.origin);
+      }
       setMessage(
         receiptError ||
           (file
@@ -496,7 +519,9 @@ function TransferPortal() {
     });
   }
   return (
-    <div className="portal-page">
+    <div
+      className={`portal-page${embedded ? " portal-embedded" : ""}${embeddedOperation ? " embed-created" : ""}`}
+    >
       <header className="portal-header wrap">
         <a href="/" className="brand">
           brasper<span className="text-primary">.</span>
@@ -1223,7 +1248,7 @@ function TransferPortal() {
                 const invoice = firstInvoice(t.invoices);
                 return (
                   <article
-                    className="portal-card operation-card"
+                    className={`portal-card operation-card${t.id === embeddedOperation ? " operation-new" : ""}`}
                     key={t.id}
                     id={`operacion-${t.id}`}
                   >

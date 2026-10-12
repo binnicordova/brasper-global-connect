@@ -2606,3 +2606,43 @@ footer {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Compact version of the same portal for the branded assistant's own iframe. */
+.portal-embedded {
+  background: #fff;
+  min-height: 100vh;
+}
+.portal-embedded .portal-header,
+.portal-embedded .portal-heading,
+.portal-embedded .portal-toolbar,
+.portal-embedded .guest-access,
+.portal-embedded .portal-footer,
+.portal-embedded:not(.embed-created) .portal-operations {
+  display: none;
+}
+.portal-embedded .portal-main {
+  width: 100%;
+  max-width: none;
+  padding: 12px 24px 28px;
+  margin: 0;
+}
+.portal-embedded .portal-main > .portal-card {
+  box-shadow: none;
+  border: 0;
+  padding: 12px 0;
+  border-radius: 0;
+}
+.portal-embedded .portal-section-title {
+  margin-bottom: 20px;
+}
+.portal-embedded.embed-created .portal-operations .operation-card {
+  display: none;
+}
+.portal-embedded.embed-created .portal-operations .operation-card.operation-new {
+  display: block;
+}
+@media (max-width: 600px) {
+  .portal-embedded .portal-main {
+    padding: 12px 14px 24px;
+  }
+}

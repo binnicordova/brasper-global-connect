@@ -2,7 +2,17 @@ import { useEffect, useState } from "react";
 import { isDemoEnabled, resetDemo, exitDemo } from "@/lib/demo-supabase";
 export function DemoNotice() {
   const [visible, setVisible] = useState(false);
-  useEffect(() => setVisible(isDemoEnabled()), []);
+  useEffect(
+    () =>
+      setVisible(
+        isDemoEnabled() &&
+          !(
+            window.self !== window.top &&
+            new URLSearchParams(window.location.search).get("embed") === "1"
+          ),
+      ),
+    [],
+  );
   if (!visible) return null;
   return (
     <div className="demo-notice">

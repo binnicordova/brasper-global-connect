@@ -45,15 +45,15 @@ Para una prueba móvil usar `public/demo/comprobante-ejemplo.pdf`. Validar tama�
 
 ## Vista previa interactiva e iframe en Lovable
 
-`public/whatsapp-flows/preview-beta.html` contiene una página de demostración con la vista previa nativa de Meta insertada como iframe. Después de sincronizar y publicar Lovable, estará disponible en:
+`public/whatsapp-flows/preview-beta.html` contiene una página con marca Brasper y dos pestañas. La principal reutiliza el formulario web en `/transferencias?demo=1&embed=1`, con cuatro pasos y una guía contextual. La segunda muestra la vista previa nativa de Meta. Cambiar de pestaña conserva el formulario. La guía actual usa respuestas predefinidas; no llama a un modelo de IA ni asigna un asesor real. Después de sincronizar y publicar Lovable, estará disponible en:
 
 `/whatsapp-flows/preview-beta.html`
 
-El enlace de vista previa es público, permite ver la demo y no es un token de Graph API ni de acceso a la BD. Meta indica que caduca a los 30 días o si se invalida. No incluir datos personales en este Flow público. Si caduca, generar otra URL desde «Compartir» en Meta y actualizar el `src` del iframe.
+El enlace de vista previa es público, permite ver la demo y no es un token de Graph API ni de acceso a la BD. Meta indica que caduca a los 30 días o si se invalida. No incluir datos personales en este Flow público. Si caduca, generar otra URL desde «Compartir» en Meta y actualizar el `data-src` del iframe `native-frame`.
 
 La vista previa usa `interactive=true`, `flow_action=navigate` y `flow_action_payload` con `{ "screen": "START", "data": {} }` codificado en la URL. Añadir `debug=true` muestra el registro de acciones. No iniciar directamente una pantalla intermedia: el emulador rechazó `PROOF` como pantalla inicial porque tiene conexiones entrantes.
 
-El iframe sirve para mostrar y probar el diseño en la web de Lovable. **No enlaza la finalización con nuestra BD ni sustituye el envío del Flow dentro de una conversación de WhatsApp.** No acredita recepción bancaria, transferencia, emisión SUNAT ni entrega de correo.
+El iframe **nativo de Meta** sirve para mostrar y probar el diseño en la web de Lovable. **No enlaza la finalización con nuestra BD ni sustituye el envío del Flow dentro de una conversación de WhatsApp.** No acredita recepción bancaria, transferencia, emisión SUNAT ni entrega de correo.
 
 ## Para probar en un teléfono
 
@@ -69,3 +69,9 @@ El próximo desarrollo es el puente de Lovable/Supabase descrito en `PRUEBA_Y_RE
 - Recursos y estado verificados directamente en el editor y panel de Meta mediante BrowserOS neo.
 
 Esta entrega crea una app y un Flow de demostración. No activa una operación de cambio real ni un agente de IA conectado.
+
+## Estado de la entrega y actualización manual
+
+La pestaña web registra operaciones sintéticas en el almacenamiento local de este navegador y permite revisarlas en el dashboard demo. La guía recibe solamente el paso y la señal de creación mediante mensajes del iframe; valida el origen y la ventana emisora. No recibe los documentos ni los datos bancarios. El formulario conserva sus validaciones existentes.
+
+Por decisión del usuario, no se aplican migraciones, no se despliegan funciones y no se usa el editor de Lovable durante esta entrega. La sincronización de Git puede publicar el frontend; no demuestra que la BD, SUNAT, correo o WhatsApp estén conectados. La activación del agente queda descrita en `AGENTE_IA_ACTIVACION.md` para una actualización manual posterior.
