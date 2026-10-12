@@ -15,6 +15,7 @@ import {
   ArrowLeftRight,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { lovable } from "@/integrations/lovable";
 import {
   countryLabels,
   billingTypeLabels,
@@ -330,6 +331,17 @@ function TransferPortal() {
         }
       }
       if (register) setMessage("Revisa tu correo para confirmar tu cuenta antes de operar.");
+    });
+  }
+  async function googleLogin() {
+    await run(async () => {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) throw result.error;
+      if (!result.redirected) {
+        window.location.assign("/transferencias");
+      }
     });
   }
   async function create(e: FormEvent<HTMLFormElement>) {
