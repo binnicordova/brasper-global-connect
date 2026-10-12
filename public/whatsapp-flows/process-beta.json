@@ -1,0 +1,635 @@
+{
+  "version": "7.3",
+  "screens": [
+    {
+      "id": "START",
+      "title": "Brasper demo",
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "form",
+            "children": [
+              {
+                "type": "TextHeading",
+                "text": "Prueba privada de pantallas"
+              },
+              {
+                "type": "TextBody",
+                "text": "Usa solo opciones ficticias. No se registran pagos ni operaciones reales."
+              },
+              {
+                "type": "Dropdown",
+                "name": "attention",
+                "label": "Atención de prueba",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "ai",
+                    "title": "Asistente IA demo"
+                  },
+                  {
+                    "id": "human",
+                    "title": "Asesor humano demo"
+                  }
+                ]
+              },
+              {
+                "type": "Footer",
+                "label": "Continuar",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "REQUEST"
+                  },
+                  "payload": {
+                    "attention": "${form.attention}"
+                  }
+                }
+              }
+            ],
+            "init-values": {
+              "attention": "ai"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "REQUEST",
+      "title": "Solicitud ficticia",
+      "data": {
+        "attention": {
+          "type": "string",
+          "__example__": "ai"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "form",
+            "children": [
+              {
+                "type": "TextBody",
+                "text": "Escenario sintético. No muestra una cotización ni solicita depósito."
+              },
+              {
+                "type": "Dropdown",
+                "name": "route",
+                "label": "Escenario demo",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "PEN_BRL",
+                    "title": "Ejemplo PEN a BRL"
+                  },
+                  {
+                    "id": "BRL_PEN",
+                    "title": "Ejemplo BRL a PEN"
+                  }
+                ]
+              },
+              {
+                "type": "Dropdown",
+                "name": "amount",
+                "label": "Importe de ejemplo",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "200",
+                    "title": "200 (dato ficticio)"
+                  },
+                  {
+                    "id": "300",
+                    "title": "300 (dato ficticio)"
+                  },
+                  {
+                    "id": "500",
+                    "title": "500 (dato ficticio)"
+                  }
+                ]
+              },
+              {
+                "type": "Dropdown",
+                "name": "billing_type",
+                "label": "Comprobante demo",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "boleta",
+                    "title": "Boleta ficticia"
+                  },
+                  {
+                    "id": "factura",
+                    "title": "Factura ficticia"
+                  }
+                ]
+              },
+              {
+                "type": "Footer",
+                "label": "Continuar",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "CONTACT"
+                  },
+                  "payload": {
+                    "attention": "${data.attention}",
+                    "route": "${form.route}",
+                    "amount": "${form.amount}",
+                    "billing_type": "${form.billing_type}"
+                  }
+                }
+              }
+            ],
+            "init-values": {
+              "route": "PEN_BRL",
+              "amount": "300",
+              "billing_type": "boleta"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "CONTACT",
+      "title": "Contacto y fondos demo",
+      "data": {
+        "attention": {
+          "type": "string",
+          "__example__": "ai"
+        },
+        "route": {
+          "type": "string",
+          "__example__": "PEN_BRL"
+        },
+        "amount": {
+          "type": "string",
+          "__example__": "300"
+        },
+        "billing_type": {
+          "type": "string",
+          "__example__": "boleta"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "form",
+            "children": [
+              {
+                "type": "TextBody",
+                "text": "Usa Cliente Demo y demo@example.test. No ingreses datos de personas reales."
+              },
+              {
+                "type": "TextInput",
+                "name": "customer_name",
+                "label": "Nombre ficticio",
+                "input-type": "text",
+                "required": true
+              },
+              {
+                "type": "TextInput",
+                "name": "billing_email",
+                "label": "Correo de prueba",
+                "input-type": "email",
+                "required": true
+              },
+              {
+                "type": "Dropdown",
+                "name": "funds_origin",
+                "label": "Origen de fondos demo",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "salary",
+                    "title": "Sueldo demo"
+                  },
+                  {
+                    "id": "savings",
+                    "title": "Ahorros demo"
+                  },
+                  {
+                    "id": "business",
+                    "title": "Negocio demo"
+                  }
+                ]
+              },
+              {
+                "type": "TextInput",
+                "name": "purpose",
+                "label": "Motivo ficticio",
+                "input-type": "text",
+                "required": true
+              },
+              {
+                "type": "Footer",
+                "label": "Continuar",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "DESTINATION"
+                  },
+                  "payload": {
+                    "attention": "${data.attention}",
+                    "route": "${data.route}",
+                    "amount": "${data.amount}",
+                    "billing_type": "${data.billing_type}",
+                    "customer_name": "${form.customer_name}",
+                    "billing_email": "${form.billing_email}",
+                    "funds_origin": "${form.funds_origin}",
+                    "purpose": "${form.purpose}"
+                  }
+                }
+              }
+            ],
+            "init-values": {
+              "customer_name": "Cliente Demo",
+              "billing_email": "demo@example.test",
+              "funds_origin": "savings",
+              "purpose": "Ayuda familiar demo"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "DESTINATION",
+      "title": "Destino de prueba",
+      "data": {
+        "attention": {
+          "type": "string",
+          "__example__": "ai"
+        },
+        "route": {
+          "type": "string",
+          "__example__": "PEN_BRL"
+        },
+        "amount": {
+          "type": "string",
+          "__example__": "300"
+        },
+        "billing_type": {
+          "type": "string",
+          "__example__": "boleta"
+        },
+        "customer_name": {
+          "type": "string",
+          "__example__": "Cliente Demo"
+        },
+        "billing_email": {
+          "type": "string",
+          "__example__": "demo@example.test"
+        },
+        "funds_origin": {
+          "type": "string",
+          "__example__": "savings"
+        },
+        "purpose": {
+          "type": "string",
+          "__example__": "Ayuda familiar demo"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "form",
+            "children": [
+              {
+                "type": "TextBody",
+                "text": "Elige un destino sintético. Los documentos y cuentas reales se completarían en la web privada."
+              },
+              {
+                "type": "Dropdown",
+                "name": "recipient",
+                "label": "Destinatario demo",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "demo_a",
+                    "title": "Destinatario Demo A"
+                  },
+                  {
+                    "id": "demo_b",
+                    "title": "Destinatario Demo B"
+                  }
+                ]
+              },
+              {
+                "type": "Dropdown",
+                "name": "account_type",
+                "label": "Tipo de cuenta demo",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "bank_account",
+                    "title": "Cuenta bancaria demo"
+                  },
+                  {
+                    "id": "pix",
+                    "title": "PIX demo"
+                  },
+                  {
+                    "id": "cci",
+                    "title": "CCI demo"
+                  }
+                ]
+              },
+              {
+                "type": "Dropdown",
+                "name": "account",
+                "label": "Cuenta ficticia",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "DEMO_NO_TRANSFERIR",
+                    "title": "DEMO - NO TRANSFERIR"
+                  }
+                ]
+              },
+              {
+                "type": "Footer",
+                "label": "Continuar",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "REVIEW"
+                  },
+                  "payload": {
+                    "attention": "${data.attention}",
+                    "route": "${data.route}",
+                    "amount": "${data.amount}",
+                    "billing_type": "${data.billing_type}",
+                    "customer_name": "${data.customer_name}",
+                    "billing_email": "${data.billing_email}",
+                    "funds_origin": "${data.funds_origin}",
+                    "purpose": "${data.purpose}",
+                    "recipient": "${form.recipient}",
+                    "account_type": "${form.account_type}",
+                    "account": "${form.account}"
+                  }
+                }
+              }
+            ],
+            "init-values": {
+              "recipient": "demo_a",
+              "account_type": "bank_account",
+              "account": "DEMO_NO_TRANSFERIR"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "REVIEW",
+      "title": "Resumen de prueba",
+      "data": {
+        "attention": {
+          "type": "string",
+          "__example__": "ai"
+        },
+        "route": {
+          "type": "string",
+          "__example__": "PEN_BRL"
+        },
+        "amount": {
+          "type": "string",
+          "__example__": "300"
+        },
+        "billing_type": {
+          "type": "string",
+          "__example__": "boleta"
+        },
+        "customer_name": {
+          "type": "string",
+          "__example__": "Cliente Demo"
+        },
+        "billing_email": {
+          "type": "string",
+          "__example__": "demo@example.test"
+        },
+        "funds_origin": {
+          "type": "string",
+          "__example__": "savings"
+        },
+        "purpose": {
+          "type": "string",
+          "__example__": "Ayuda familiar demo"
+        },
+        "recipient": {
+          "type": "string",
+          "__example__": "demo_a"
+        },
+        "account_type": {
+          "type": "string",
+          "__example__": "bank_account"
+        },
+        "account": {
+          "type": "string",
+          "__example__": "DEMO_NO_TRANSFERIR"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "form",
+            "children": [
+              {
+                "type": "TextHeading",
+                "text": "Revisa antes de continuar"
+              },
+              {
+                "type": "TextSubheading",
+                "text": "Ruta ficticia"
+              },
+              {
+                "type": "TextBody",
+                "text": "${data.route}"
+              },
+              {
+                "type": "TextSubheading",
+                "text": "Importe de ejemplo"
+              },
+              {
+                "type": "TextBody",
+                "text": "${data.amount}"
+              },
+              {
+                "type": "TextSubheading",
+                "text": "Cliente demo"
+              },
+              {
+                "type": "TextBody",
+                "text": "${data.customer_name}"
+              },
+              {
+                "type": "TextSubheading",
+                "text": "Comprobante"
+              },
+              {
+                "type": "TextBody",
+                "text": "${data.billing_type}"
+              },
+              {
+                "type": "TextSubheading",
+                "text": "Correo demo"
+              },
+              {
+                "type": "TextBody",
+                "text": "${data.billing_email}"
+              },
+              {
+                "type": "TextSubheading",
+                "text": "Destinatario demo"
+              },
+              {
+                "type": "TextBody",
+                "text": "${data.recipient}"
+              },
+              {
+                "type": "TextCaption",
+                "text": "Este ensayo no cotiza ni transfiere. El equipo confirma ingreso y registra envío; después sigue la facturación."
+              },
+              {
+                "type": "Footer",
+                "label": "Continuar",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "PROOF"
+                  },
+                  "payload": {
+                    "attention": "${data.attention}",
+                    "route": "${data.route}",
+                    "amount": "${data.amount}",
+                    "billing_type": "${data.billing_type}",
+                    "customer_name": "${data.customer_name}",
+                    "billing_email": "${data.billing_email}",
+                    "funds_origin": "${data.funds_origin}",
+                    "purpose": "${data.purpose}",
+                    "recipient": "${data.recipient}",
+                    "account_type": "${data.account_type}",
+                    "account": "${data.account}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "PROOF",
+      "title": "Prueba de comprobante",
+      "terminal": true,
+      "success": true,
+      "data": {
+        "attention": {
+          "type": "string",
+          "__example__": "ai"
+        },
+        "route": {
+          "type": "string",
+          "__example__": "PEN_BRL"
+        },
+        "amount": {
+          "type": "string",
+          "__example__": "300"
+        },
+        "billing_type": {
+          "type": "string",
+          "__example__": "boleta"
+        },
+        "customer_name": {
+          "type": "string",
+          "__example__": "Cliente Demo"
+        },
+        "billing_email": {
+          "type": "string",
+          "__example__": "demo@example.test"
+        },
+        "funds_origin": {
+          "type": "string",
+          "__example__": "savings"
+        },
+        "purpose": {
+          "type": "string",
+          "__example__": "Ayuda familiar demo"
+        },
+        "recipient": {
+          "type": "string",
+          "__example__": "demo_a"
+        },
+        "account_type": {
+          "type": "string",
+          "__example__": "bank_account"
+        },
+        "account": {
+          "type": "string",
+          "__example__": "DEMO_NO_TRANSFERIR"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "form",
+            "children": [
+              {
+                "type": "TextBody",
+                "text": "En el teléfono de pruebas puedes adjuntar el PDF ficticio de la demo. En la vista previa web puedes finalizar sin adjunto. No uses comprobantes reales."
+              },
+              {
+                "type": "DocumentPicker",
+                "name": "proof",
+                "label": "Archivo de prueba (opcional)",
+                "description": "La vista previa genera archivos simulados; no acredita una carga real.",
+                "min-uploaded-documents": 0,
+                "max-uploaded-documents": 1,
+                "max-file-size-kb": 5120
+              },
+              {
+                "type": "Footer",
+                "label": "Finalizar prueba",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {
+                    "attention": "${data.attention}",
+                    "route": "${data.route}",
+                    "amount": "${data.amount}",
+                    "billing_type": "${data.billing_type}",
+                    "customer_name": "${data.customer_name}",
+                    "billing_email": "${data.billing_email}",
+                    "funds_origin": "${data.funds_origin}",
+                    "purpose": "${data.purpose}",
+                    "recipient": "${data.recipient}",
+                    "account_type": "${data.account_type}",
+                    "account": "${data.account}",
+                    "proof": "${form.proof}",
+                    "demo": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

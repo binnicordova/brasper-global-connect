@@ -1,5 +1,9 @@
 # Probar WhatsApp Flows reutilizando Brasper
 
+## Beta ya creada en Meta
+
+La app **Brasper Flows Beta** y el Flow **Brasper Proceso Beta** se crearon después de preparar esta guía, en **Jbdevs Studio**. El Flow de seis pantallas está guardado como borrador y validado por el editor de Meta. Su archivo es `public/whatsapp-flows/process-beta.json`, y la web puede servir su vista previa nativa con `public/whatsapp-flows/preview-beta.html`. Consulta [BETA_META.md](BETA_META.md) para IDs, pruebas y límites. El archivo básico de tres pantallas descrito a continuación se conserva como ejemplo independiente.
+
 ## Qué se entrega
 
 `public/whatsapp-flows/demo-static.json` es un borrador de tres pantallas para importar en el editor de Flows de Meta. Permite elegir atención, escenario sintético e importe de ejemplo, factura/boleta y revisar el resumen. Al finalizar devuelve un payload de demostración. No registra una transferencia, asigna un asesor, emite un comprobante ni envía correo.

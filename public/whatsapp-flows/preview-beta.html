@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Brasper · WhatsApp Flows Beta</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f4f7fb;
+        color: #12234b;
+        font-family: system-ui, sans-serif;
+      }
+      main {
+        max-width: 1240px;
+        margin: auto;
+        padding: 32px 20px;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(26px, 4vw, 40px);
+      }
+      p {
+        max-width: 850px;
+        line-height: 1.6;
+      }
+      a {
+        color: #1754c4;
+      }
+      nav {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        margin: 20px 0;
+      }
+      iframe {
+        display: block;
+        width: 100%;
+        height: 900px;
+        border: 1px solid #d5dfec;
+        background: white;
+        border-radius: 14px;
+      }
+      .footnote {
+        color: #54627a;
+        font-size: 14px;
+      }
+      @media (max-width: 600px) {
+        main {
+          padding: 24px 12px;
+        }
+        iframe {
+          height: 1000px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Brasper · WhatsApp Flows Beta</h1>
+      <p>
+        Prueba el formulario nativo de Meta con datos ficticios: modalidad de atención, solicitud,
+        contacto y fondos, destino, resumen y documento de prueba. Los campos se pueden editar.
+      </p>
+      <p>
+        Esta vista previa no registra operaciones en el dashboard ni envía dinero, comprobantes
+        fiscales o correos. La carga de documentos en el emulador es simulada y opcional.
+      </p>
+      <nav aria-label="Recursos de la beta">
+        <a href="./process-beta.json" download>Descargar Flow JSON</a>
+        <a href="../demo/comprobante-ejemplo.pdf" download>Descargar PDF sintético</a>
+        <a href="/dashboard?demo=1">Probar dashboard demo</a>
+      </nav>
+      <iframe
+        title="Vista previa interactiva del Flow Brasper"
+        src="https://business.facebook.com/wa/manage/flows/1746368663111217/preview/?token=a5692a42-100f-49bc-8a90-25ec598a59c0&amp;interactive=true&amp;flow_action=navigate&amp;flow_action_payload=%7B%22screen%22%3A%22START%22%2C%22data%22%3A%7B%7D%7D"
+        loading="lazy"
+        referrerpolicy="no-referrer"
+      ></iframe>
+      <p class="footnote">
+        Meta aloja esta vista previa. Su enlace caduca y puede requerir renovación desde Compartir
+        en el editor del Flow. El registro web y esta beta mantienen datos separados hasta conectar
+        el backend.
+      </p>
+    </main>
+  </body>
+</html>
