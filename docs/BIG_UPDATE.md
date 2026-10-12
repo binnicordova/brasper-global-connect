@@ -29,9 +29,18 @@ La migración `202610120009_pen_brl_only.sql` deja solo PEN ↔ BRL para nuevos 
 ## 3. Configuración y comprobación
 
 - Auth: activar **Anonymous sign-ins** y **Manual identity linking**.
-- Equipo, cuentas y tasas PEN/BRL: completar `supabase/manual-setup.example.sql` con los datos aprobados.
+- Equipo y cuentas PEN/BRL: completar `supabase/manual-setup.example.sql`. Tasas fijas de prueba: revisar y ejecutar `supabase/fixed-rates.example.sql` (sin actualización automática; vigencia de 30 días).
 - Comprobar: migraciones aplicadas, función desplegada y una llamada sin autorización devuelve **401**. No emitir ni enviar correos durante esta comprobación.
 
 ## Prompt corto para Lovable
 
 > Implementa únicamente docs/BIG_UPDATE.md: aplica las migraciones SQL pendientes y despliega process-invoices usando exactamente supabase/functions/process-invoices/index.ts y supabase/config.toml. Conserva los secretos; informa solo los faltantes. Comprueba Auth anónimo y que la función rechace llamadas sin autorización. No rediseñes, refactorices, regeneres código ni desarrolles IA/WhatsApp. No hagas emisiones, correos ni despliegues externos adicionales. Responde con estado de BD, Edge Function y bloqueo concreto si existe.
+
+## De dónde salen los secretos
+
+- `BILLING_ENVIRONMENT`: escribir `beta`. No es una contraseña.
+- `BILLING_GATEWAY_URL`: URL del servidor publicado: `https://TU_DOMINIO/api/billing-beta`. No sirve una URL localhost.
+- `BILLING_GATEWAY_TOKEN`: token propio compartido entre Edge Function y gateway. Ya está definido en el archivo local privado `.env.billing-beta`; copiarlo a Secrets, nunca al chat o Git.
+- `BILLING_WORKER_SECRET`: secreto propio para autorizar al scheduler. También está definido en `.env.billing-beta`; copiarlo a Secrets y usarlo en la cabecera del scheduler.
+
+Estos tokens son de nuestra integración, no credenciales entregadas por SUNAT. Mantener los valores actuales para que ambos servicios coincidan. El worker devuelve 401 si falta su secreto o si la llamada no lleva el valor correcto.

@@ -57,6 +57,14 @@
       "sha256": "fdf53763180dce8f31e51443bc9d5e8781218fc8775fc9d5a357c5a07f3636d0"
     },
     {
+      "path": "supabase/fixed-rates.example.sql",
+      "sha256": "7cf3364bc49de4eb92eb37d9de6efd8c515f11b8152808fe83da3a3d551fd612"
+    },
+    {
+      "path": "supabase/manual-setup.example.sql",
+      "sha256": "c7b859058ec7e717c3f8db1de02e7584996086fef0cdcf504f3b185f9c530fac"
+    },
+    {
       "path": "supabase/demo/catalog.json",
       "sha256": "debfb600d040db3937b0d7857c63566cf8958f0f134e442cd6b4ea7d6e7c09b4"
     },

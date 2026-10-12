@@ -10,11 +10,8 @@
 
 -- 2. Cuenta oficial de recepción. Una entrada por cuenta y moneda admitida.
 -- insert into public.deposit_accounts(currency, bank, holder, account_number, instructions, country)
--- values ('<PEN_O_BRL_O_USD>', '<BANCO_REAL>', '<TITULAR_OFICIAL>',
+-- values ('<PEN_O_BRL>', '<BANCO_REAL>', '<TITULAR_OFICIAL>',
 --         '<CUENTA_REAL>', '<INSTRUCCIONES_APROBADAS>', '<PE_O_BR>');
-
--- Las cuentas USD existentes requieren indicar el país real antes de aceptar solicitudes:
--- update public.deposit_accounts set country='<PE_O_BR>' where id='<UUID_CUENTA_USD>' and currency='USD';
 
 -- 3. Cotización aprobada. La tasa es unidades destino por unidad origen;
 -- comisión porcentual descontada del monto origen. Usar números reales.
@@ -29,3 +26,5 @@
 -- Reencolar solo blocked después de corregir la configuración y comprobar
 -- que no existe emisión previa. processing/sending/reconciliation_required
 -- requieren conciliación con el proveedor antes de cualquier cambio.
+
+-- Tasas fijas de prueba: revisar y ejecutar supabase/fixed-rates.example.sql.
