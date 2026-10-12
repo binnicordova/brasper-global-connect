@@ -18,7 +18,7 @@
               },
               {
                 "type": "TextBody",
-                "text": "Usa solo opciones ficticias. No se registran pagos ni operaciones reales."
+                "text": "Usa solo opciones de ejemplo. No se registran pagos ni operaciones reales."
               },
               {
                 "type": "Dropdown",
@@ -57,7 +57,7 @@
     },
     {
       "id": "REQUEST",
-      "title": "Solicitud ficticia",
+      "title": "Solicitud demo",
       "data": {
         "attention": {
           "type": "string",
@@ -73,7 +73,7 @@
             "children": [
               {
                 "type": "TextBody",
-                "text": "Escenario sintético. No muestra una cotización ni solicita depósito."
+                "text": "Escenario demo. No muestra una cotización ni solicita depósito."
               },
               {
                 "type": "Dropdown",
@@ -99,15 +99,15 @@
                 "data-source": [
                   {
                     "id": "200",
-                    "title": "200 (dato ficticio)"
+                    "title": "200 (demo)"
                   },
                   {
                     "id": "300",
-                    "title": "300 (dato ficticio)"
+                    "title": "300 (demo)"
                   },
                   {
                     "id": "500",
-                    "title": "500 (dato ficticio)"
+                    "title": "500 (demo)"
                   }
                 ]
               },
@@ -119,11 +119,11 @@
                 "data-source": [
                   {
                     "id": "boleta",
-                    "title": "Boleta ficticia"
+                    "title": "Boleta demo"
                   },
                   {
                     "id": "factura",
-                    "title": "Factura ficticia"
+                    "title": "Factura demo"
                   }
                 ]
               },
@@ -195,7 +195,7 @@
               },
               {
                 "type": "TextSubheading",
-                "text": "Importe ficticio"
+                "text": "Importe demo"
               },
               {
                 "type": "TextBody",

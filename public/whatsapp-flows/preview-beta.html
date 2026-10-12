@@ -409,7 +409,7 @@
           <a href="/">Inicio</a
           ><a href="/dashboard?demo=1" target="_blank" rel="noopener">Dashboard</a>
         </nav>
-        <span class="demo">Demo con datos sintéticos</span>
+        <span class="demo">Demo con datos de la demo</span>
       </div>
     </header>
     <main>
@@ -517,13 +517,13 @@
             ></iframe>
           </div>
           <nav class="resources" aria-label="Recursos de la demo">
-            <a href="/demo/comprobante-ejemplo.pdf" download>Descargar comprobante ficticio</a
+            <a href="/demo/comprobante-ejemplo.pdf" download>Descargar comprobante demo</a
             ><a href="/transferencias?demo=1" target="_blank" rel="noopener"
               >Abrir formulario completo</a
             ><a href="./process-beta.json" download>Descargar Flow JSON</a>
           </nav>
           <p class="note">
-            La web registra solicitudes sintéticas en este navegador y comparte esos datos con el
+            La web registra solicitudes demo en este navegador y comparte esos datos con el
             dashboard demo. El Flow nativo prueba sus pantallas en Meta y todavía no comparte
             operaciones con esa base. Ambos recorridos simulan el cambio.
           </p>
@@ -616,9 +616,9 @@
       });
       const help = {
         requirements:
-          "Para esta prueba necesitas datos ficticios del remitente, correo, banco de origen, origen y motivo de fondos y la cuenta de destino. Puedes descargar el comprobante de ejemplo al pie del formulario.",
+          "Para esta prueba necesitas datos de ejemplo del remitente, correo, banco de origen, origen y motivo de fondos y la cuenta de destino. Puedes descargar el comprobante de ejemplo al pie del formulario.",
         billing:
-          "Elige boleta para un comprobante personal o factura con RUC y razón social del receptor. El comprobante se generará después de registrar el envío. En la demo el PDF y el correo son simulados.",
+          "Elige boleta para un comprobante personal o factura con RUC y razón social del receptor. El comprobante se generará después de registrar el envío. La demo genera el PDF y registra el correo sin enviarlo.",
         proof:
           "Sube una foto JPG/PNG o un PDF de hasta 5 MB y escribe la referencia bancaria. La captura se recibe para revisión: no confirma automáticamente que el dinero ingresó.",
       };

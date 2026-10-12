@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "setup:billing-beta": "node scripts/reuse-billing-beta-env.mjs",
     "dev:billing-beta": "node --env-file=.env.billing-beta node_modules/vite/bin/vite.js",
-    "smoke:billing-beta": "tsx scripts/smoke-billing-beta.ts"
+    "smoke:billing-beta": "tsx scripts/smoke-billing-beta.ts",
+    "prepare:release": "node --import tsx scripts/prepare-release.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"

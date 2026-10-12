@@ -76,7 +76,7 @@
             "children": [
               {
                 "type": "TextBody",
-                "text": "Elige las monedas y el monto. En la web verás la tasa vigente y la comisión antes de aceptar. Aquí probamos el recorrido con opciones ficticias."
+                "text": "Elige las monedas y el monto. En la web verás la tasa vigente y la comisión antes de aceptar. Aquí probamos el recorrido con opciones de ejemplo."
               },
               {
                 "type": "Dropdown",
@@ -102,15 +102,15 @@
                 "data-source": [
                   {
                     "id": "200",
-                    "title": "200 (dato ficticio)"
+                    "title": "200 (demo)"
                   },
                   {
                     "id": "300",
-                    "title": "300 (dato ficticio)"
+                    "title": "300 (demo)"
                   },
                   {
                     "id": "500",
-                    "title": "500 (dato ficticio)"
+                    "title": "500 (demo)"
                   }
                 ]
               },
@@ -122,11 +122,11 @@
                 "data-source": [
                   {
                     "id": "boleta",
-                    "title": "Boleta ficticia"
+                    "title": "Boleta demo"
                   },
                   {
                     "id": "factura",
-                    "title": "Factura ficticia"
+                    "title": "Factura demo"
                   }
                 ]
               },
@@ -308,7 +308,7 @@
             "children": [
               {
                 "type": "TextBody",
-                "text": "Indica quién recibe el dinero y su cuenta. En esta demo elegimos destinos ficticios; los datos bancarios completos se registran en la web privada."
+                "text": "Indica quién recibe el dinero y su cuenta. En esta demo elegimos destinos de ejemplo; los datos bancarios completos se registran en la web privada."
               },
               {
                 "type": "Dropdown",
@@ -454,7 +454,7 @@
               },
               {
                 "type": "TextSubheading",
-                "text": "Ruta ficticia"
+                "text": "Ruta demo"
               },
               {
                 "type": "TextBody",
@@ -599,7 +599,7 @@
                 "type": "DocumentPicker",
                 "name": "proof",
                 "label": "Comprobante demo",
-                "description": "Vista previa: carga simulada y opcional. Usa solo documentos ficticios.",
+                "description": "Adjunto de ejemplo, opcional en la vista previa.",
                 "min-uploaded-documents": 0,
                 "max-uploaded-documents": 1,
                 "max-file-size-kb": 5120

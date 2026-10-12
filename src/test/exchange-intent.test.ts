@@ -11,6 +11,7 @@ describe("Exchange request from the landing", () => {
   });
   it("rejects unsupported routes and invalid monetary inputs", () => {
     for (const search of [
+      "?from=USD&to=PEN&amount=100",
       "?from=constructor&to=PEN&amount=100",
       "?from=PEN&to=PEN&amount=100",
       "?from=PEN&to=BRL&amount=-100",

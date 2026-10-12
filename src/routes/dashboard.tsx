@@ -397,7 +397,6 @@ function Dashboard() {
                       <option value="">Todas las monedas</option>
                       <option value="PEN">PEN · Soles</option>
                       <option value="BRL">BRL · Reales</option>
-                      <option value="USD">USD · Dólares</option>
                     </select>
                   </label>
                   <Button type="submit" variant="outline" disabled={busy}>
@@ -765,7 +764,7 @@ function Dashboard() {
                           {openedInvoice?.number && <strong>{openedInvoice.number}</strong>}
                           {openedInvoice?.demo_email && (
                             <p>
-                              Correo automático simulado para{" "}
+                              Correo demo registrado para{" "}
                               <strong>{openedInvoice.demo_email}</strong>
                               {openedInvoice.demo_delivered_at &&
                                 ` · ${new Date(openedInvoice.demo_delivered_at).toLocaleString("es-PE")}`}

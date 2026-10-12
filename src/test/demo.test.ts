@@ -117,7 +117,19 @@ describe("Explicit synthetic demo", () => {
     ).toBeTruthy();
     expect((await db.from("transfers").select("*")).data).toHaveLength(before.data!.length);
   });
-  it("runs registration, evidence, staff approval and simulated invoice/email once, with no network", async () => {
+  it("opens the seeded completed invoice as a PDF and rejects unknown invoices", async () => {
+    const db = createDemoClient();
+    const { data } = await db.from("transfers").select("*").eq("status", "completed");
+    const path = data![0].invoices[0].pdf_path;
+    const result = await db.storage.from("invoice-documents").createSignedUrl(path, 60);
+    expect(result.error).toBeNull();
+    const blob = vi.mocked(URL.createObjectURL).mock.calls.at(-1)![0] as Blob;
+    expect(blob.type).toBe("application/pdf");
+    expect(
+      (await db.storage.from("invoice-documents").createSignedUrl("unknown.pdf", 60)).error,
+    ).toBeTruthy();
+  });
+  it("runs registration, evidence, staff approval and demo invoice/email once, with no network", async () => {
     const network = vi.fn();
     vi.stubGlobal("fetch", network);
     const customer = createDemoClient();
@@ -176,7 +188,7 @@ describe("Explicit synthetic demo", () => {
       JSON.parse(localStorage.getItem("brasper-synthetic-demo-v1")!)
         .events.filter((e: { transfer_id: string; action: string }) => e.transfer_id === id)
         .map((e: { action: string }) => e.action),
-    ).toContain("Correo automático simulado");
+    ).toContain("Correo demo registrado");
     expect(t.invoices[0].pdf_path).toBeTruthy();
     expect(
       (await staff.storage.from("invoice-documents").createSignedUrl(t.invoices[0].pdf_path, 60))

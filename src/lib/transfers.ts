@@ -163,7 +163,7 @@ export const statusLabels: Record<string, string> = {
   cancelled: "Cancelada",
 };
 export const invoiceLabels: Record<string, string> = {
-  demo_delivered: "Demo · comprobante y correo simulados",
+  demo_delivered: "Demo · comprobante y correo demo",
   queued: "Facturación pendiente",
   processing: "Procesando comprobante",
   sending: "Enviando comprobante",

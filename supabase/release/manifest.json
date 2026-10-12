@@ -1,0 +1,70 @@
+{
+  "after": "none",
+  "migrations": [
+    "202610100001_transfer_workflow.sql",
+    "202610100002_staff_dashboard.sql",
+    "202610100003_recipient_details.sql",
+    "202610100004_sunat_beta.sql",
+    "202610100005_guest_exchange.sql",
+    "202610100006_safe_transfer_review.sql",
+    "202610100007_billing_preferences.sql",
+    "202610100008_exchange_validation.sql",
+    "202610120009_pen_brl_only.sql"
+  ],
+  "files": [
+    {
+      "path": "supabase/migrations/202610100001_transfer_workflow.sql",
+      "sha256": "6d6642b68cf729ddeada5edf8d26618d49dc93e47c7cf153062a0aa765b381c2"
+    },
+    {
+      "path": "supabase/migrations/202610100002_staff_dashboard.sql",
+      "sha256": "0c797c690d17faf822724eab29dee97720ce3b710b6ddd588d94c7bce4b68a91"
+    },
+    {
+      "path": "supabase/migrations/202610100003_recipient_details.sql",
+      "sha256": "5daf4735c9b9227cc2abbcd7225118b1fd6913bdf5a4b3a88808f2af8337d2f0"
+    },
+    {
+      "path": "supabase/migrations/202610100004_sunat_beta.sql",
+      "sha256": "08e1f9fbe719ba1accba6d31f9fd700501d79a8dc4677d60d04a4c79011c94ec"
+    },
+    {
+      "path": "supabase/migrations/202610100005_guest_exchange.sql",
+      "sha256": "70d62fb256e2e4a02ee4e7903506a979939e46f7ea785496303ac76df5e313f6"
+    },
+    {
+      "path": "supabase/migrations/202610100006_safe_transfer_review.sql",
+      "sha256": "37b189399401daa132f13f14249cdf7b6d3adca56f26a0d9a70138fdf1137065"
+    },
+    {
+      "path": "supabase/migrations/202610100007_billing_preferences.sql",
+      "sha256": "5b6479fd369cb4feb2000e15ab763c58223ed63ceffe4a5c6dcb257863ef69d5"
+    },
+    {
+      "path": "supabase/migrations/202610100008_exchange_validation.sql",
+      "sha256": "a845594812ca43340a85b45333a502b7569d5d13421df36caa1f35df00d0f1e6"
+    },
+    {
+      "path": "supabase/migrations/202610120009_pen_brl_only.sql",
+      "sha256": "12b5603f56f0f083275d856705a819e1c5a8ab09eb9819e89b9efec8df0a7780"
+    },
+    {
+      "path": "supabase/functions/process-invoices/index.ts",
+      "sha256": "ddf1470a2948089ecbb4b742a412a426ece7728745f5274af4b4e2c6d3735a18"
+    },
+    {
+      "path": "supabase/config.toml",
+      "sha256": "fdf53763180dce8f31e51443bc9d5e8781218fc8775fc9d5a357c5a07f3636d0"
+    },
+    {
+      "path": "supabase/demo/catalog.json",
+      "sha256": "debfb600d040db3937b0d7857c63566cf8958f0f134e442cd6b4ea7d6e7c09b4"
+    },
+    {
+      "path": "supabase/demo/seed.sql",
+      "sha256": "4bc8da79aed6a71c62a270d1368e20f20ff3f19d8e8a1a414ef94bf5a79c9b8d"
+    }
+  ],
+  "demoSeed": "supabase/demo/seed.sql",
+  "deployment": "manual; no aplicado"
+}

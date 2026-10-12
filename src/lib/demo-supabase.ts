@@ -1,13 +1,15 @@
+import {
+  STAFF,
+  CLIENT,
+  createDemoFixtures,
+  demoRates,
+  type DemoState as State,
+} from "./demo-fixtures";
+type DemoTransfer = State["transfers"][number];
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { recipientDetailsInput, quoteAmounts, validateProof, type Transfer } from "./transfers";
 
 const STORE = "brasper-synthetic-demo-v1";
-const STAFF = "00000000-0000-4000-8000-000000000901";
-const CLIENT = "00000000-0000-4000-8000-000000000902";
-const RATE = "00000000-0000-4000-8000-000000000903";
-type Event = { transfer_id: string; action: string; note: string; created_at: string };
-type DemoTransfer = Transfer & { user_id: string };
-type State = { transfers: DemoTransfer[]; events: Event[]; nextInvoice?: number };
 const now = () => new Date().toISOString();
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -26,118 +28,7 @@ export function resetDemo() {
   indexedDB.deleteDatabase("brasper-demo-files");
   window.location.assign("/dashboard?demo=1");
 }
-function fixtures(): State {
-  const names = [
-    "Cliente Demo A",
-    "Cliente Demo B",
-    "Cliente Demo C",
-    "Cliente Demo D",
-    "Cliente Demo E",
-    "Cliente Demo F",
-  ];
-  const transfers = names.map((name, i): DemoTransfer => {
-    const amount = [300, 500, 200, 850, 1500, 280][i]!;
-    const q = quoteAmounts(amount, 1.425, 5);
-    const status = [
-      "proof_submitted",
-      "proof_submitted",
-      "verified",
-      "awaiting_payment",
-      "completed",
-      "paid_out",
-    ][i]!;
-    const id = `${String(i + 1).padStart(8, "0")}-0000-4000-8000-000000000000`;
-    const created = new Date(Date.now() - (i + 1) * 3600000).toISOString();
-    return {
-      id,
-      user_id: CLIENT,
-      demo_meta: {
-        code: `DEMO-${String(i + 1).padStart(6, "0")}`,
-        advisor: `Asesor Demo ${(i % 2) + 1}`,
-        issuer: "Emisor Demo S.A.C.",
-      },
-      amount,
-      commission: q.commission,
-      recipient_amount: q.received,
-      rate: 1.425,
-      from_currency: "PEN",
-      to_currency: "BRL",
-      customer_name: name,
-      customer_document: `1234500${i}`,
-      customer_document_type: "1",
-      customer_phone: "+51900000000",
-      customer_email: `cliente${i + 1}@example.test`,
-      customer_email_verified: false,
-      billing_type: i === 4 ? "factura" : "boleta",
-      billing_email: `cliente${i + 1}@example.test`,
-      billing_name: i === 4 ? "Empresa Demo S.A.C." : name,
-      billing_document: i === 4 ? "20999999999" : `1234500${i}`,
-      billing_document_type: i === 4 ? "6" : "1",
-      recipient_name: `Destinatario Demo ${i + 1}`,
-      recipient_document: `8765400${i}`,
-      recipient_bank: "Banco Demo Brasil",
-      recipient_account: `destino${i + 1}@example.test`,
-      recipient_account_type: "pix",
-      recipient_account_holder: `Destinatario Demo ${i + 1}`,
-      recipient_account_holder_document: `1234567890${i}`,
-      recipient_relationship: "Familia",
-      origin_bank: "Banco Demo Perú",
-      source_country: "PE",
-      destination_country: "BR",
-      funds_origin: "savings",
-      funds_detail: "Ahorros declarados para la demostración",
-      transfer_purpose: "Apoyo a mi familia",
-      status,
-      deposit_instructions: [
-        {
-          bank: "Banco Demo Perú",
-          holder: "Brasper Demo",
-          account_number: "DEMO-NO-TRANSFERIR",
-          instructions: "Cuenta sintética para demostración. No realizar depósitos.",
-        },
-      ],
-      proof_path: status === "awaiting_payment" ? null : `${CLIENT}/${id}/deposit/demo.jpg`,
-      payout_path: ["completed", "paid_out"].includes(status)
-        ? `${STAFF}/${id}/payout/demo.jpg`
-        : null,
-      payout_reference: ["completed", "paid_out"].includes(status) ? `DEMO-ENVIO-${i + 1}` : null,
-      deposit_bank_reference: status === "awaiting_payment" ? null : `DEMO-INGRESO-${i + 1}`,
-      created_at: created,
-      updated_at: created,
-      verified_at: ["verified", "completed", "paid_out"].includes(status) ? created : null,
-      payout_at: ["completed", "paid_out"].includes(status) ? created : null,
-      invoices:
-        status === "completed"
-          ? [
-              {
-                status: "demo_delivered",
-                environment: "demo",
-                number: "DEMO-000001",
-                pdf_path: null,
-                xml_path: null,
-                cdr_path: null,
-                error: null,
-                demo_email: `cliente${i + 1}@example.test`,
-                demo_delivered_at: created,
-              },
-            ]
-          : status === "paid_out"
-            ? [
-                {
-                  status: "blocked",
-                  environment: "demo",
-                  number: null,
-                  pdf_path: null,
-                  xml_path: null,
-                  cdr_path: null,
-                  error: "Caso sintético: revisión de datos del receptor.",
-                },
-              ]
-            : [],
-    };
-  });
-  return { transfers, events: [], nextInvoice: 2 };
-}
+
 function read(): State {
   const saved = localStorage.getItem(STORE);
   if (saved) {
@@ -147,7 +38,7 @@ function read(): State {
       /* Reset damaged demo data only. */
     }
   }
-  const state = fixtures();
+  const state = createDemoFixtures();
   write(state);
   return state;
 }
@@ -187,13 +78,13 @@ async function demoPdf(t: Transfer) {
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const lines = [
     "BRASPER - DEMOSTRACION",
-    `${t.billing_type === "boleta" ? "Boleta" : "Factura"} simulada`,
+    `${t.billing_type === "boleta" ? "Boleta" : "Factura"} demo`,
     `Operacion: ${t.id}`,
     `Cliente: ${t.billing_name || t.customer_name}`,
     `Correo de ejemplo: ${t.billing_email}`,
     `Comision: ${t.commission.toFixed(2)} ${t.from_currency}`,
     "No se realiza ninguna emision ante SUNAT.",
-    "El envio de correo es simulado dentro de esta demo.",
+    "Correo registrado en la demo; no se entrega a un servicio de correo.",
   ];
   lines.forEach((line, i) =>
     page.drawText(line.replace(/[^\x20-\x7e]/g, "?"), {
@@ -208,7 +99,7 @@ async function demoPdf(t: Transfer) {
 const placeholder = () =>
   new Blob(
     [
-      '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="360"><rect width="600" height="360" fill="#eef3fb"/><text x="300" y="170" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#284677">Archivo sintetico de ejemplo</text><text x="300" y="210" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#61708a">No representa una transferencia bancaria</text></svg>',
+      '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="360"><rect width="600" height="360" fill="#eef3fb"/><text x="300" y="170" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#284677">Comprobante demo</text><text x="300" y="210" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#61708a">No representa una transferencia bancaria</text></svg>',
     ],
     { type: "image/svg+xml" },
   );
@@ -235,30 +126,7 @@ export function createDemoClient(): SupabaseClient {
       : null;
   const authChanged = () => listeners.forEach((fn) => fn("SIGNED_IN", session()));
   const success = (data: unknown = null) => ({ data, error: null });
-  const rates = () => [
-    {
-      id: RATE,
-      from_currency: "PEN",
-      to_currency: "BRL",
-      rate: 1.425,
-      commission_percent: 5,
-      min_amount: 1,
-      max_amount: 100000,
-      active: true,
-      valid_until: new Date(Date.now() + 86400000).toISOString(),
-    },
-    {
-      id: "00000000-0000-4000-8000-000000000904",
-      from_currency: "BRL",
-      to_currency: "PEN",
-      rate: 0.69,
-      commission_percent: 3,
-      min_amount: 1,
-      max_amount: 100000,
-      active: true,
-      valid_until: new Date(Date.now() + 86400000).toISOString(),
-    },
-  ];
+  const rates = demoRates;
   const event = (state: State, t: Transfer, action: string, note = "") =>
     state.events.unshift({ transfer_id: t.id, action, note, created_at: now() });
   const urls = new Set<string>();
@@ -468,7 +336,7 @@ export function createDemoClient(): SupabaseClient {
                 bank: "Banco Demo",
                 holder: "Brasper Demo",
                 account_number: "DEMO-NO-TRANSFERIR",
-                instructions: "Cuenta sintética. No realizar depósitos.",
+                instructions: "Cuenta demo. No realizar depósitos.",
               },
             ],
           } as unknown as DemoTransfer;
@@ -555,7 +423,7 @@ export function createDemoClient(): SupabaseClient {
               event(
                 fresh,
                 latest,
-                "Correo automático simulado",
+                "Correo demo registrado",
                 `Destinatario: ${t.billing_email || t.customer_email}`,
               );
               latest.updated_at = now();
@@ -588,7 +456,16 @@ export function createDemoClient(): SupabaseClient {
         },
         createSignedUrl: async (path: string) => {
           try {
-            const blob = (await fileStore(bucket, path)) || placeholder();
+            let blob = await fileStore(bucket, path);
+            if (!blob && bucket === "invoice-documents") {
+              const transfer = read().transfers.find((t) =>
+                t.invoices?.some((i) => i.pdf_path === path),
+              );
+              if (transfer && (staff || transfer.user_id === CLIENT))
+                blob = await demoPdf(transfer);
+              else throw new Error("Comprobante demo no encontrado");
+            }
+            blob ||= placeholder();
             const signedUrl = URL.createObjectURL(blob);
             urls.add(signedUrl);
             return success({ signedUrl });

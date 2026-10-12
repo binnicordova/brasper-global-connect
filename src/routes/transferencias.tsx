@@ -61,6 +61,10 @@ function TransferPortal() {
     const requested = readExchangeIntent(window.location.search);
     setIntent(requested);
     if (requested) setAmount(requested.amount);
+    else {
+      const amount = new URLSearchParams(window.location.search).get("amount");
+      if (amount && /^\d{1,9}(\.\d{1,2})?$/.test(amount) && Number(amount) > 0) setAmount(amount);
+    }
   }, []);
   useEffect(() => {
     formRef.current?.querySelector<HTMLHeadingElement>(`fieldset[data-step="${step}"] h3`)?.focus();
@@ -97,8 +101,6 @@ function TransferPortal() {
   const [initialReceipt, setInitialReceipt] = useState<File | null>(null);
   const [accountType, setAccountType] = useState("bank_account");
   const [customerDocumentType, setCustomerDocumentType] = useState("1");
-  const [sourceUsdCountry, setSourceUsdCountry] = useState("");
-  const [destinationUsdCountry, setDestinationUsdCountry] = useState("");
   const [fundsOrigin, setFundsOrigin] = useState("");
   const [initialBankReference, setInitialBankReference] = useState("");
   const [bankReferences, setBankReferences] = useState<Record<string, string>>({});
@@ -137,9 +139,9 @@ function TransferPortal() {
       ? quoteAmounts(Number(amount), Number(rate.rate), Number(rate.commission_percent))
       : null;
   const sourceCountry =
-    rate?.from_currency === "PEN" ? "PE" : rate?.from_currency === "BRL" ? "BR" : sourceUsdCountry;
+    rate?.from_currency === "PEN" ? "PE" : rate?.from_currency === "BRL" ? "BR" : "";
   const destinationCountry =
-    rate?.to_currency === "PEN" ? "PE" : rate?.to_currency === "BRL" ? "BR" : destinationUsdCountry;
+    rate?.to_currency === "PEN" ? "PE" : rate?.to_currency === "BRL" ? "BR" : "";
   const involvesPeru = sourceCountry === "PE" || destinationCountry === "PE";
   const billingDocumentType = ["cpf", "cnpj"].includes(customerDocumentType)
     ? "0"
@@ -185,17 +187,25 @@ function TransferPortal() {
       supabase.from("staff_members").select("user_id"),
     ]);
     for (const result of [r, t, e, s]) if (result.error) throw result.error;
-    setRates(r.data ?? []);
+    const available = (r.data ?? []).filter(
+      (item) =>
+        ["PEN", "BRL"].includes(item.from_currency) &&
+        ["PEN", "BRL"].includes(item.to_currency) &&
+        item.from_currency !== item.to_currency,
+    );
+    setRates(available);
+    const routeParams = new URLSearchParams(window.location.search);
+    const unsupported = [routeParams.get("from"), routeParams.get("to")].includes("USD");
     const requested = readExchangeIntent(window.location.search);
-    const matching = r.data?.find(
+    const matching = available.find(
       (item) => item.from_currency === requested?.from && item.to_currency === requested?.to,
     );
     setSelected((old) =>
-      r.data?.some((item) => item.id === old)
+      !unsupported && available.some((item) => item.id === old)
         ? old
-        : matching?.id || (requested ? "" : r.data?.[0]?.id) || "",
+        : matching?.id || (requested || unsupported ? "" : available[0]?.id) || "",
     );
-    if (requested && !matching && r.data?.length)
+    if ((requested || unsupported) && !matching)
       setMessage(
         "La ruta elegida no tiene una cotización vigente. Elige una de las rutas disponibles para continuar.",
       );
@@ -886,35 +896,18 @@ function TransferPortal() {
                           label: "País de la cuenta de origen",
                           currency: rate?.from_currency,
                           value: sourceCountry,
-                          change: setSourceUsdCountry,
                         },
                         {
                           name: "destinationCountry",
                           label: "País de la cuenta receptora",
                           currency: rate?.to_currency,
                           value: destinationCountry,
-                          change: setDestinationUsdCountry,
                         },
                       ].map((country) => (
                         <label key={country.name}>
                           {country.label}
-                          {country.currency === "USD" ? (
-                            <select
-                              name={country.name}
-                              value={country.value}
-                              required
-                              onChange={(e) => country.change(e.target.value)}
-                            >
-                              <option value="">Elige el país del banco</option>
-                              <option value="PE">Perú</option>
-                              <option value="BR">Brasil</option>
-                            </select>
-                          ) : (
-                            <>
-                              <input type="hidden" name={country.name} value={country.value} />
-                              <span>{countryLabels[country.value]}</span>
-                            </>
-                          )}
+                          <input type="hidden" name={country.name} value={country.value} />
+                          <span>{countryLabels[country.value]}</span>
                         </label>
                       ))}
                       {involvesPeru && (
