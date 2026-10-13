@@ -14,6 +14,14 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    // Public Lovable Cloud config: .env is gitignored, so publish builds need these baked in.
+    define: {
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify("https://lfjnywpvunfrvkgcfobl.supabase.co"),
+      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
+        "sb_publishable_ClPSzeIA5FNqpiCSngS0Ig_RIzvNCrJ",
+      ),
+      "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify("lfjnywpvunfrvkgcfobl"),
+    },
     resolve: {
       alias: {
         "entities/lib/decode.js": path.resolve(__dirname, "node_modules/entities/lib/decode.js"),
