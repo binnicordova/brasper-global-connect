@@ -98,6 +98,7 @@ export type Database = {
           error: string | null
           external_id: string | null
           id: string
+          issuer_country: string
           next_attempt_at: string | null
           number: string | null
           pdf_path: string | null
@@ -120,6 +121,7 @@ export type Database = {
           error?: string | null
           external_id?: string | null
           id?: string
+          issuer_country?: string
           next_attempt_at?: string | null
           number?: string | null
           pdf_path?: string | null
@@ -142,6 +144,7 @@ export type Database = {
           error?: string | null
           external_id?: string | null
           id?: string
+          issuer_country?: string
           next_attempt_at?: string | null
           number?: string | null
           pdf_path?: string | null
@@ -213,6 +216,7 @@ export type Database = {
       transfers: {
         Row: {
           amount: number
+          billing_country: string
           billing_document: string
           billing_document_type: string
           billing_email: string | null
@@ -264,6 +268,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          billing_country?: string
           billing_document?: string
           billing_document_type?: string
           billing_email?: string | null
@@ -315,6 +320,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          billing_country?: string
           billing_document?: string
           billing_document_type?: string
           billing_email?: string | null
@@ -403,6 +409,7 @@ export type Database = {
           error: string | null
           external_id: string | null
           id: string
+          issuer_country: string
           next_attempt_at: string | null
           number: string | null
           pdf_path: string | null
@@ -422,6 +429,38 @@ export type Database = {
         Args: { p_invoice_id: string; p_prepared: Json; p_transfer_id: string }
         Returns: boolean
       }
+      claim_brazil_invoice: {
+        Args: never
+        Returns: {
+          beta_attempts: number
+          beta_prepared: Json | null
+          beta_result: Json | null
+          beta_sent_at: string | null
+          cdr_path: string | null
+          created_at: string
+          delivered_at: string | null
+          document_type: string
+          email_attempted_at: string | null
+          environment: string
+          error: string | null
+          external_id: string | null
+          id: string
+          issuer_country: string
+          next_attempt_at: string | null
+          number: string | null
+          pdf_path: string | null
+          processing_at: string | null
+          status: string
+          transfer_id: string
+          xml_path: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_demo_invoice: {
         Args: { p_boleta_only?: boolean }
         Returns: {
@@ -438,6 +477,7 @@ export type Database = {
           error: string | null
           external_id: string | null
           id: string
+          issuer_country: string
           next_attempt_at: string | null
           number: string | null
           pdf_path: string | null
@@ -469,6 +509,7 @@ export type Database = {
           error: string | null
           external_id: string | null
           id: string
+          issuer_country: string
           next_attempt_at: string | null
           number: string | null
           pdf_path: string | null
@@ -500,6 +541,7 @@ export type Database = {
           error: string | null
           external_id: string | null
           id: string
+          issuer_country: string
           next_attempt_at: string | null
           number: string | null
           pdf_path: string | null
