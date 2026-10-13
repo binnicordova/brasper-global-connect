@@ -399,6 +399,112 @@
           height: 1100px;
         }
       }
+      .layout {
+        grid-template-columns: 380px minmax(0, 1fr);
+      }
+      #chat-messages {
+        max-height: 350px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin: 18px 0;
+        scroll-behavior: smooth;
+      }
+      .chat-message {
+        flex-shrink: 0;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: #f0f5f7;
+        font-size: 14px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .chat-message.user {
+        background: #008575;
+        color: white;
+        align-self: flex-end;
+        max-width: 95%;
+      }
+      .chat-message small {
+        display: block;
+        font-size: 10px;
+        opacity: 0.7;
+        margin-bottom: 5px;
+      }
+      #chat-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      #chat-form label {
+        width: 100%;
+      }
+      #chat-input {
+        font: inherit;
+        font-size: 14px;
+        resize: vertical;
+        width: 100%;
+        min-height: 76px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        color: var(--ink);
+      }
+      #chat-send {
+        background: var(--green);
+        color: white;
+        border: 0;
+        border-radius: 12px;
+        padding: 12px 16px;
+        width: 100%;
+        font-weight: 650;
+      }
+      #chat-send:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
+      #chat-status {
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+      #handoff {
+        background: #fff5dd;
+        border: 1px solid #efd692;
+        padding: 12px;
+        border-radius: 12px;
+        margin-top: 15px;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      #reset-chat {
+        font-size: 12px;
+        border: 0;
+        color: var(--muted);
+      }
+      .assistant-body {
+        max-height: calc(100vh - 150px);
+        overflow: auto;
+      }
+      #help-reply {
+        display: none !important;
+      }
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .assistant {
+          position: static;
+        }
+        .assistant-body {
+          max-height: none;
+        }
+        #chat-messages {
+          max-height: 300px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -408,7 +514,7 @@
         <nav class="topnav" aria-label="Navegación">
           <a href="/">Inicio</a>
         </nav>
-        <span class="demo">Demo con datos de la demo</span>
+        <span class="demo">Chat híbrido · entorno local</span>
       </div>
     </header>
     <main>
@@ -426,7 +532,7 @@
             <div class="avatar" aria-hidden="true">b.</div>
             <div>
               <h2>Asistente Brasper</h2>
-              <p>Tu guía para este cambio</p>
+              <p id="chat-connection">Conectando asistente…</p>
             </div>
           </div>
           <div class="assistant-body">
@@ -435,18 +541,43 @@
               Hola, soy tu guía Brasper. Empieza eligiendo cuánto quieres cambiar y la moneda que
               vas a recibir. Después completaremos tus datos y la cuenta de destino.
             </div>
-            <p class="helper-title">Te ayudo con lo que necesites</p>
+            <div
+              id="chat-messages"
+              role="log"
+              aria-label="Conversación con el asistente"
+              aria-live="polite"
+            ></div>
+            <form id="chat-form">
+              <label class="helper-title" for="chat-input">Pregúntame o empecemos tu cambio</label
+              ><textarea
+                id="chat-input"
+                rows="2"
+                maxlength="1500"
+                placeholder="¿Cómo funciona? ¿Qué necesito?"
+                required
+              ></textarea
+              ><button id="chat-send" type="submit">Enviar pregunta ↗</button>
+            </form>
+            <p id="chat-status" role="status"></p>
+            <button type="button" class="human" id="start-change">Empezar mi cambio →</button>
+            <p class="helper-title">Respuestas rápidas</p>
             <div class="quick">
               <button type="button" data-help="requirements">¿Qué datos necesito?</button
               ><button type="button" data-help="billing">Factura o boleta</button
               ><button type="button" data-help="proof">Mi comprobante de pago</button>
             </div>
             <div class="help-reply" id="help-reply" role="status" hidden></div>
+            <div id="handoff" hidden>
+              <p>IA pausada. No hay un asesor conectado a esta prueba local.</p>
+              <button type="button" class="human" id="copy-summary">Copiar resumen</button
+              ><button type="button" class="human" id="resume-chat">Volver al asistente</button>
+            </div>
+            <button type="button" class="human" id="reset-chat">Nueva conversación</button>
             <button class="human" id="human" type="button">Prefiero hablar con una persona</button>
           </div>
           <div class="assistant-foot">
-            En esta beta, el asistente es una guía interactiva. La atención por IA y la derivación a
-            un asesor se conectarán en el siguiente paso.
+            IA para conversar; formulario para validar. Solo las preguntas del chat se envían a
+            OpenAI. Los archivos y datos del formulario se mantienen en su flujo.
           </div>
         </aside>
         <section class="workspace" aria-label="Tu solicitud de cambio">
@@ -613,24 +744,7 @@
               "Tu solicitud demo quedó registrada. El equipo revisará el ingreso y, después, registrará el envío. Puedes continuar la prueba desde el dashboard.";
         }
       });
-      const help = {
-        requirements:
-          "Para esta prueba necesitas datos de ejemplo del remitente, correo, banco de origen, origen y motivo de fondos y la cuenta de destino. Puedes descargar el comprobante de ejemplo al pie del formulario.",
-        billing:
-          "Elige boleta para un comprobante personal o factura con RUC y razón social del receptor. El comprobante se generará después de registrar el envío. La demo genera el PDF y registra el correo sin enviarlo.",
-        proof:
-          "Sube una foto JPG/PNG o un PDF de hasta 5 MB y escribe la referencia bancaria. La captura se recibe para revisión: no confirma automáticamente que el dinero ingresó.",
-      };
-      for (const button of document.querySelectorAll("[data-help]"))
-        button.addEventListener("click", () => {
-          reply.hidden = false;
-          reply.textContent = help[button.dataset.help];
-        });
-      document.getElementById("human").addEventListener("click", () => {
-        reply.hidden = false;
-        reply.textContent =
-          "En la experiencia real, el asesor retomará tu solicitud y los datos ya enviados. Esta demo todavía no conecta con una persona; puedes continuar con el formulario sin perder lo que completaste.";
-      });
     </script>
+    <script src="./hybrid-chat.js"></script>
   </body>
 </html>

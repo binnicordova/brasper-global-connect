@@ -8,3 +8,9 @@ verify_jwt = false
 enable_signup = true
 enable_anonymous_sign_ins = true
 enable_manual_linking = true
+
+# Meta signature and session JWT are validated inside the functions.
+[functions.whatsapp-webhook]
+verify_jwt = false
+[functions.whatsapp-session]
+verify_jwt = false

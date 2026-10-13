@@ -2,7 +2,9 @@
 
 ## Estado actual
 
-El asistente de `preview-beta.html` es una guía contextual con respuestas predefinidas. No existe todavía una función de conversación con un modelo, memoria de conversación, conexión a WhatsApp ni asignación real de asesores. La demo web reutiliza el formulario y sus validaciones, y guarda solamente datos sintéticos localmente. Esta entrega no despliega cambios de BD ni funciones.
+La beta local ya dispone de chat con OpenAI, memoria de sesión en el servidor, respuestas deterministas, inicio del formulario y pausa/reanudación de IA para atención humana. Se probó una respuesta real con la clave local autorizada por el usuario. El chat no está conectado al canal WhatsApp ni asigna un asesor real. El formulario conserva el registro sintético local y sus validaciones; la vista previa de Meta continúa independiente de la BD.
+
+Consulta [BETA_CHAT_LOCAL.md](BETA_CHAT_LOCAL.md) para uso, límites y pruebas. Esta actualización no despliega cambios de BD ni funciones en Lovable.
 
 ## Diseño propuesto para la actualización grande
 
@@ -22,7 +24,7 @@ En la web podemos personalizar colores, tipografía, avatar, conversación y rec
 
 ## Proveedor de IA y costos
 
-[Lovable AI](https://docs.lovable.dev/features/ai) permite añadir asistentes y análisis de imágenes con credenciales gestionadas y llamadas desde el backend. Su uso en la aplicación consume créditos de ejecución, distintos de los del editor. Otra opción es una API de modelo con clave propia y cobro del proveedor. Elegir el proveedor y establecer cuotas antes de activar tráfico real. No llamar a servicios de IA desde la demo local ni exponer claves en HTML, variables públicas o Git.
+[Lovable AI](https://docs.lovable.dev/features/ai) permite añadir asistentes y análisis de imágenes con credenciales gestionadas y llamadas desde el backend. Su uso en la aplicación consume créditos de ejecución, distintos de los del editor. Otra opción es una API de modelo con clave propia y cobro del proveedor. Elegir el proveedor y establecer cuotas antes de activar tráfico real. La beta de chat local llama a OpenAI desde el servidor por autorización explícita del usuario; el registro financiero sigue siendo local. Nunca exponer claves en HTML, variables públicas o Git.
 
 ## Prompt para la futura actualización en Lovable
 

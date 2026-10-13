@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Brasper · Bandeja WhatsApp</title
+  ><style>
+    body {
+      font: 15px system-ui;
+      color: #122344;
+      background: #f2f6f9;
+      padding: 24px;
+      max-width: 1000px;
+      margin: auto;
+    }
+    article {
+      background: #fff;
+      padding: 24px;
+      margin: 20px 0;
+      border-radius: 18px;
+    }
+    pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font: inherit;
+      line-height: 1.7;
+    }
+    button {
+      font: inherit;
+      background: #008575;
+      color: white;
+      border: 0;
+      padding: 13px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    a {
+      color: #008575;
+    }
+    p {
+      line-height: 1.6;
+    }
+  </style>
+  <h1>WhatsApp · Chat + Flow</h1>
+  <p>
+    Sesiones y formularios recibidos en el servidor local. Pendiente de revisión no equivale a
+    ingreso confirmado ni envío de dinero.
+  </p>
+  <p><a href="./whatsapp-setup.html">Configurar conexión</a></p>
+  <button id="refresh">Actualizar</button>
+  <button id="test">Enviar saludo de prueba</button>
+  <p id="status" role="status"></p>
+  <div id="content"></div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    async function load() {
+      const r = await fetch("/api/whatsapp-inbox");
+      const d = await r.json();
+      $("status").textContent = r.ok
+        ? d.configured
+          ? "Credenciales configuradas. Revisa los eventos para confirmar recepción real."
+          : "Faltan credenciales de Meta."
+        : d.error || "No disponible";
+      $("content").replaceChildren();
+      if (!r.ok) return;
+      for (const [phone, c] of Object.entries(d.channels)) {
+        const a = document.createElement("article"),
+          h = document.createElement("h2"),
+          p = document.createElement("pre");
+        h.textContent = "Sesión terminada en " + phone.slice(-4) + " · " + c.mode;
+        p.textContent =
+          (c.draft
+            ? "Formulario " +
+              c.draft.id.slice(0, 8) +
+              " · " +
+              c.draft.status +
+              "\nRuta " +
+              c.draft.route +
+              " · " +
+              c.draft.amount +
+              "\nAdjuntos referenciados: " +
+              c.draft.proofCount +
+              "\n\n"
+            : "") +
+          c.history
+            .map((m) => (m.direction === "in" ? "Cliente" : "Brasper") + ": " + m.text)
+            .join("\n\n");
+        a.append(h, p);
+        if (c.webData) {
+          const details = document.createElement("details"),
+            summary = document.createElement("summary"),
+            data = document.createElement("pre");
+          summary.textContent = "Datos completos de la solicitud web";
+          data.textContent = JSON.stringify(c.webData, null, 2);
+          details.append(summary, data);
+          a.append(details);
+          const link = document.createElement("a");
+          link.href = "/api/whatsapp-inbox?proof=" + encodeURIComponent(c.draft.id);
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.textContent = "Ver comprobante de pago";
+          a.append(link);
+        }
+
+        $("content").append(a);
+      }
+      const a = document.createElement("article"),
+        p = document.createElement("pre");
+      p.textContent =
+        "Procesamiento\n" +
+        d.jobs
+          .map((j) => j.id.slice(-12) + " · " + j.status + (j.error ? " · " + j.error : ""))
+          .join("\n") +
+        "\n\nEventos\n" +
+        d.events
+          .slice(-20)
+          .map((e) => e.at + " · " + e.kind)
+          .join("\n");
+      a.append(p);
+      $("content").append(a);
+    }
+    $("refresh").onclick = () => load().catch(() => ($("status").textContent = "Sin conexión"));
+    $("test").onclick = async () => {
+      if (!confirm("Enviar un único saludo de prueba desde Meta al destinatario configurado?"))
+        return;
+      try {
+        const r = await fetch("/api/whatsapp-inbox", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "send_test" }),
+        });
+        const d = await r.json();
+        $("status").textContent = d.message || d.error;
+      } catch {
+        $("status").textContent = "No se pudo enviar.";
+      }
+    };
+    load();
+  </script>
+</html>

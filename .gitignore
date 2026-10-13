@@ -39,3 +39,6 @@ artifacts/billing-beta/
 
 # PDF rendering intermediates
 tmp/pdfs/
+
+# Private WhatsApp beta messages and files
+artifacts/whatsapp-beta/

@@ -118,3 +118,25 @@ it("preserves a logged-in customer session and uses the customer URL for Google"
     }),
   );
 });
+
+it("keeps the signed WhatsApp link through guest access and email login", async () => {
+  const token = "00000000-0000-4000-8000-000000000001.1893456000." + "a".repeat(64);
+  window.history.replaceState(null, "", "/login?wa=" + token);
+  render(<Login />);
+  expect(await screen.findByRole("link", { name: /Continuar sin cuenta/ })).toHaveAttribute(
+    "href",
+    "/transferencias?wa=" + token,
+  );
+  fireEvent.change(screen.getByLabelText("Correo"), { target: { value: "client@example.test" } });
+  fireEvent.click(screen.getByRole("button", { name: "Entrar con enlace por correo" }));
+  await waitFor(() =>
+    expect(mock.otp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: window.location.origin + "/transferencias?wa=" + token,
+        },
+      }),
+    ),
+  );
+});

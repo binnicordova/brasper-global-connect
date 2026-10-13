@@ -13,7 +13,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as TransferenciasRouteImport } from './routes/transferencias'
+import { Route as ApiAssistantRouteImport } from './routes/api.assistant'
+import { Route as ApiAssistantSetupRouteImport } from './routes/api.assistant-setup'
 import { Route as ApiBillingBetaRouteImport } from './routes/api.billing-beta'
+import { Route as ApiWhatsappInboxRouteImport } from './routes/api.whatsapp-inbox'
+import { Route as ApiWhatsappSetupRouteImport } from './routes/api.whatsapp-setup'
+import { Route as ApiWhatsappWebRouteImport } from './routes/api.whatsapp-web'
+import { Route as ApiWhatsappWebhookRouteImport } from './routes/api.whatsapp.webhook'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const IndexRoute = IndexRouteImport.update({
@@ -36,9 +42,39 @@ const TransferenciasRoute = TransferenciasRouteImport.update({
   path: '/transferencias',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAssistantRoute = ApiAssistantRouteImport.update({
+  id: '/api/assistant',
+  path: '/api/assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAssistantSetupRoute = ApiAssistantSetupRouteImport.update({
+  id: '/api/assistant-setup',
+  path: '/api/assistant-setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBillingBetaRoute = ApiBillingBetaRouteImport.update({
   id: '/api/billing-beta',
   path: '/api/billing-beta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWhatsappInboxRoute = ApiWhatsappInboxRouteImport.update({
+  id: '/api/whatsapp-inbox',
+  path: '/api/whatsapp-inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWhatsappSetupRoute = ApiWhatsappSetupRouteImport.update({
+  id: '/api/whatsapp-setup',
+  path: '/api/whatsapp-setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWhatsappWebRoute = ApiWhatsappWebRouteImport.update({
+  id: '/api/whatsapp-web',
+  path: '/api/whatsapp-web',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWhatsappWebhookRoute = ApiWhatsappWebhookRouteImport.update({
+  id: '/api/whatsapp/webhook',
+  path: '/api/whatsapp/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LovableEmailTransactionalPreviewRoute =
@@ -53,7 +89,13 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/transferencias': typeof TransferenciasRoute
+  '/api/assistant': typeof ApiAssistantRoute
+  '/api/assistant-setup': typeof ApiAssistantSetupRoute
   '/api/billing-beta': typeof ApiBillingBetaRoute
+  '/api/whatsapp-inbox': typeof ApiWhatsappInboxRoute
+  '/api/whatsapp-setup': typeof ApiWhatsappSetupRoute
+  '/api/whatsapp-web': typeof ApiWhatsappWebRoute
+  '/api/whatsapp/webhook': typeof ApiWhatsappWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
@@ -61,7 +103,13 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/transferencias': typeof TransferenciasRoute
+  '/api/assistant': typeof ApiAssistantRoute
+  '/api/assistant-setup': typeof ApiAssistantSetupRoute
   '/api/billing-beta': typeof ApiBillingBetaRoute
+  '/api/whatsapp-inbox': typeof ApiWhatsappInboxRoute
+  '/api/whatsapp-setup': typeof ApiWhatsappSetupRoute
+  '/api/whatsapp-web': typeof ApiWhatsappWebRoute
+  '/api/whatsapp/webhook': typeof ApiWhatsappWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
@@ -70,7 +118,13 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/transferencias': typeof TransferenciasRoute
+  '/api/assistant': typeof ApiAssistantRoute
+  '/api/assistant-setup': typeof ApiAssistantSetupRoute
   '/api/billing-beta': typeof ApiBillingBetaRoute
+  '/api/whatsapp-inbox': typeof ApiWhatsappInboxRoute
+  '/api/whatsapp-setup': typeof ApiWhatsappSetupRoute
+  '/api/whatsapp-web': typeof ApiWhatsappWebRoute
+  '/api/whatsapp/webhook': typeof ApiWhatsappWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
@@ -80,7 +134,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/transferencias'
+    | '/api/assistant'
+    | '/api/assistant-setup'
     | '/api/billing-beta'
+    | '/api/whatsapp-inbox'
+    | '/api/whatsapp-setup'
+    | '/api/whatsapp-web'
+    | '/api/whatsapp/webhook'
     | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,7 +148,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/transferencias'
+    | '/api/assistant'
+    | '/api/assistant-setup'
     | '/api/billing-beta'
+    | '/api/whatsapp-inbox'
+    | '/api/whatsapp-setup'
+    | '/api/whatsapp-web'
+    | '/api/whatsapp/webhook'
     | '/lovable/email/transactional/preview'
   id:
     | '__root__'
@@ -96,7 +162,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/transferencias'
+    | '/api/assistant'
+    | '/api/assistant-setup'
     | '/api/billing-beta'
+    | '/api/whatsapp-inbox'
+    | '/api/whatsapp-setup'
+    | '/api/whatsapp-web'
+    | '/api/whatsapp/webhook'
     | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
@@ -105,7 +177,13 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   TransferenciasRoute: typeof TransferenciasRoute
+  ApiAssistantRoute: typeof ApiAssistantRoute
+  ApiAssistantSetupRoute: typeof ApiAssistantSetupRoute
   ApiBillingBetaRoute: typeof ApiBillingBetaRoute
+  ApiWhatsappInboxRoute: typeof ApiWhatsappInboxRoute
+  ApiWhatsappSetupRoute: typeof ApiWhatsappSetupRoute
+  ApiWhatsappWebRoute: typeof ApiWhatsappWebRoute
+  ApiWhatsappWebhookRoute: typeof ApiWhatsappWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
@@ -139,11 +217,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TransferenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/assistant': {
+      id: '/api/assistant'
+      path: '/api/assistant'
+      fullPath: '/api/assistant'
+      preLoaderRoute: typeof ApiAssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/assistant-setup': {
+      id: '/api/assistant-setup'
+      path: '/api/assistant-setup'
+      fullPath: '/api/assistant-setup'
+      preLoaderRoute: typeof ApiAssistantSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/billing-beta': {
       id: '/api/billing-beta'
       path: '/api/billing-beta'
       fullPath: '/api/billing-beta'
       preLoaderRoute: typeof ApiBillingBetaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/whatsapp-inbox': {
+      id: '/api/whatsapp-inbox'
+      path: '/api/whatsapp-inbox'
+      fullPath: '/api/whatsapp-inbox'
+      preLoaderRoute: typeof ApiWhatsappInboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/whatsapp-setup': {
+      id: '/api/whatsapp-setup'
+      path: '/api/whatsapp-setup'
+      fullPath: '/api/whatsapp-setup'
+      preLoaderRoute: typeof ApiWhatsappSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/whatsapp-web': {
+      id: '/api/whatsapp-web'
+      path: '/api/whatsapp-web'
+      fullPath: '/api/whatsapp-web'
+      preLoaderRoute: typeof ApiWhatsappWebRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/whatsapp/webhook': {
+      id: '/api/whatsapp/webhook'
+      path: '/api/whatsapp/webhook'
+      fullPath: '/api/whatsapp/webhook'
+      preLoaderRoute: typeof ApiWhatsappWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lovable/email/transactional/preview': {
@@ -161,7 +281,13 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   TransferenciasRoute: TransferenciasRoute,
+  ApiAssistantRoute: ApiAssistantRoute,
+  ApiAssistantSetupRoute: ApiAssistantSetupRoute,
   ApiBillingBetaRoute: ApiBillingBetaRoute,
+  ApiWhatsappInboxRoute: ApiWhatsappInboxRoute,
+  ApiWhatsappSetupRoute: ApiWhatsappSetupRoute,
+  ApiWhatsappWebRoute: ApiWhatsappWebRoute,
+  ApiWhatsappWebhookRoute: ApiWhatsappWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport

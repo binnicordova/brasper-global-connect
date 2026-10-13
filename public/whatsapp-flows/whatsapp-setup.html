@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Brasper · Conectar WhatsApp</title
+  ><style>
+    body {
+      font: 16px system-ui;
+      background: #f2f6f9;
+      color: #122344;
+      margin: 0;
+      padding: 20px;
+    }
+    main {
+      max-width: 580px;
+      margin: 30px auto;
+      background: white;
+      border-radius: 24px;
+      padding: 30px;
+    }
+    label {
+      display: block;
+      margin: 18px 0 8px;
+    }
+    input,
+    button {
+      box-sizing: border-box;
+      font: inherit;
+      padding: 13px;
+      border-radius: 10px;
+      width: 100%;
+    }
+    input {
+      border: 1px solid #cdd8df;
+    }
+    button {
+      background: #008575;
+      color: #fff;
+      border: 0;
+      margin-top: 24px;
+      cursor: pointer;
+    }
+    p {
+      line-height: 1.6;
+    }
+    a {
+      color: #008575;
+    }
+    code {
+      overflow-wrap: anywhere;
+    }
+    #status {
+      white-space: pre-wrap;
+    }
+  </style>
+  <main>
+    <h1>IA + Flow en WhatsApp</h1>
+    <p>
+      Conecta el número de prueba de Meta. La clave de OpenAI ya se utiliza desde el servidor; aquí
+      solo guardas los datos de WhatsApp.
+    </p>
+    <p>
+      <a
+        target="_blank"
+        rel="noopener"
+        href="https://developers.facebook.com/apps/2190725181540988/use_cases/customize/api-testing-v2/?use_case_enum=WHATSAPP_BUSINESS_MESSAGING&selected_tab=api-testing-v2&product_route=whatsapp-business&business_id=2089147141630010"
+        >Abrir configuración de pruebas de Meta ↗</a
+      >
+    </p>
+    <p>
+      <a
+        target="_blank"
+        rel="noopener"
+        href="https://developers.facebook.com/apps/2190725181540988/settings/basic/"
+        >Abrir configuración básica para copiar el secreto de la app ↗</a
+      >
+    </p>
+    <label for="callback">URL temporal de webhook para Meta</label><input id="callback" readonly />
+    <form id="form">
+      <label for="token">Token temporal de WhatsApp Cloud API</label
+      ><input type="password" id="token" autocomplete="off" required /><label for="secret"
+        >Secreto de la app de Meta (configuración básica)</label
+      ><input type="password" id="secret" autocomplete="off" required /><label for="recipient"
+        >Tu número autorizado para probar (sin +)</label
+      ><input id="recipient" inputmode="numeric" required /><label for="phone"
+        >Phone Number ID</label
+      ><input id="phone" value="1287260894478658" required /><label for="flow">Flow ID</label
+      ><input id="flow" value="1746368663111217" required /><button id="save">
+        Guardar conexión local
+      </button>
+    </form>
+    <p id="status" role="status"></p>
+    <div id="verify" hidden>
+      <h2>Verificación del webhook</h2>
+      <p>
+        En Meta, suscribe el campo <b>messages</b>. La URL pública HTTPS debe terminar en
+        <code>/api/whatsapp/webhook</code>.
+      </p>
+      <label for="verify-token">Token de verificación generado</label
+      ><input id="verify-token" readonly />
+      <p>
+        Este token es distinto del token de acceso. Se muestra aquí para copiarlo al formulario de
+        verificación de Meta.
+      </p>
+    </div>
+    <p><a href="./whatsapp-inbox.html">Abrir bandeja local de WhatsApp →</a></p>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    async function load() {
+      const r = await fetch("/api/whatsapp-setup");
+      const d = await r.json();
+      if (!r.ok) {
+        $("form").hidden = true;
+        $("status").textContent = d.error;
+        return;
+      }
+      $("callback").value = d.callback || "";
+      $("recipient").value = d.recipient || "";
+      $("phone").value = d.phoneId;
+      $("flow").value = d.flowId;
+      if (d.configured) {
+        $("status").textContent =
+          "Configuración local guardada. La conexión a Meta se confirma con la verificación y un mensaje recibido.";
+        $("verify").hidden = false;
+        $("verify-token").value = d.verifyToken;
+      }
+    }
+    $("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      $("save").disabled = true;
+      try {
+        const r = await fetch("/api/whatsapp-setup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: $("token").value,
+            secret: $("secret").value,
+            recipient: $("recipient").value,
+            phoneId: $("phone").value,
+            flowId: $("flow").value,
+          }),
+        });
+        const d = await r.json();
+        $("status").textContent = d.message || d.error;
+        if (r.ok) {
+          $("token").value = "";
+          $("secret").value = "";
+          await load();
+        }
+      } catch {
+        $("status").textContent = "No se pudo conectar.";
+      } finally {
+        $("save").disabled = false;
+      }
+    });
+    load();
+  </script>
+</html>

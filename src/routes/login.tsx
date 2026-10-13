@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, LockKeyhole, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { hostedWhatsappToken, whatsappReturnPath } from "@/lib/hosted-whatsapp";
 import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/login")({
@@ -13,6 +14,13 @@ export const Route = createFileRoute("/login")({
 });
 function CustomerLogin() {
   const navigate = useNavigate();
+  const returnPath = whatsappReturnPath(
+    typeof window === "undefined" ? "" : window.location.search,
+  );
+  async function continueToTransfers() {
+    if (hostedWhatsappToken(window.location.search)) window.location.assign(returnPath);
+    else await navigate({ to: "/transferencias" });
+  }
   const [registeredSession, setRegisteredSession] = useState(false);
   const [ready, setReady] = useState(false);
   const [register, setRegister] = useState(false);
@@ -68,7 +76,7 @@ function CustomerLogin() {
       const result = register
         ? await supabase!.auth.signUp({
             ...credentials,
-            options: { emailRedirectTo: window.location.origin + "/transferencias" },
+            options: { emailRedirectTo: window.location.origin + returnPath },
           })
         : await supabase!.auth.signInWithPassword(credentials);
       if (result.error)
@@ -77,7 +85,7 @@ function CustomerLogin() {
             ? result.error.message
             : "No se pudo iniciar sesión. Revisa tu correo y contraseña.",
         );
-      if (result.data.session) await navigate({ to: "/transferencias" });
+      if (result.data.session) await continueToTransfers();
       else setMessage("Revisa tu correo para confirmar tu cuenta y acceder a tus transferencias.");
     });
   }
@@ -89,7 +97,7 @@ function CustomerLogin() {
         email: email.value.trim(),
         options: {
           shouldCreateUser: false,
-          emailRedirectTo: window.location.origin + "/transferencias",
+          emailRedirectTo: window.location.origin + returnPath,
         },
       });
       if (error) throw new Error("No se pudo solicitar el enlace. Inténtalo de nuevo.");
@@ -99,10 +107,15 @@ function CustomerLogin() {
   async function googleLogin() {
     await run(async () => {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + "/login",
+        redirect_uri:
+          window.location.origin +
+          "/login" +
+          (hostedWhatsappToken(window.location.search)
+            ? "?wa=" + encodeURIComponent(hostedWhatsappToken(window.location.search)!)
+            : ""),
       });
       if (result.error) throw result.error;
-      if (!result.redirected) await navigate({ to: "/transferencias" });
+      if (!result.redirected) await continueToTransfers();
     });
   }
   return (
@@ -139,9 +152,9 @@ function CustomerLogin() {
             <div className="login-session">
               <p>Ya tienes una sesión iniciada.</p>
               <Button variant="brand" asChild>
-                <Link to="/transferencias">
+                <a href={returnPath}>
                   Ir a mis transferencias <ArrowRight size={16} />
-                </Link>
+                </a>
               </Button>
               <Button
                 type="button"
@@ -221,9 +234,9 @@ function CustomerLogin() {
           )}
           <div className="login-guest">
             <p>También puedes realizar un cambio sin crear una cuenta.</p>
-            <Link to="/transferencias">
+            <a href={returnPath}>
               Continuar sin cuenta <ArrowRight size={16} />
-            </Link>
+            </a>
           </div>
         </section>
       </main>

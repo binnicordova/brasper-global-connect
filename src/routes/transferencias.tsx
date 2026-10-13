@@ -1,3 +1,4 @@
+import { hostedWhatsappToken, whatsappReturnPath } from "@/lib/hosted-whatsapp";
 import { BillingStatus } from "@/components/billing-status";
 import { readBillingCompatible } from "@/lib/billing";
 import { readExchangeIntent, exchangePath } from "@/lib/exchange-intent";
@@ -383,7 +384,7 @@ function TransferPortal() {
     await run(async () => {
       const { error } = await supabase!.auth.updateUser(
         { email: String(fields.get("email")) },
-        { emailRedirectTo: window.location.origin + "/transferencias" },
+        { emailRedirectTo: window.location.origin + whatsappReturnPath(window.location.search) },
       );
       if (error) throw error;
       setSaveGuestAccess(false);
@@ -417,7 +418,7 @@ function TransferPortal() {
         email: emailInput.value,
         options: {
           shouldCreateUser: false,
-          emailRedirectTo: window.location.origin + "/transferencias",
+          emailRedirectTo: window.location.origin + whatsappReturnPath(window.location.search),
         },
       });
       if (error) throw error;
@@ -438,7 +439,11 @@ function TransferPortal() {
             options: {
               emailRedirectTo:
                 window.location.origin +
-                (intent ? exchangePath(intent.from, intent.to, intent.amount) : "/transferencias"),
+                (hostedWhatsappToken(window.location.search)
+                  ? whatsappReturnPath(window.location.search)
+                  : intent
+                    ? exchangePath(intent.from, intent.to, intent.amount)
+                    : "/transferencias"),
             },
           })
         : await supabase.auth.signInWithPassword(credentials);
@@ -449,11 +454,11 @@ function TransferPortal() {
   async function googleLogin() {
     await run(async () => {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: window.location.origin + whatsappReturnPath(window.location.search),
       });
       if (result.error) throw result.error;
       if (!result.redirected) {
-        window.location.assign("/transferencias");
+        window.location.assign(whatsappReturnPath(window.location.search));
       }
     });
   }
@@ -482,7 +487,46 @@ function TransferPortal() {
         if (initialBankReference.trim().length < 2)
           throw new Error("Indica el número de operación de tu pago bancario");
       }
-      const { data: id, error } = await supabase.rpc("create_validated_transfer", {
+      const waToken = new URLSearchParams(window.location.search).get("wa");
+      const cloudWa = hostedWhatsappToken(window.location.search);
+      if (waToken && !cloudWa) {
+        if (!file)
+          throw new Error(
+            "Adjunta el comprobante de pago antes de enviar la solicitud de WhatsApp.",
+          );
+        const payload = new FormData();
+        payload.set("token", waToken);
+        payload.set("payload", JSON.stringify(v));
+        payload.set("proof", file);
+        payload.set("bankReference", initialBankReference.trim());
+        payload.set("declaration", String(d.get("declarationAccepted") || ""));
+        const response = await fetch("/api/whatsapp-web", { method: "POST", body: payload });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "No se pudo registrar la solicitud");
+        setMessage(
+          "Solicitud y comprobante recibidos. Quedan pendientes de revisión interna. Puedes regresar al chat de WhatsApp.",
+        );
+        setEmbeddedOperation(result.id);
+        setNewOperation(result.id);
+        form
+          .querySelectorAll<HTMLButtonElement | HTMLInputElement | HTMLSelectElement>(
+            "button,input,select",
+          )
+          .forEach((el) => (el.disabled = true));
+        if (embedded)
+          window.parent.postMessage({ type: "brasper:exchange-created" }, window.location.origin);
+        return;
+      }
+      let cloudSessionId: string | null = null;
+      if (cloudWa) {
+        const claim = await supabase.functions.invoke("whatsapp-session", {
+          body: { action: "claim", token: cloudWa },
+        });
+        if (claim.error || !claim.data?.sessionId)
+          throw new Error("No se pudo validar el enlace de WhatsApp. Pide uno nuevo en el chat.");
+        cloudSessionId = claim.data.sessionId;
+      }
+      const transferArgs = {
         p_declaration_accepted: d.get("declarationAccepted") === "yes",
         p_customer_document_type: v.customerDocumentType,
         p_source_country: v.sourceCountry,
@@ -512,8 +556,18 @@ function TransferPortal() {
         p_billing_name: v.billingType !== "boleta" ? v.billingLegalName : v.customerName,
         p_billing_document: v.billingType !== "boleta" ? v.billingRuc : v.customerDocument,
         p_billing_document_type: v.billingType === "factura" ? "6" : v.billingDocumentType,
-      });
-      if (error) throw error;
+      };
+      const rpcClient = supabase as unknown as {
+        rpc(
+          name: string,
+          args: Record<string, unknown>,
+        ): Promise<{ data: string | null; error: Error | null }>;
+      };
+      const { data: id, error } = await rpcClient.rpc(
+        cloudSessionId ? "create_whatsapp_transfer" : "create_validated_transfer",
+        cloudSessionId ? { p_session_id: cloudSessionId, p_data: transferArgs } : transferArgs,
+      );
+      if (error || !id) throw error || new Error("No se pudo registrar la solicitud");
       let accountNote = "";
       if (registered && saveRecipient) {
         try {
@@ -560,10 +614,21 @@ function TransferPortal() {
         null,
         "",
         window.location.pathname +
-          (embedded
-            ? `?embed=1${new URLSearchParams(window.location.search).get("demo") === "1" ? "&demo=1" : ""}`
-            : ""),
+          (cloudWa
+            ? "?wa=" + encodeURIComponent(cloudWa)
+            : embedded
+              ? `?embed=1${new URLSearchParams(window.location.search).get("demo") === "1" ? "&demo=1" : ""}`
+              : ""),
       );
+      if (cloudWa && !receiptError && file) {
+        const complete = await supabase.functions.invoke("whatsapp-session", {
+          body: { action: "complete", token: cloudWa, transferId: id },
+        });
+        if (complete.error || !complete.data?.notified)
+          accountNote +=
+            " La solicitud está guardada; la notificación de WhatsApp queda pendiente de revisión.";
+        else accountNote += " Confirmación enviada al chat de WhatsApp.";
+      }
       await load();
       setNewOperation(id);
       if (embedded) {
@@ -604,7 +669,21 @@ function TransferPortal() {
       if (error) throw error;
       setProofFiles((old) => ({ ...old, [t.id]: null }));
       await load();
-      setMessage("Prueba recibida. Nuestro equipo verificará el ingreso en la cuenta bancaria.");
+      let confirmation = "";
+      const cloudWa = hostedWhatsappToken(window.location.search);
+      if (cloudWa) {
+        const complete = await supabase!.functions.invoke("whatsapp-session", {
+          body: { action: "complete", token: cloudWa, transferId: t.id },
+        });
+        confirmation =
+          complete.error || !complete.data?.notified
+            ? " La notificación de WhatsApp queda pendiente de revisión."
+            : " Confirmación enviada al chat de WhatsApp.";
+      }
+      setMessage(
+        "Prueba recibida. Nuestro equipo verificará el ingreso en la cuenta bancaria." +
+          confirmation,
+      );
     });
   }
   async function review(t: Transfer, data: ReviewSubmission) {
@@ -694,9 +773,17 @@ function TransferPortal() {
           <ArrowLeft size={16} /> Volver al inicio
         </Link>
         {(!session || guest) && (
-          <Link to="/login" className="portal-back">
+          <a
+            href={
+              "/login" +
+              (typeof window !== "undefined" && hostedWhatsappToken(window.location.search)
+                ? "?wa=" + encodeURIComponent(hostedWhatsappToken(window.location.search)!)
+                : "")
+            }
+            className="portal-back"
+          >
             Iniciar sesión
-          </Link>
+          </a>
         )}
         {session && !guest && (
           <Button
