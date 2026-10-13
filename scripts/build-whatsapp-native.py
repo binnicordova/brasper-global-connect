@@ -52,10 +52,10 @@ for ix,screen in enumerate(steps):
   if typ=='TextInput' and arg:f['input-type']=arg
   if typ=='TextArea':f['max-length']=500
   if key=='amount':f['helper-text']='Hasta 2 decimales.'
-  form.append(f);payload[key]='${form.'+key+'}';init[key]='${data.'+key+'}'
+  form.append(f);payload[key]='${form.'+key+'}';init.update({} if key=='amount' else {key:'${data.'+key+'}'})
  if screen=='PAYMENT':
-  form.extend([{'type':'PhotoPicker','name':'photo_picker','label':'Foto del comprobante','description':'Toma una foto o elige una imagen.','photo-source':'camera_gallery','min-uploaded-photos':0,'max-uploaded-photos':1,'max-file-size-kb':5120},{'type':'DocumentPicker','name':'document_picker','label':'PDF del comprobante','description':'Si prefieres PDF, adjúntalo aquí.','min-uploaded-documents':0,'max-uploaded-documents':1,'max-file-size-kb':5120},{'type':'OptIn','name':'declaration','label':'Confirmo que los datos son correctos y que tengo autorización para usar las cuentas indicadas.','required':True}])
-  payload.update({key:'${form.'+key+'}'for key in ['photo_picker','document_picker','declaration']})
+  form.extend([{'type':'DocumentPicker','name':'document_picker','label':'Comprobante (foto o PDF)','description':'Adjunta una foto o un PDF del pago.','allowed-mime-types':['image/jpeg','image/png','application/pdf'],'min-uploaded-documents':0,'max-uploaded-documents':1,'max-file-size-kb':5120},{'type':'OptIn','name':'declaration','label':'Confirmo que los datos son correctos y que tengo autorización para usar las cuentas indicadas.','required':True}])
+  payload.update({key:'${form.'+key+'}'for key in ['document_picker','declaration']})
  form.append({'type':'Footer','label':'Enviar a revisión' if screen=='PAYMENT' else 'Ver mi cotización' if screen=='QUOTE' else 'Confirmar datos' if screen=='REVIEW' else 'Continuar','on-click-action':{'name':'data_exchange','payload':payload}})
  children.append({'type':'Form','name':'form','init-values':init,'children':form})
  screens.append({'id':screen,'title':'Brasper · '+labels[screen],'terminal':screen=='PAYMENT','data':data,'layout':{'type':'SingleColumnLayout','children':children}})

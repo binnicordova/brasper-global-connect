@@ -177,8 +177,7 @@
             "type": "Form",
             "name": "form",
             "init-values": {
-              "route": "${data.route}",
-              "amount": "${data.amount}"
+              "route": "${data.route}"
             },
             "children": [
               {
@@ -1535,23 +1534,18 @@
                 "required": true
               },
               {
-                "type": "PhotoPicker",
-                "name": "photo_picker",
-                "label": "Foto del comprobante",
-                "description": "Toma una foto o elige una imagen.",
-                "photo-source": "camera_gallery",
-                "min-uploaded-photos": 0,
-                "max-uploaded-photos": 1,
-                "max-file-size-kb": 5120
-              },
-              {
                 "type": "DocumentPicker",
                 "name": "document_picker",
-                "label": "PDF del comprobante",
-                "description": "Si prefieres PDF, adjúntalo aquí.",
+                "label": "Comprobante (foto o PDF)",
+                "description": "Adjunta una foto o un PDF del pago.",
                 "min-uploaded-documents": 0,
                 "max-uploaded-documents": 1,
-                "max-file-size-kb": 5120
+                "max-file-size-kb": 5120,
+                "allowed-mime-types": [
+                  "image/jpeg",
+                  "image/png",
+                  "application/pdf"
+                ]
               },
               {
                 "type": "OptIn",
@@ -1566,7 +1560,6 @@
                   "name": "data_exchange",
                   "payload": {
                     "bank_reference": "${form.bank_reference}",
-                    "photo_picker": "${form.photo_picker}",
                     "document_picker": "${form.document_picker}",
                     "declaration": "${form.declaration}"
                   }
