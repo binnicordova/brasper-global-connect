@@ -470,6 +470,108 @@ export type Database = {
           },
         ]
       }
+      whatsapp_channels: {
+        Row: {
+          ai_calls: number
+          ai_window: string
+          history: Json
+          last_inbound: string | null
+          mode: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          ai_calls?: number
+          ai_window?: string
+          history?: Json
+          last_inbound?: string | null
+          mode?: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          ai_calls?: number
+          ai_window?: string
+          history?: Json
+          last_inbound?: string | null
+          mode?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_events: {
+        Row: {
+          created_at: string
+          error_code: string | null
+          id: string
+          payload: Json
+          phone: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_code?: string | null
+          id: string
+          payload: Json
+          phone: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          payload?: Json
+          phone?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      whatsapp_sessions: {
+        Row: {
+          claimed_by: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          notification_state: string
+          phone: string
+          transfer_id: string | null
+        }
+        Insert: {
+          claimed_by?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          notification_state?: string
+          phone: string
+          transfer_id?: string | null
+        }
+        Update: {
+          claimed_by?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          notification_state?: string
+          phone?: string
+          transfer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_sessions_phone_fkey"
+            columns: ["phone"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_channels"
+            referencedColumns: ["phone"]
+          },
+          {
+            foreignKeyName: "whatsapp_sessions_transfer_id_fkey"
+            columns: ["transfer_id"]
+            isOneToOne: true
+            referencedRelation: "transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -781,6 +883,24 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_whatsapp_session: {
+        Args: { p_id: string; p_user: string }
+        Returns: {
+          claimed_by: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          notification_state: string
+          phone: string
+          transfer_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "whatsapp_sessions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       complete_invoice_delivery: {
         Args: { p_invoice_id: string }
         Returns: undefined
@@ -921,6 +1041,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_whatsapp_transfer: {
+        Args: { p_data: Json; p_session_id: string }
+        Returns: string
+      }
       delete_saved_recipient: { Args: { p_id: string }; Returns: boolean }
       has_registered_session: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
@@ -939,6 +1063,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      reserve_whatsapp_ai: { Args: { p_phone: string }; Returns: boolean }
       restore_verified_transfer: {
         Args: { p_note: string; p_transfer_id: string }
         Returns: undefined
