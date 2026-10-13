@@ -1,3 +1,4 @@
+import { deliverNativeFlow, whatsappErrorCode } from "../_shared/whatsapp-errors.ts";
 import {
   admin,
   env,
@@ -131,6 +132,7 @@ async function processMessage(m: any) {
   }
   if (
     q === "start_change" ||
+    q === "hacer mi cambio" ||
     q === "start_web" ||
     q === "abrir web" ||
     /^(empezar|iniciar|quiero hacer|quiero cambiar)( mi| un| el)?( cambio| soles| reales)?(?:\s+\d+.*)?[.!?]*$/.test(
@@ -164,13 +166,18 @@ async function processMessage(m: any) {
       s = r.data;
     }
     if (native) {
-      await send(
-        phone,
-        nativeFlowMessage(
-          env("WHATSAPP_FLOW_ID"),
-          await sessionToken(s),
-          env("WHATSAPP_FLOW_STATUS") !== "published",
-        ),
+      const token = await sessionToken(s);
+      await deliverNativeFlow(
+        () =>
+          send(
+            phone,
+            nativeFlowMessage(
+              env("WHATSAPP_FLOW_ID"),
+              token,
+              env("WHATSAPP_FLOW_STATUS") !== "published",
+            ),
+          ),
+        (message) => text(phone, message),
       );
       return;
     }
@@ -359,10 +366,10 @@ Deno.serve(async (request: Request) => {
         try {
           await processMessage(m);
           await db.from("whatsapp_events").update({ status: "done" }).eq("id", m.id);
-        } catch {
+        } catch (error) {
           await db
             .from("whatsapp_events")
-            .update({ status: "failed", error_code: "processing_failed" })
+            .update({ status: "failed", error_code: whatsappErrorCode(error) })
             .eq("id", m.id);
         }
       }

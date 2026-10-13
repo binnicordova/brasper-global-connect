@@ -1,3 +1,4 @@
+import { MetaSendError } from "./whatsapp-errors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 export const env = (name: string) => Deno.env.get(name) || "";
 export const admin = () => createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"));
@@ -36,9 +37,9 @@ export async function send(phone: string, payload: Record<string, unknown>) {
       signal: AbortSignal.timeout(12000),
     },
   );
-  if (!r.ok) throw Error("Meta request failed");
-  const d = await r.json();
-  if (!d.messages?.[0]?.id) throw Error("Meta result missing");
+  const d = await r.json().catch(() => null);
+  if (!r.ok || d?.error) throw new MetaSendError(r.status, d);
+  if (!d?.messages?.[0]?.id) throw Error("Meta result missing");
   return d.messages[0].id;
 }
 export const text = (phone: string, body: string) =>

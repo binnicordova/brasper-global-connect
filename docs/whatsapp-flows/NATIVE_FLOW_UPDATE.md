@@ -72,3 +72,13 @@ node scripts/configure-whatsapp-native.mjs --check-endpoint
 ```
 
 Debe mostrar `amountType: "number"`, `invalidSessionRejected: true` y `compatible: true`. Luego prueba un mensaje nuevo `empezar cambio` en WhatsApp; no reutilices el botón web antiguo.
+
+## Diagnóstico real de envío nativo
+
+El endpoint cifrado ya respondió con monto numérico. El envío directo del borrador al destinatario autorizado fue rechazado por Meta con HTTP 400, código `139000`, `Blocked by Integrity`, detalle `Integrity requirements not met`. Esto es un bloqueo del proveedor y no identifica por sí solo cuál requisito de la cuenta falta. No basta con cambiar el JSON, activar native o corregir el cifrado para resolverlo.
+
+El webhook actualizado conserva códigos numéricos de Meta en `whatsapp_events.error_code` (por ejemplo `meta_139000`) e intenta avisar al cliente si falla el Flow. Si Meta también rechaza el aviso, conserva el error original. No cambia automáticamente al canal web: el cliente puede elegirlo con `abrir web`.
+
+Prompt para desplegar esta protección:
+
+> Redespliega únicamente `whatsapp-webhook` con los imports `_shared/whatsapp-cloud.ts` y `_shared/whatsapp-errors.ts` actualizados. Conserva modo native, Secrets y BD. El envío rechazado debe registrar el código numérico real de Meta e intentar informar al cliente. No marques el bloqueo 139000 como resuelto hasta que Meta acepte y entregue el Flow.
