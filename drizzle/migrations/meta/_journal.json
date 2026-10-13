@@ -29,6 +29,13 @@
       "when": 1791683000000,
       "tag": "0003_exchange_validation",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791865875395,
+      "tag": "0004_demo_receipts",
+      "breakpoints": true
     }
   ]
 }

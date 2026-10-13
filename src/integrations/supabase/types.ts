@@ -85,6 +85,7 @@ export type Database = {
       }
       invoices: {
         Row: {
+          beta_attempts: number
           beta_prepared: Json | null
           beta_result: Json | null
           beta_sent_at: string | null
@@ -97,13 +98,16 @@ export type Database = {
           error: string | null
           external_id: string | null
           id: string
+          next_attempt_at: string | null
           number: string | null
           pdf_path: string | null
+          processing_at: string | null
           status: string
           transfer_id: string
           xml_path: string | null
         }
         Insert: {
+          beta_attempts?: number
           beta_prepared?: Json | null
           beta_result?: Json | null
           beta_sent_at?: string | null
@@ -116,13 +120,16 @@ export type Database = {
           error?: string | null
           external_id?: string | null
           id?: string
+          next_attempt_at?: string | null
           number?: string | null
           pdf_path?: string | null
+          processing_at?: string | null
           status?: string
           transfer_id: string
           xml_path?: string | null
         }
         Update: {
+          beta_attempts?: number
           beta_prepared?: Json | null
           beta_result?: Json | null
           beta_sent_at?: string | null
@@ -135,8 +142,10 @@ export type Database = {
           error?: string | null
           external_id?: string | null
           id?: string
+          next_attempt_at?: string | null
           number?: string | null
           pdf_path?: string | null
+          processing_at?: string | null
           status?: string
           transfer_id?: string
           xml_path?: string | null
@@ -381,6 +390,7 @@ export type Database = {
       claim_beta_invoice: {
         Args: never
         Returns: {
+          beta_attempts: number
           beta_prepared: Json | null
           beta_result: Json | null
           beta_sent_at: string | null
@@ -393,8 +403,10 @@ export type Database = {
           error: string | null
           external_id: string | null
           id: string
+          next_attempt_at: string | null
           number: string | null
           pdf_path: string | null
+          processing_at: string | null
           status: string
           transfer_id: string
           xml_path: string | null
@@ -410,9 +422,10 @@ export type Database = {
         Args: { p_invoice_id: string; p_prepared: Json; p_transfer_id: string }
         Returns: boolean
       }
-      claim_invoice: {
-        Args: never
+      claim_demo_invoice: {
+        Args: { p_boleta_only?: boolean }
         Returns: {
+          beta_attempts: number
           beta_prepared: Json | null
           beta_result: Json | null
           beta_sent_at: string | null
@@ -425,8 +438,41 @@ export type Database = {
           error: string | null
           external_id: string | null
           id: string
+          next_attempt_at: string | null
           number: string | null
           pdf_path: string | null
+          processing_at: string | null
+          status: string
+          transfer_id: string
+          xml_path: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_invoice: {
+        Args: never
+        Returns: {
+          beta_attempts: number
+          beta_prepared: Json | null
+          beta_result: Json | null
+          beta_sent_at: string | null
+          cdr_path: string | null
+          created_at: string
+          delivered_at: string | null
+          document_type: string
+          email_attempted_at: string | null
+          environment: string
+          error: string | null
+          external_id: string | null
+          id: string
+          next_attempt_at: string | null
+          number: string | null
+          pdf_path: string | null
+          processing_at: string | null
           status: string
           transfer_id: string
           xml_path: string | null
@@ -441,6 +487,7 @@ export type Database = {
       claim_invoice_delivery: {
         Args: never
         Returns: {
+          beta_attempts: number
           beta_prepared: Json | null
           beta_result: Json | null
           beta_sent_at: string | null
@@ -453,8 +500,10 @@ export type Database = {
           error: string | null
           external_id: string | null
           id: string
+          next_attempt_at: string | null
           number: string | null
           pdf_path: string | null
+          processing_at: string | null
           status: string
           transfer_id: string
           xml_path: string | null
@@ -616,6 +665,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      schedule_beta_retry: { Args: { p_invoice_id: string }; Returns: boolean }
       staff_dashboard_summary: { Args: never; Returns: Json }
       submit_proof: {
         Args: { p_path: string; p_transfer_id: string }
