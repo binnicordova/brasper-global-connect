@@ -13,3 +13,4 @@
 - [ ] Implementar adaptador con contrato real del proveedor SUNAT/Keyfacil.
 - [ ] Configurar correo oficial, cron y probar emisión en homologación.
 - [ ] Aprobar política de privacidad y procedimientos de devoluciones/retención.
+- [ ] WhatsApp Flow nativo (draft): redesplegar whatsapp-flow y whatsapp-webhook, WHATSAPP_FLOW_MODE=native; «Empezar cambio» envía flow, «abrir web» el enlace.
