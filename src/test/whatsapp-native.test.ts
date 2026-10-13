@@ -214,8 +214,8 @@ describe("Native Flow financial adapter", () => {
       }),
     ).not.toHaveProperty("rate_id");
     expect(collectStage("QUOTE", { amount: 300 }).amount).toBe("300");
-    expect(renderFlow("QUOTE", { amount: "300" }).data.amount).toBe(300);
-    expect(renderFlow("QUOTE", {}).data.amount).toBe(0);
+    expect(renderFlow("QUOTE", { amount: "300" }).data["amount"]).toBe(300);
+    expect(renderFlow("QUOTE", {}).data["amount"]).toBe(0);
     expect(() => oneProof({ photo_picker: [], document_picker: [] })).toThrow();
     expect(() => oneProof({ photo_picker: [{}], document_picker: [{}] })).toThrow();
     expect(oneProof({ photo_picker: [{ cdn_url: "test" }] })).toEqual({ cdn_url: "test" });
