@@ -203,7 +203,6 @@
                 "label": "Monto a cambiar",
                 "required": true,
                 "input-type": "number",
-                "max-length": 200,
                 "helper-text": "Hasta 2 decimales."
               },
               {
@@ -394,8 +393,7 @@
                 "type": "TextInput",
                 "name": "customer_name",
                 "label": "Nombre completo",
-                "required": true,
-                "max-length": 200
+                "required": true
               },
               {
                 "type": "Dropdown",
@@ -408,16 +406,14 @@
                 "type": "TextInput",
                 "name": "customer_document",
                 "label": "Número de documento",
-                "required": true,
-                "max-length": 200
+                "required": true
               },
               {
                 "type": "TextInput",
                 "name": "billing_email",
                 "label": "Correo del comprobante",
                 "required": true,
-                "input-type": "email",
-                "max-length": 200
+                "input-type": "email"
               },
               {
                 "type": "Footer",
@@ -618,8 +614,7 @@
                 "type": "TextInput",
                 "name": "origin_bank",
                 "label": "Banco de origen",
-                "required": true,
-                "max-length": 200
+                "required": true
               },
               {
                 "type": "Dropdown",
@@ -675,8 +670,7 @@
                 "type": "TextInput",
                 "name": "recipient_relationship",
                 "label": "Relación con destinatario",
-                "required": true,
-                "max-length": 200
+                "required": true
               },
               {
                 "type": "Footer",
@@ -894,22 +888,19 @@
                 "type": "TextInput",
                 "name": "recipient_name",
                 "label": "Nombre del destinatario",
-                "required": true,
-                "max-length": 200
+                "required": true
               },
               {
                 "type": "TextInput",
                 "name": "recipient_document",
                 "label": "Documento destinatario",
-                "required": true,
-                "max-length": 200
+                "required": true
               },
               {
                 "type": "TextInput",
                 "name": "recipient_bank",
                 "label": "Banco de destino",
-                "required": true,
-                "max-length": 200
+                "required": true
               },
               {
                 "type": "Dropdown",
@@ -922,37 +913,32 @@
                 "type": "TextInput",
                 "name": "recipient_account",
                 "label": "Cuenta, CCI o PIX",
-                "required": true,
-                "max-length": 200
+                "required": true
               },
               {
                 "type": "TextInput",
                 "name": "recipient_account_holder",
                 "label": "Titular de la cuenta",
-                "required": true,
-                "max-length": 200
+                "required": true
               },
               {
                 "type": "TextInput",
                 "name": "recipient_account_holder_document",
                 "label": "Documento del titular",
-                "required": true,
-                "max-length": 200
+                "required": true
               },
               {
                 "type": "TextInput",
                 "name": "recipient_bank_branch",
                 "label": "Agencia bancaria",
-                "required": false,
-                "max-length": 200
+                "required": false
               },
               {
                 "type": "TextInput",
                 "name": "recipient_phone",
                 "label": "Teléfono del destinatario",
                 "required": false,
-                "input-type": "phone",
-                "max-length": 200
+                "input-type": "phone"
               },
               {
                 "type": "Footer",
@@ -1160,8 +1146,7 @@
                 "type": "TextInput",
                 "name": "billing_legal_name",
                 "label": "Nombre o razón social",
-                "required": false,
-                "max-length": 200
+                "required": false
               },
               {
                 "type": "Dropdown",
@@ -1174,8 +1159,7 @@
                 "type": "TextInput",
                 "name": "billing_document",
                 "label": "Número fiscal",
-                "required": false,
-                "max-length": 200
+                "required": false
               },
               {
                 "type": "Footer",
@@ -1548,8 +1532,7 @@
                 "type": "TextInput",
                 "name": "bank_reference",
                 "label": "Número de operación",
-                "required": true,
-                "max-length": 200
+                "required": true
               },
               {
                 "type": "PhotoPicker",

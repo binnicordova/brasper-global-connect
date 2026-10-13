@@ -50,7 +50,7 @@ for ix,screen in enumerate(steps):
   f={'type':typ,'name':key,'label':label,'required':key not in optional}
   if typ=='Dropdown':f['data-source']=[{'id':a,'title':b}for a,b in arg] if isinstance(arg,list) else '${data.'+arg+'}'
   if typ=='TextInput' and arg:f['input-type']=arg
-  if typ in ('TextInput','TextArea'):f['max-length']=500 if typ=='TextArea' else 200
+  if typ=='TextArea':f['max-length']=500
   if key=='amount':f['helper-text']='Hasta 2 decimales.'
   form.append(f);payload[key]='${form.'+key+'}';init[key]='${data.'+key+'}'
  if screen=='PAYMENT':
