@@ -46,15 +46,16 @@ for ix,screen in enumerate(steps):
  form=[];payload={};init={}
  for key,typ,label,arg in fields[screen]:
   examples={'route':'PEN_BRL','amount':'300','customer_document_type':'1','funds_origin':'savings','recipient_account_type':'pix','billing_type':'nfse','billing_document_type':'cpf'}
-  data[key]={'type':'string','__example__':examples.get(key,'')}
+  data[key]={'type':'number' if key=='amount' else 'string','__example__':300 if key=='amount' else examples.get(key,'')}
   f={'type':typ,'name':key,'label':label,'required':key not in optional}
   if typ=='Dropdown':f['data-source']=[{'id':a,'title':b}for a,b in arg] if isinstance(arg,list) else '${data.'+arg+'}'
   if typ=='TextInput' and arg:f['input-type']=arg
   if typ=='TextArea':f['max-length']=500
   if key=='amount':f['helper-text']='Hasta 2 decimales.'
-  form.append(f);payload[key]='${form.'+key+'}';init.update({} if key=='amount' else {key:'${data.'+key+'}'})
+  form.append(f);payload[key]='${form.'+key+'}'
+  if key!='amount':init[key]='${data.'+key+'}'
  if screen=='PAYMENT':
-  form.extend([{'type':'DocumentPicker','name':'document_picker','label':'Comprobante (foto o PDF)','description':'Adjunta una foto o un PDF del pago.','allowed-mime-types':['image/jpeg','image/png','application/pdf'],'min-uploaded-documents':0,'max-uploaded-documents':1,'max-file-size-kb':5120},{'type':'OptIn','name':'declaration','label':'Confirmo que los datos son correctos y que tengo autorización para usar las cuentas indicadas.','required':True}])
+  form.extend([{'type':'DocumentPicker','name':'document_picker','label':'Comprobante de pago','description':'Elige una foto JPG/PNG o un PDF desde la galería o archivos.','min-uploaded-documents':1,'max-uploaded-documents':1,'max-file-size-kb':5120,'allowed-mime-types':['image/jpeg','image/png','application/pdf']},{'type':'OptIn','name':'declaration','label':'Confirmo que los datos son correctos y que tengo autorización para usar las cuentas indicadas.','required':True}])
   payload.update({key:'${form.'+key+'}'for key in ['document_picker','declaration']})
  form.append({'type':'Footer','label':'Enviar a revisión' if screen=='PAYMENT' else 'Ver mi cotización' if screen=='QUOTE' else 'Confirmar datos' if screen=='REVIEW' else 'Continuar','on-click-action':{'name':'data_exchange','payload':payload}})
  children.append({'type':'Form','name':'form','init-values':init,'children':form})

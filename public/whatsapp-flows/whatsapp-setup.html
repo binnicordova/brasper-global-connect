@@ -76,11 +76,16 @@
         >Abrir configuración básica para copiar el secreto de la app ↗</a
       >
     </p>
-    <label for="callback">URL temporal de webhook para Meta</label><input id="callback" readonly />
+    <p>
+      Para renovar el token, completa solo ese campo. Los campos de credenciales vacíos conservan el
+      valor guardado.
+    </p>
+    <label for="callback">Callback del entorno local (referencia)</label
+    ><input id="callback" readonly />
     <form id="form">
-      <label for="token">Token temporal de WhatsApp Cloud API</label
+      <label for="token">Token de acceso · WHATSAPP_ACCESS_TOKEN</label
       ><input type="password" id="token" autocomplete="off" required /><label for="secret"
-        >Secreto de la app de Meta (configuración básica)</label
+        >Secreto de la app · META_APP_SECRET</label
       ><input type="password" id="secret" autocomplete="off" required /><label for="recipient"
         >Tu número autorizado para probar (sin +)</label
       ><input id="recipient" inputmode="numeric" required /><label for="phone"
@@ -94,14 +99,15 @@
     <div id="verify" hidden>
       <h2>Verificación del webhook</h2>
       <p>
-        En Meta, suscribe el campo <b>messages</b>. La URL pública HTTPS debe terminar en
-        <code>/api/whatsapp/webhook</code>.
+        En Meta, suscribe <b>messages</b>. Para Lovable usa el callback de la Edge Function
+        <code>/functions/v1/whatsapp-webhook</code>. El callback local del túnel es solo una
+        referencia anterior.
       </p>
-      <label for="verify-token">Token de verificación generado</label
+      <label for="verify-token">Token del webhook · WHATSAPP_VERIFY_TOKEN</label
       ><input id="verify-token" readonly />
       <p>
-        Este token es distinto del token de acceso. Se muestra aquí para copiarlo al formulario de
-        verificación de Meta.
+        Este valor verifica el webhook. No es el token de acceso ni la clave privada del Flow. La
+        clave privada del Flow se guarda aparte, en el Secret WHATSAPP_FLOW_PRIVATE_KEY de Lovable.
       </p>
     </div>
     <p><a href="./whatsapp-inbox.html">Abrir bandeja local de WhatsApp →</a></p>
@@ -120,6 +126,14 @@
       $("recipient").value = d.recipient || "";
       $("phone").value = d.phoneId;
       $("flow").value = d.flowId;
+      $("token").required = !d.hasToken;
+      $("secret").required = !d.hasAppSecret;
+      $("token").placeholder = d.hasToken
+        ? "Dejar vacío conserva el token actual"
+        : "Token generado por Meta";
+      $("secret").placeholder = d.hasAppSecret
+        ? "Dejar vacío conserva el secreto actual"
+        : "Secreto de la app: 32 caracteres";
       if (d.configured) {
         $("status").textContent =
           "Configuración local guardada. La conexión a Meta se confirma con la verificación y un mensaje recibido.";

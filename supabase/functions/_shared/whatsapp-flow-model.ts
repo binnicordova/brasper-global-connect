@@ -38,6 +38,10 @@ export function collectStage(screen: FlowStep, input: Record<string, unknown>) {
   const out: Record<string, string> = {};
   for (const field of stepFields[screen]) {
     const value = input[field];
+    if (field === "amount" && typeof value === "number" && Number.isFinite(value)) {
+      out[field] = String(value);
+      continue;
+    }
     if (field === "declaration") {
       out[field] = value === true ? "yes" : "no";
       continue;
@@ -182,6 +186,7 @@ export function renderFlow(screen: FlowStep, d: Record<string, unknown>, error =
     screen,
     data: {
       ...fields,
+      ...(screen === "QUOTE" ? { amount: Number(d["amount"]) || 0 } : {}),
       quote_summary: String(d["quote_summary"] || "Cotiza tu cambio entre soles y reales."),
       customer_summary: `${d["customer_name"] || ""} · ${d["customer_document"] || ""}`,
       recipient_summary: `${d["recipient_name"] || ""}\n${d["recipient_bank"] || ""} · ${d["recipient_account"] || ""}\nTitular: ${d["recipient_account_holder"] || ""}`,

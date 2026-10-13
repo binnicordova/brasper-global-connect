@@ -1,5 +1,6 @@
 // Run after Lovable deploy. Registers the draft and checks the encrypted endpoint; never publishes it.
 import { readFileSync } from "node:fs";
+import { request as httpsRequest } from "node:https";
 import {
   createHmac,
   createPublicKey,
@@ -45,10 +46,52 @@ async function graph(path, init = {}) {
 }
 const before = await graph(flow + "?fields=id,status");
 if (before.status !== "DRAFT") throw Error("Este comando solo modifica un Flow borrador.");
+async function validateDraftJson() {
+  const form = new FormData();
+  form.set("name", "flow.json");
+  form.set("asset_type", "FLOW_JSON");
+  form.set(
+    "file",
+    new Blob([readFileSync("public/whatsapp-flows/brasper-native.json")], {
+      type: "application/json",
+    }),
+    "flow.json",
+  );
+  const asset = await graph(flow + "/assets", { method: "POST", body: form });
+  if (asset.validation_errors?.length) {
+    console.log(JSON.stringify({ validation_errors: asset.validation_errors }, null, 2));
+    throw Error("Corrige los errores de JSON antes de activar.");
+  }
+  return asset;
+}
+if (process.argv.includes("--validate-json")) {
+  const asset = await validateDraftJson();
+  console.log(
+    JSON.stringify(
+      {
+        flow_id: flow,
+        status: before.status,
+        jsonValidated: true,
+        validation_errors: asset.validation_errors || [],
+      },
+      null,
+      2,
+    ),
+  );
+  console.log(
+    "JSON guardado en el borrador; el endpoint todavía requiere su comprobación cifrada.",
+  );
+  process.exit(0);
+}
 const aes = randomBytes(16),
   iv = randomBytes(16),
   cipher = createCipheriv("aes-128-gcm", aes, iv);
-const clear = JSON.stringify({ version: "3.0", action: "ping" });
+const checkOnly = process.argv.includes("--check-endpoint");
+const clear = JSON.stringify(
+  checkOnly
+    ? { version: "3.0", action: "INIT", flow_token: "invalid-readonly-diagnostic" }
+    : { version: "3.0", action: "ping" },
+);
 const encrypted = Buffer.concat([
   cipher.update(clear, "utf8"),
   cipher.final(),
@@ -62,15 +105,44 @@ const body = JSON.stringify({
   ).toString("base64"),
   initial_vector: iv.toString("base64"),
 });
-const ping = await fetch(endpoint, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "x-hub-signature-256":
-      "sha256=" + createHmac("sha256", env.META_APP_SECRET).update(body).digest("hex"),
-  },
-  body,
-  signal: AbortSignal.timeout(15000),
+// An early Edge rejection can confuse Node 25 fetch's body writer. Send a bounded HTTP/1 body.
+const ping = await new Promise((resolve, reject) => {
+  const bytes = Buffer.from(body, "utf8");
+  const req = httpsRequest(
+    endpoint,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": String(bytes.length),
+        "x-hub-signature-256":
+          "sha256=" + createHmac("sha256", env.META_APP_SECRET).update(bytes).digest("hex"),
+      },
+    },
+    (res) => {
+      const chunks = [];
+      let size = 0;
+      res.on("data", (chunk) => {
+        size += chunk.length;
+        if (size > 256 * 1024) {
+          req.destroy(Error("Respuesta demasiado grande"));
+          return;
+        }
+        chunks.push(chunk);
+      });
+      res.on("end", () =>
+        resolve({
+          ok: res.statusCode >= 200 && res.statusCode < 300,
+          status: res.statusCode,
+          text: async () => Buffer.concat(chunks).toString("utf8"),
+        }),
+      );
+      res.on("error", reject);
+    },
+  );
+  req.setTimeout(15000, () => req.destroy(Error("El endpoint tardó demasiado")));
+  req.on("error", reject);
+  req.end(bytes);
 });
 if (!ping.ok)
   throw Error(
@@ -85,24 +157,36 @@ const decoded = JSON.parse(
     decipher.final(),
   ]).toString("utf8"),
 );
+if (checkOnly) {
+  const compatible =
+    decoded.screen === "QUOTE" &&
+    typeof decoded.data?.amount === "number" &&
+    !!decoded.data?.error_message;
+  console.log(
+    JSON.stringify({
+      status: ping.status,
+      screen: decoded.screen,
+      amountType: typeof decoded.data?.amount,
+      invalidSessionRejected: !!decoded.data?.error_message,
+      compatible,
+    }),
+  );
+  if (!compatible)
+    throw Error(
+      "Vuelve a desplegar whatsapp-flow con el modelo actualizado: amount debe ser numérico.",
+    );
+  process.exit(0);
+}
 if (decoded.data?.status !== "active")
   throw Error("El endpoint no respondió al protocolo de Meta.");
-const form = new FormData();
-form.set("name", "flow.json");
-form.set("asset_type", "FLOW_JSON");
-form.set(
-  "file",
-  new Blob([readFileSync("public/whatsapp-flows/brasper-native.json")], {
-    type: "application/json",
+await validateDraftJson();
+await graph(flow, {
+  method: "POST",
+  body: new URLSearchParams({
+    endpoint_uri: endpoint,
+    application_id: env.WHATSAPP_APP_ID || "2190725181540988",
   }),
-  "flow.json",
-);
-const asset = await graph(flow + "/assets", { method: "POST", body: form });
-if (asset.validation_errors?.length) {
-  console.log(JSON.stringify({ validation_errors: asset.validation_errors }, null, 2));
-  throw Error("Corrige los errores de JSON antes de activar.");
-}
-await graph(flow, { method: "POST", body: new URLSearchParams({ endpoint_uri: endpoint }) });
+});
 await graph(phone + "/whatsapp_business_encryption", {
   method: "POST",
   body: new URLSearchParams({ business_public_key: publicPem }),

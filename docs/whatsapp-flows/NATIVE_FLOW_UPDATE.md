@@ -49,10 +49,26 @@ La clave pública es por número, no por Flow. Este archivo debe corresponder a 
 
 Vista previa visual: `/whatsapp-flows/native-design.html` (representación del diseño, sin registrar operaciones).
 
-Siete pantallas: cotización → cliente → origen de fondos → destinatario → comprobante fiscal → revisión → pago/adjunto. Cabecera azul Brasper, progreso, textos breves y selección de foto o PDF. WhatsApp controla los estilos de campos/botones; no se ejecutan React ni CSS dentro del Flow.
+Siete pantallas: cotización → cliente → origen de fondos → destinatario → comprobante fiscal → revisión → pago/adjunto. Cabecera azul Brasper, progreso, textos breves y un selector nativo de foto JPG/PNG o PDF desde galería/archivos. WhatsApp controla los estilos de campos/botones; no se ejecutan React ni CSS dentro del Flow.
 
 La tasa y cuentas vienen de BD. Una tasa modificada exige recotizar; un adjunto requiere hashes, HMAC, descifrado, tipo y tamaño válidos. La operación queda en `proof_submitted`, nunca aprobada por la IA. El dashboard y la cola fiscal actuales continúan tras la revisión y el registro del envío por el equipo. La cuenta del canal conserva identidad privada, pero no inicia sesión automáticamente en la web ni vincula cuentas registradas existentes.
 
 El código, pruebas y assets se entregan por Git. La validación final de componentes en Meta y la prueba completa en teléfono/backend desplegado deben confirmarse; el build local no las sustituye. La vista previa estática anterior y los archivos `process-beta.json`/`demo-static.json` son referencias antiguas, no el JSON que debe registrarse ahora.
 
 Fuentes: [componentes de Meta](https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/guides/components/), [endpoint cifrado](https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/guides/implementingyourflowendpoint/), [archivo y validación multimedia](https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/guides/media_upload/).
+
+## Última corrección después del despliegue
+
+El JSON ya fue validado en Meta. El campo `amount` debe ser numérico también en la respuesta del endpoint; desplegar sólo el JSON no actualiza el modelo del servidor.
+
+Prompt mínimo para Lovable después de sincronizar Git:
+
+> Vuelve a desplegar únicamente `whatsapp-flow` incluyendo la última versión de `_shared/whatsapp-flow-model.ts` (recibe y devuelve `amount` numérico) y sus imports actuales. Conserva Secrets, BD y webhook existentes. Configura `WHATSAPP_FLOW_MODE=native`, `WHATSAPP_FLOW_STATUS=draft` y `WHATSAPP_FLOW_ID=1746368663111217` en el entorno del webhook. No cambies la web ni facturación.
+
+Comprobación sin crear una transferencia ni modificar el borrador:
+
+```sh
+node scripts/configure-whatsapp-native.mjs --check-endpoint
+```
+
+Debe mostrar `amountType: "number"`, `invalidSessionRejected: true` y `compatible: true`. Luego prueba un mensaje nuevo `empezar cambio` en WhatsApp; no reutilices el botón web antiguo.

@@ -141,8 +141,8 @@
           "__example__": "PEN_BRL"
         },
         "amount": {
-          "type": "string",
-          "__example__": "300"
+          "type": "number",
+          "__example__": 300
         }
       },
       "layout": {
@@ -1536,9 +1536,9 @@
               {
                 "type": "DocumentPicker",
                 "name": "document_picker",
-                "label": "Comprobante (foto o PDF)",
-                "description": "Adjunta una foto o un PDF del pago.",
-                "min-uploaded-documents": 0,
+                "label": "Comprobante de pago",
+                "description": "Elige una foto JPG/PNG o un PDF desde la galería o archivos.",
+                "min-uploaded-documents": 1,
                 "max-uploaded-documents": 1,
                 "max-file-size-kb": 5120,
                 "allowed-mime-types": [

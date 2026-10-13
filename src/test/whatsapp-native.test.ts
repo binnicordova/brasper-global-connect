@@ -18,6 +18,7 @@ import {
   transferArgs,
   collectStage,
   oneProof,
+  renderFlow,
 } from "../../supabase/functions/_shared/whatsapp-flow-model";
 const secret = "test-only-native-flow-session-secret-32chars";
 describe("Native Flow encrypted exchange", () => {
@@ -212,6 +213,9 @@ describe("Native Flow financial adapter", () => {
         auth_cipher: "attack",
       }),
     ).not.toHaveProperty("rate_id");
+    expect(collectStage("QUOTE", { amount: 300 }).amount).toBe("300");
+    expect(renderFlow("QUOTE", { amount: "300" }).data.amount).toBe(300);
+    expect(renderFlow("QUOTE", {}).data.amount).toBe(0);
     expect(() => oneProof({ photo_picker: [], document_picker: [] })).toThrow();
     expect(() => oneProof({ photo_picker: [{}], document_picker: [{}] })).toThrow();
     expect(oneProof({ photo_picker: [{ cdn_url: "test" }] })).toEqual({ cdn_url: "test" });
@@ -220,6 +224,7 @@ describe("Native Flow financial adapter", () => {
     const flow = JSON.parse(readFileSync("public/whatsapp-flows/brasper-native.json", "utf8"));
     expect(flow.screens).toHaveLength(7);
     expect(flow.data_api_version).toBe("3.0");
+    expect(flow.screens[0].data.amount.type).toBe("number");
     for (const screen of flow.screens) {
       const children = screen.layout.children;
       expect(children[0].type).toBe("Image");
@@ -228,6 +233,11 @@ describe("Native Flow financial adapter", () => {
       );
       const form = children.find((c: { type: string; label?: string }) => c.type === "Form");
       expect(form.children.at(-1)["on-click-action"].name).toBe("data_exchange");
+      expect(
+        form.children.filter((c: { type: string }) =>
+          ["DocumentPicker", "PhotoPicker"].includes(c.type),
+        ).length,
+      ).toBeLessThanOrEqual(1);
       for (const c of form.children.filter(
         (c: { type: string; label?: string }) => c.type === "Dropdown",
       ))
@@ -238,7 +248,12 @@ describe("Native Flow financial adapter", () => {
       .at(-1)
       .layout.children.find((c: { type: string; label?: string }) => c.type === "Form");
     expect(
-      payment.children.some((c: { type: string; label?: string }) => c.type === "PhotoPicker"),
+      payment.children.some((c: { type: string; label?: string }) => c.type === "DocumentPicker"),
     ).toBe(true);
+    expect(
+      payment.children.find((c: { type: string }) => c.type === "DocumentPicker")[
+        "min-uploaded-documents"
+      ],
+    ).toBe(1);
   });
 });

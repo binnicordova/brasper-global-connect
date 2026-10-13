@@ -24,6 +24,8 @@ export async function configureWhatsApp(request: Request) {
     return Response.json(
       {
         configured: !!(c.token && c.secret && c.verify && c.recipient),
+        hasToken: !!c.token,
+        hasAppSecret: !!c.secret,
         phoneId: c.phoneId,
         flowId: c.flowId,
         recipient: c.recipient,
@@ -36,11 +38,17 @@ export async function configureWhatsApp(request: Request) {
     );
   const schema = z
     .object({
-      token: z.string().trim().min(30).max(2048),
+      token: z
+        .string()
+        .trim()
+        .max(2048)
+        .refine((v) => !v || v.length >= 30)
+        .default(""),
       secret: z
         .string()
         .trim()
-        .regex(/^[a-f0-9]{32}$/i),
+        .refine((v) => !v || /^[a-f0-9]{32}$/i.test(v))
+        .default(""),
       recipient: z.string().regex(/^[1-9]\d{7,14}$/),
       phoneId: z.string().regex(/^\d{8,30}$/),
       flowId: z.string().regex(/^\d{8,30}$/),
@@ -50,9 +58,33 @@ export async function configureWhatsApp(request: Request) {
     const text = await request.text();
     if (text.length > 4096) throw Error();
     const data = schema.parse(JSON.parse(text));
+    if (!(data.token || c.token) || !(data.secret || c.secret))
+      throw Error("Completa el token de acceso y el secreto de la app.");
+    if (data.token) {
+      const checked = await fetch(`https://graph.facebook.com/v25.0/${data.phoneId}?fields=id`, {
+        headers: { Authorization: `Bearer ${data.token}` },
+        signal: AbortSignal.timeout(10000),
+      });
+      const result = await checked.json();
+      if (!checked.ok || result.id !== data.phoneId)
+        throw Error("El token de acceso no es válido para este número. Genera uno nuevo en Meta.");
+    }
+    if (data.secret) {
+      const appId = localSetting("WHATSAPP_APP_ID") || "2190725181540988";
+      if (!/^\d+$/.test(appId)) throw Error("Revisa el ID de la app.");
+      const checked = await fetch(`https://graph.facebook.com/v25.0/${appId}/subscriptions`, {
+        headers: { Authorization: `Bearer ${appId}|${data.secret}` },
+        signal: AbortSignal.timeout(10000),
+      });
+      const result = await checked.json();
+      if (!checked.ok || !Array.isArray(result.data))
+        throw Error(
+          "El secreto no coincide con la app Brasper Flows Beta. Cópialo desde Configuración básica.",
+        );
+    }
     await saveLocalSettings({
-      WHATSAPP_ACCESS_TOKEN: data.token,
-      META_APP_SECRET: data.secret,
+      ...(data.token ? { WHATSAPP_ACCESS_TOKEN: data.token } : {}),
+      ...(data.secret ? { META_APP_SECRET: data.secret } : {}),
       WHATSAPP_VERIFY_TOKEN: c.verify || randomBytes(24).toString("hex"),
       WHATSAPP_TEST_RECIPIENT: data.recipient,
       WHATSAPP_PHONE_NUMBER_ID: data.phoneId,
@@ -67,10 +99,11 @@ export async function configureWhatsApp(request: Request) {
       },
       { headers: { "Cache-Control": "no-store" } },
     );
-  } catch {
-    return Response.json(
-      { error: "Revisa los campos. No se guardó la configuración." },
-      { status: 400 },
-    );
+  } catch (error) {
+    const message =
+      error instanceof Error && /^(Completa|El token|El secreto|Revisa el ID)/.test(error.message)
+        ? error.message
+        : "Revisa los campos. No se guardó la configuración.";
+    return Response.json({ error: message }, { status: 400 });
   }
 }
