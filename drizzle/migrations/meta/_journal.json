@@ -64,6 +64,13 @@
       "when": 1791872826830,
       "tag": "0008_whatsapp_cloud",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791898015998,
+      "tag": "0009_whatsapp_native_flow",
+      "breakpoints": true
     }
   ]
 }
