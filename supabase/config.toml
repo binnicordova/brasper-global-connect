@@ -14,3 +14,7 @@ enable_manual_linking = true
 verify_jwt = false
 [functions.whatsapp-session]
 verify_jwt = false
+
+# Native Flow checks Meta's signature, encrypted envelope and signed session.
+[functions.whatsapp-flow]
+verify_jwt = false

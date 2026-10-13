@@ -27,6 +27,10 @@ beforeAll(async () => {
   );
   await db.exec(readFileSync("supabase/migrations/202610130014_whatsapp_cloud.sql", "utf8"));
   await db.exec(
+    "create table public.fx_rates(id uuid primary key,active boolean not null,valid_until timestamptz not null,rate numeric,commission_percent numeric);",
+  );
+  await db.exec(readFileSync("supabase/migrations/202610130015_whatsapp_native_flow.sql", "utf8"));
+  await db.exec(
     `insert into public.whatsapp_channels(phone)values('51999999999');insert into public.whatsapp_sessions(id,phone)values('${sid}','51999999999');`,
   );
 }, 20000);
@@ -81,4 +85,67 @@ it("rate limiter applies on backend and honors human pause", async () => {
   expect(
     (await act("service_role", "", "select reserve_whatsapp_ai('51999999999') as ok")).rows,
   ).toEqual([{ ok: false }]);
+});
+
+it("native flow state cannot expose guest credentials or be leased by a customer", async () => {
+  const nativeId = "00000000-0000-4000-8000-000000000020";
+  await db.exec(
+    `insert into whatsapp_sessions(id,phone,entry_mode)values('${nativeId}','51999999999','native')`,
+  );
+  await expect(
+    act("authenticated", user, `select claim_whatsapp_flow('${nativeId}')`),
+  ).rejects.toThrow(/permission denied/);
+  await expect(
+    act("authenticated", user, "select auth_cipher from whatsapp_flow_states"),
+  ).rejects.toThrow(/permission denied/);
+  expect(
+    (await act("service_role", "", `select (claim_whatsapp_flow('${nativeId}')).session_id as id`))
+      .rows,
+  ).toEqual([{ id: nativeId }]);
+  await expect(
+    act("service_role", "", `select claim_whatsapp_flow('${nativeId}')`),
+  ).rejects.toThrow(/curso/);
+  await expect(act("service_role", "", `select claim_whatsapp_flow('${sid}')`)).rejects.toThrow(
+    /no válido/,
+  );
+});
+it("native creation rejects a changed quote and uses the same identity and duplicate guard", async () => {
+  const nativeId = "00000000-0000-4000-8000-000000000020",
+    rateId = "00000000-0000-4000-8000-000000000021";
+  await db.exec(`insert into fx_rates values('${rateId}',true,now()+interval '1 hour',1.5,3)`);
+  await act("service_role", "", `select claim_whatsapp_session('${nativeId}','${user}')`);
+  const data = JSON.stringify({ p_rate_id: rateId, p_amount: 300, p_declaration_accepted: true });
+  await expect(
+    act(
+      "authenticated",
+      user,
+      `select create_whatsapp_native_transfer('${nativeId}','${data}'::jsonb,1.4,3)`,
+    ),
+  ).rejects.toThrow(/cotización cambió/);
+  await expect(
+    act(
+      "authenticated",
+      other,
+      `select create_whatsapp_native_transfer('${nativeId}','${data}'::jsonb,1.5,3)`,
+    ),
+  ).rejects.toThrow(/no válido/);
+  const a = await act(
+    "authenticated",
+    user,
+    `select create_whatsapp_native_transfer('${nativeId}','${data}'::jsonb,1.5,3) as id`,
+  );
+  await db.exec(`update fx_rates set rate=2 where id='${rateId}'`);
+  expect(
+    (
+      await act(
+        "authenticated",
+        user,
+        `select create_whatsapp_native_transfer('${nativeId}','${data}'::jsonb,1.5,3) as id`,
+      )
+    ).rows,
+  ).toEqual(a.rows);
+  expect(
+    (await db.query(`select user_id from transfers where id='${(a.rows[0] as { id: string }).id}'`))
+      .rows,
+  ).toEqual([{ user_id: user }]);
 });

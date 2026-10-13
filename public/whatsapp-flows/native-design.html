@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Brasper · Diseño del Flow nativo</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #edf2fb;
+        color: #152238;
+        font:
+          15px system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      main {
+        max-width: 1100px;
+        margin: auto;
+        display: grid;
+        grid-template-columns: 1fr 410px;
+        gap: 60px;
+        padding: 48px 24px;
+      }
+      .intro {
+        padding-top: 65px;
+      }
+      .kicker {
+        color: #1656d7;
+        letter-spacing: 2px;
+        font-weight: 700;
+        font-size: 12px;
+      }
+      h1 {
+        font-size: clamp(34px, 5vw, 60px);
+        line-height: 1.04;
+        letter-spacing: -2px;
+        margin: 20px 0;
+      }
+      p {
+        color: #5e6e86;
+        line-height: 1.6;
+      }
+      .steps {
+        display: grid;
+        gap: 8px;
+        margin-top: 28px;
+      }
+      .steps button {
+        background: transparent;
+        text-align: left;
+        border: 1px solid #d2dbea;
+        color: #49627e;
+        border-radius: 12px;
+        padding: 12px;
+        cursor: pointer;
+        font: inherit;
+      }
+      .steps .active {
+        background: #1656d7;
+        color: white;
+        border-color: #1656d7;
+      }
+      .phone {
+        background: white;
+        border: 8px solid #152238;
+        border-radius: 34px;
+        overflow: hidden;
+        box-shadow: 0 28px 65px #10264d22;
+        height: 800px;
+        display: flex;
+        flex-direction: column;
+      }
+      .top {
+        padding: 16px 18px;
+        border-bottom: 1px solid #e4e8ed;
+        display: flex;
+        gap: 14px;
+        font-weight: 600;
+      }
+      .top small {
+        color: #697689;
+      }
+      .content {
+        overflow: auto;
+        flex: 1;
+        padding: 16px;
+      }
+      .brand {
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
+      }
+      .progress {
+        font-size: 10px;
+        letter-spacing: 1.3px;
+        font-weight: 700;
+        color: #7a8799;
+        padding: 16px 0 4px;
+      }
+      .content h2 {
+        font-size: 25px;
+        letter-spacing: -0.6px;
+        margin: 12px 0;
+      }
+      .bodytext {
+        white-space: pre-line;
+        font-size: 14px;
+        color: #5d6b7c;
+        line-height: 1.5;
+        margin: 12px 0;
+      }
+      .content label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        margin: 18px 0 7px;
+      }
+      .content input,
+      .content select,
+      .content textarea {
+        width: 100%;
+        font: 14px system-ui;
+        border: 1px solid #cfd8e3;
+        border-radius: 8px;
+        padding: 12px;
+        background: #fff;
+        color: #22354d;
+      }
+      .content textarea {
+        height: 75px;
+        resize: vertical;
+      }
+      .upload {
+        padding: 18px;
+        border: 1px dashed #b7c7db;
+        border-radius: 10px;
+        text-align: center;
+        color: #557089;
+        font-size: 13px;
+        margin: 14px 0;
+      }
+      .opt {
+        font-size: 12px;
+        color: #617287;
+        background: #f2f6fc;
+        padding: 12px;
+        line-height: 1.5;
+        border-radius: 9px;
+        margin-top: 16px;
+      }
+      .bottom {
+        padding: 14px 16px;
+        background: white;
+        border-top: 1px solid #e4e8ed;
+      }
+      .bottom button {
+        width: 100%;
+        border: 0;
+        border-radius: 24px;
+        background: #067d68;
+        color: white;
+        padding: 14px;
+        font: 600 15px system-ui;
+        cursor: pointer;
+      }
+      .bottom small {
+        display: block;
+        text-align: center;
+        font-size: 10px;
+        color: #8190a0;
+        margin-top: 9px;
+      }
+      .note {
+        font-size: 12px;
+        margin-top: 20px;
+      }
+      @media (max-width: 800px) {
+        main {
+          display: block;
+          padding: 20px 12px;
+        }
+        .intro {
+          padding: 8px 8px 24px;
+        }
+        h1 {
+          font-size: 38px;
+        }
+        .steps {
+          display: flex;
+          overflow: auto;
+        }
+        .steps button {
+          white-space: nowrap;
+        }
+        .phone {
+          max-width: 410px;
+          width: 100%;
+          margin: auto;
+          height: 760px;
+          border-width: 4px;
+        }
+        .intro p {
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="intro">
+        <span class="kicker">BRASPER / WHATSAPP FLOW</span>
+        <h1>Tu cambio.<br />En la conversación.</h1>
+        <p>
+          Vista previa del diseño nativo: identidad Brasper, pasos claros y el mismo proceso
+          conectado al dashboard.
+        </p>
+        <nav class="steps" id="steps" aria-label="Pantallas del Flow"></nav>
+        <p class="note">
+          Representación visual para revisar el diseño. WhatsApp determina los estilos finales de
+          campos y botones. Las tasas, cuentas y operaciones requieren el endpoint desplegado; esta
+          vista no registra solicitudes.
+        </p>
+        <a href="brasper-native.json" download>Descargar JSON para Meta</a>
+      </section>
+      <section class="phone" aria-label="Vista móvil del Flow">
+        <header class="top">
+          <span>‹</span>
+          <div>Brasper<small> · tu cambio</small></div>
+        </header>
+        <div class="content" id="content"></div>
+        <footer class="bottom">
+          <button id="next" type="button">Continuar</button
+          ><small>Administrado por Brasper · Más información</small>
+        </footer>
+      </section>
+    </main>
+    <script>
+      (async () => {
+        const flow = await (await fetch("brasper-native.json")).json();
+        let active = 0;
+        const dynamic = {
+          quote_summary: "Tasa, comisión y monto neto\nconsultados desde la base de Brasper.",
+          customer_summary: "Tu nombre y documento",
+          recipient_summary: "Destinatario, banco y cuenta\nTitular y documento",
+          billing_summary: "Correo y comprobante según el destino",
+          payment_instructions:
+            "Banco, titular y cuenta de Brasper\nsegún la moneda que depositas.",
+        };
+        const container = document.getElementById("content"),
+          steps = document.getElementById("steps");
+        function draw() {
+          container.replaceChildren();
+          steps.replaceChildren();
+          flow.screens.forEach((s, i) => {
+            const b = document.createElement("button");
+            b.textContent = i + 1 + ". " + s.title.replace("Brasper · ", "");
+            b.className = i === active ? "active" : "";
+            b.onclick = () => {
+              active = i;
+              draw();
+            };
+            steps.append(b);
+          });
+          const screen = flow.screens[active];
+          const lookup = (value) =>
+            typeof value === "string" && value.startsWith("${data.")
+              ? dynamic[value.slice(7, -1)] || ""
+              : value;
+          for (const c of screen.layout.children) {
+            if (c.type === "Image") {
+              const img = document.createElement("img");
+              img.src = "data:image/png;base64," + c.src;
+              img.alt = c["alt-text"];
+              img.className = "brand";
+              container.append(img);
+            } else if (c.type === "TextCaption") {
+              const t = document.createElement("div");
+              t.className = "progress";
+              t.textContent = c.text;
+              container.append(t);
+            } else if (c.type === "TextHeading" || c.type === "TextSubheading") {
+              const h = document.createElement(c.type === "TextHeading" ? "h2" : "h3");
+              h.textContent = c.text;
+              container.append(h);
+            } else if (c.type === "TextBody" && !c.visible) {
+              const p = document.createElement("div");
+              p.className = "bodytext";
+              p.textContent = lookup(c.text);
+              container.append(p);
+            } else if (c.type === "Form") {
+              for (const f of c.children) {
+                if (f.type === "Footer") {
+                  document.getElementById("next").textContent = f.label;
+                  continue;
+                }
+                if (f.type === "PhotoPicker" || f.type === "DocumentPicker") {
+                  const u = document.createElement("div");
+                  u.className = "upload";
+                  u.textContent = (f.type === "PhotoPicker" ? "▧  " : "↥  ") + f.label;
+                  container.append(u);
+                  continue;
+                }
+                if (f.type === "OptIn") {
+                  const o = document.createElement("div");
+                  o.className = "opt";
+                  o.textContent = "□ " + f.label;
+                  container.append(o);
+                  continue;
+                }
+                const label = document.createElement("label");
+                label.textContent = f.label + (f.required ? " *" : "");
+                const id = "field-" + f.name;
+                label.htmlFor = id;
+                container.append(label);
+                const el = document.createElement(
+                  f.type === "Dropdown" ? "select" : f.type === "TextArea" ? "textarea" : "input",
+                );
+                el.id = id;
+                if (f.type === "Dropdown") {
+                  const options = Array.isArray(f["data-source"])
+                    ? f["data-source"]
+                    : screen.data[f["data-source"].slice(7, -1)].__example__;
+                  for (const item of options) {
+                    const option = document.createElement("option");
+                    option.value = item.id;
+                    option.textContent = item.title;
+                    el.append(option);
+                  }
+                } else el.placeholder = f.label;
+                container.append(el);
+              }
+            }
+          }
+          container.scrollTop = 0;
+        }
+        document.getElementById("next").onclick = () => {
+          active = (active + 1) % flow.screens.length;
+          draw();
+        };
+        draw();
+      })();
+    </script>
+  </body>
+</html>
