@@ -527,10 +527,49 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_flow_states: {
+        Row: {
+          auth_cipher: string | null
+          completed_at: string | null
+          data: Json
+          processing_id: string | null
+          processing_until: string | null
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          auth_cipher?: string | null
+          completed_at?: string | null
+          data?: Json
+          processing_id?: string | null
+          processing_until?: string | null
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          auth_cipher?: string | null
+          completed_at?: string | null
+          data?: Json
+          processing_id?: string | null
+          processing_until?: string | null
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_flow_states_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "whatsapp_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_sessions: {
         Row: {
           claimed_by: string | null
           created_at: string
+          entry_mode: string
           expires_at: string
           id: string
           notification_state: string
@@ -540,6 +579,7 @@ export type Database = {
         Insert: {
           claimed_by?: string | null
           created_at?: string
+          entry_mode?: string
           expires_at?: string
           id?: string
           notification_state?: string
@@ -549,6 +589,7 @@ export type Database = {
         Update: {
           claimed_by?: string | null
           created_at?: string
+          entry_mode?: string
           expires_at?: string
           id?: string
           notification_state?: string
@@ -883,11 +924,30 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_whatsapp_flow: {
+        Args: { p_session_id: string }
+        Returns: {
+          auth_cipher: string | null
+          completed_at: string | null
+          data: Json
+          processing_id: string | null
+          processing_until: string | null
+          session_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "whatsapp_flow_states"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       claim_whatsapp_session: {
         Args: { p_id: string; p_user: string }
         Returns: {
           claimed_by: string | null
           created_at: string
+          entry_mode: string
           expires_at: string
           id: string
           notification_state: string
@@ -1038,6 +1098,15 @@ export type Database = {
           p_source_country: string
           p_transfer_note: string
           p_transfer_purpose: string
+        }
+        Returns: string
+      }
+      create_whatsapp_native_transfer: {
+        Args: {
+          p_data: Json
+          p_expected_commission: number
+          p_expected_rate: number
+          p_session_id: string
         }
         Returns: string
       }
