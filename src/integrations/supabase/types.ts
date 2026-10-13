@@ -193,6 +193,66 @@ export type Database = {
           },
         ]
       }
+      saved_recipients: {
+        Row: {
+          country: string
+          created_at: string
+          currency: string
+          id: string
+          label: string
+          recipient_account: string
+          recipient_account_holder: string
+          recipient_account_holder_document: string
+          recipient_account_type: string
+          recipient_bank: string
+          recipient_bank_branch: string
+          recipient_document: string
+          recipient_name: string
+          recipient_phone: string
+          recipient_relationship: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          currency: string
+          id?: string
+          label: string
+          recipient_account: string
+          recipient_account_holder: string
+          recipient_account_holder_document: string
+          recipient_account_type: string
+          recipient_bank: string
+          recipient_bank_branch?: string
+          recipient_document: string
+          recipient_name: string
+          recipient_phone?: string
+          recipient_relationship?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          label?: string
+          recipient_account?: string
+          recipient_account_holder?: string
+          recipient_account_holder_document?: string
+          recipient_account_type?: string
+          recipient_bank?: string
+          recipient_bank_branch?: string
+          recipient_document?: string
+          recipient_name?: string
+          recipient_phone?: string
+          recipient_relationship?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       staff_members: {
         Row: {
           created_at: string
@@ -861,6 +921,8 @@ export type Database = {
         }
         Returns: string
       }
+      delete_saved_recipient: { Args: { p_id: string }; Returns: boolean }
+      has_registered_session: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
       record_beta_result: {
         Args: { p_invoice_id: string; p_result: Json }
@@ -890,6 +952,10 @@ export type Database = {
           p_transfer_id: string
         }
         Returns: undefined
+      }
+      save_transfer_recipient: {
+        Args: { p_label: string; p_transfer_id: string }
+        Returns: string
       }
       schedule_beta_retry: { Args: { p_invoice_id: string }; Returns: boolean }
       staff_dashboard_summary: { Args: never; Returns: Json }

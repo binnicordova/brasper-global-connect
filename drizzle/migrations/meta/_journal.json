@@ -50,6 +50,13 @@
       "when": 1791865943171,
       "tag": "0006_mailersend_delivery",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791869707981,
+      "tag": "0007_saved_recipients",
+      "breakpoints": true
     }
   ]
 }
