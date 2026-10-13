@@ -9,10 +9,12 @@ export class MetaSendError extends Error {
         : null;
     const value = error && typeof error === "object" ? (error as Record<string, unknown>) : {};
     const code =
-      Number.isSafeInteger(value.code) && Number(value.code) > 0 ? Number(value.code) : null;
+      Number.isSafeInteger(value["code"]) && Number(value["code"]) > 0
+        ? Number(value["code"])
+        : null;
     const subcode =
-      Number.isSafeInteger(value.error_subcode) && Number(value.error_subcode) > 0
-        ? Number(value.error_subcode)
+      Number.isSafeInteger(value["error_subcode"]) && Number(value["error_subcode"]) > 0
+        ? Number(value["error_subcode"])
         : null;
     super(`Meta send failed (HTTP ${status}, code ${code ?? "unknown"})`);
     this.name = "MetaSendError";

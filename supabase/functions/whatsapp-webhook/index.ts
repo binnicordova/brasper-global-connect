@@ -374,7 +374,9 @@ Deno.serve(async (request: Request) => {
         }
       }
     })();
-    if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(task);
+    const edgeRuntime = (globalThis as { EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void } })
+      .EdgeRuntime;
+    if (edgeRuntime) edgeRuntime.waitUntil(task);
     else await task;
     return new Response("EVENT_RECEIVED");
   } catch {
