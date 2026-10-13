@@ -626,3 +626,50 @@ describe("Private saved recipient shortcuts", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("Guest wizard validation recovery", () => {
+  it("returns to a hidden invalid customer document, focuses it and continues after correction", async () => {
+    mock.guest = true;
+    await fillAndAttach(false, false);
+    fireEvent.click(screen.getByRole("button", { name: /Volver/ }));
+    fireEvent.change(screen.getByLabelText("Tu DNI, RUC o documento"), {
+      target: { value: "1234567" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Revisa el tipo y número de tu documento",
+    );
+    expect(screen.getByText("Tus datos de contacto")).toBeVisible();
+    expect(screen.getByLabelText("Tu DNI, RUC o documento")).toHaveFocus();
+    expect(
+      mock.rpc.mock.calls.filter(([name]) => name === "create_validated_transfer"),
+    ).toHaveLength(0);
+    fireEvent.change(screen.getByLabelText("Tu DNI, RUC o documento"), {
+      target: { value: "12345678" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    expect(screen.getByText("Resumen de tu solicitud")).toBeVisible();
+  });
+  it("shows the missing relationship at the destination step and accepts the guest after correction", async () => {
+    mock.guest = true;
+    await fillAndAttach(false, false);
+    fireEvent.click(screen.getByRole("button", { name: /Volver/ }));
+    const relationship = screen.getByLabelText(
+      "Relación con el destinatario y el titular de la cuenta",
+    );
+    fireEvent.change(relationship, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Indica tu relación con el destinatario y el titular de la cuenta",
+    );
+    expect(relationship).toHaveFocus();
+    fireEvent.change(relationship, { target: { value: "Familia" } });
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Guardar datos y continuar al pago/ }));
+    await screen.findByText(/Datos registrados. Paso siguiente/);
+    expect(
+      mock.rpc.mock.calls.filter(([name]) => name === "create_validated_transfer"),
+    ).toHaveLength(1);
+  });
+});

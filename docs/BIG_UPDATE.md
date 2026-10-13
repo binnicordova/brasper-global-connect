@@ -88,3 +88,9 @@ La interfaz usa textos operativos y herramientas de presentación plegadas; los 
 El gateway beta usa el RUC autorizado `10042049579` y las credenciales públicas de pruebas MODDATOS; esto no utiliza la clave SOL de producción. La denominación del emisor es de pruebas, pendiente de su identidad fiscal aprobada. Re-publicar la web para actualizar este motor; los secretos del servidor indicados arriba siguen siendo necesarios. No modificar comprobantes ya preparados o enviados bajo el RUC anterior: recuperarlos con su identificación original.
 
 Prueba del 12/10/2026: factura `F903-91844545`, por comisión de 31,05 PEN, aceptada directamente en SUNAT beta con código 0. PDF/XML/CDR guardados localmente. El gateway desplegado, cron y correo siguen pendientes del big update; esta comprobación no activa esos servicios. [Pautas oficiales SUNAT beta](https://orientacion.sunat.gob.pe/12-pautas-servicio-beta).
+
+## Acceso de clientes y equipo
+
+La página pública incluye **Iniciar sesión** en `/login`, con correo/contraseña, enlace de acceso y Google. El acceso público lleva a `/transferencias`. El dashboard se abre directamente en `/dashboard`; exige una cuenta autorizada en `staff_members`, no aparece enlazado en páginas públicas y tiene `noindex`. Este cambio no requiere migración ni Edge Function adicional. Para enlaces de correo/Google, autorizar en Auth las URLs publicadas `/login` y `/transferencias` del dominio actual (y localhost solo para pruebas locales).
+
+El asistente de cambio muestra los errores junto a la navegación y vuelve al campo correspondiente, incluso si pertenece a un paso anterior. Los invitados pueden completar revisión y registrar su solicitud sin crear una cuenta; las validaciones siguen vigentes.

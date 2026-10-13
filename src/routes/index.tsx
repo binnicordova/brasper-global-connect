@@ -130,6 +130,9 @@ function Index() {
             </a>
           </nav>
           <div className="header-actions">
+            <Button variant="outline" className="header-login" asChild>
+              <Link to="/login">Iniciar sesión</Link>
+            </Button>
             <span className="language">
               <Globe2 size={14} /> ES
             </span>

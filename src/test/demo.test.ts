@@ -198,3 +198,10 @@ describe("Explicit synthetic demo", () => {
     expect(network).not.toHaveBeenCalled();
   });
 });
+
+it("switches from guest to a registered presentation account on explicit sign-up", async () => {
+  const db = createDemoClient();
+  expect((await db.auth.getSession()).data.session?.user.is_anonymous).toBe(true);
+  await db.auth.signUp({ email: "client@example.test", password: "password123" });
+  expect((await db.auth.getSession()).data.session?.user.is_anonymous).toBe(false);
+});

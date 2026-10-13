@@ -21,7 +21,6 @@ export function DemoNotice() {
       <span>Sesión de presentación con datos de prueba.</span>
       <nav aria-label="Herramientas de presentación">
         <Link to="/transferencias">Registrar cambio</Link>
-        <Link to="/dashboard">Ver dashboard</Link>
         <a href="/demo/comprobante-ejemplo.pdf" download>
           Archivo de ejemplo
         </a>

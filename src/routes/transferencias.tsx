@@ -50,6 +50,25 @@ const money = (n: number, c: string) =>
 function TransferPortal() {
   const formRef = useRef<HTMLFormElement>(null);
   const [step, setStep] = useState(0);
+  const [formIssue, setFormIssue] = useState<{
+    message: string;
+    field?: string | undefined;
+  } | null>(null);
+  function clearFormIssue() {
+    formRef.current
+      ?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+        "input,select,textarea",
+      )
+      .forEach((field) => field.setCustomValidity(""));
+    setFormIssue(null);
+  }
+  function reportFormIssue(message: string, name?: string) {
+    setFormIssue({ message, field: name });
+    const field = name ? (formRef.current?.elements.namedItem(name) as HTMLElement | null) : null;
+    const ownerStep = field?.closest<HTMLElement>("fieldset[data-step]")?.dataset["step"];
+    if (ownerStep !== undefined) setStep(Number(ownerStep));
+  }
+
   const [embedded, setEmbedded] = useState(false);
   const [embeddedOperation, setEmbeddedOperation] = useState<string | null>(null);
   useEffect(() => {
@@ -79,15 +98,32 @@ function TransferPortal() {
   useEffect(() => {
     formRef.current?.querySelector<HTMLHeadingElement>(`fieldset[data-step="${step}"] h3`)?.focus();
   }, [step]);
+  useEffect(() => {
+    if (!formIssue?.field) return;
+    const field = formRef.current?.elements.namedItem(formIssue.field) as
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null;
+    if (!field || (field instanceof HTMLInputElement && field.type === "hidden")) return;
+    if (field.closest<HTMLElement>("fieldset")?.hidden) return;
+    field.setCustomValidity(formIssue.message);
+    field.focus();
+    field.reportValidity();
+  }, [formIssue, step]);
   function validStep(index: number) {
     const fields = formRef.current?.querySelectorAll<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >(
       `fieldset[data-step="${index}"] input,fieldset[data-step="${index}"] select,fieldset[data-step="${index}"] textarea`,
     );
-    return Array.from(fields ?? []).every((field) => field.reportValidity());
+    const invalid = Array.from(fields ?? []).find((field) => !field.validity.valid);
+    if (!invalid) return true;
+    reportFormIssue(
+      invalid.validationMessage || "Completa este campo para continuar.",
+      invalid.name || undefined,
+    );
+    return false;
   }
   function nextStep() {
+    clearFormIssue();
     if (!validStep(step)) return;
     if (!rate || new Date(rate.valid_until).getTime() <= Date.now()) {
       setMessage("La cotización venció. Actualiza para obtener una tasa vigente.");
@@ -100,7 +136,8 @@ function TransferPortal() {
         ...Object.fromEntries(new FormData(formRef.current!)),
       });
       if (!result.success) {
-        setMessage(result.error.issues[0]?.message || "Revisa los datos.");
+        const issue = result.error.issues[0];
+        reportFormIssue(issue?.message || "Revisa los datos.", String(issue?.path[0] || ""));
         return;
       }
       setReviewData(result.data);
@@ -406,17 +443,6 @@ function TransferPortal() {
           })
         : await supabase.auth.signInWithPassword(credentials);
       if (result.error) throw result.error;
-      if (!register && result.data.user) {
-        const { data: staff } = await supabase
-          .from("staff_members")
-          .select("user_id")
-          .eq("user_id", result.data.user.id)
-          .maybeSingle();
-        if (staff) {
-          window.location.assign("/dashboard");
-          return;
-        }
-      }
       if (register) setMessage("Revisa tu correo para confirmar tu cuenta antes de operar.");
     });
   }
@@ -438,6 +464,7 @@ function TransferPortal() {
       nextStep();
       return;
     }
+    clearFormIssue();
     for (let index = 0; index < 4; index++) {
       if (!validStep(index)) {
         setStep(index);
@@ -666,9 +693,9 @@ function TransferPortal() {
         <Link to="/" className="portal-back">
           <ArrowLeft size={16} /> Volver al inicio
         </Link>
-        {staff && (
-          <Link to="/dashboard" className="portal-back">
-            Dashboard <ArrowRight size={16} />
+        {(!session || guest) && (
+          <Link to="/login" className="portal-back">
+            Iniciar sesión
           </Link>
         )}
         {session && !guest && (
@@ -850,6 +877,8 @@ function TransferPortal() {
                 ) : (
                   <form
                     ref={formRef}
+                    onInputCapture={clearFormIssue}
+                    onChangeCapture={clearFormIssue}
                     className="portal-form transfer-form"
                     onSubmit={create}
                     noValidate
@@ -1464,6 +1493,15 @@ function TransferPortal() {
                         gestionar este envío y el comprobante.
                       </label>
                     </fieldset>
+                    {formIssue && (
+                      <div
+                        id="exchange-validation"
+                        className="exchange-validation wide"
+                        role="alert"
+                      >
+                        {formIssue.message}
+                      </div>
+                    )}
                     <div className="exchange-navigation wide">
                       {step > 0 && (
                         <Button
@@ -1471,7 +1509,10 @@ function TransferPortal() {
                           variant="outline"
                           className="exchange-back"
                           disabled={busy}
-                          onClick={() => setStep((old) => old - 1)}
+                          onClick={() => {
+                            clearFormIssue();
+                            setStep((old) => old - 1);
+                          }}
                         >
                           <ArrowLeft size={16} /> Volver
                         </Button>

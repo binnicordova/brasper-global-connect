@@ -2809,3 +2809,90 @@ footer {
   flex: 0 0 1rem;
   margin-top: 0.15rem;
 }
+
+.login-main {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 440px);
+  gap: 4rem;
+  align-items: center;
+  padding-block: 4rem;
+}
+.login-intro h1 {
+  max-width: 540px;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  margin-block: 1rem;
+}
+.login-intro > p {
+  max-width: 490px;
+  color: var(--muted-foreground);
+  line-height: 1.8;
+}
+.login-privacy {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+.login-card {
+  min-width: 0;
+}
+.login-form {
+  grid-template-columns: 1fr;
+  margin-top: 1.5rem;
+}
+.login-session {
+  display: grid;
+  gap: 0.75rem;
+}
+.login-card .portal-text-button {
+  margin-top: 1rem;
+}
+.login-guest {
+  border-top: 1px solid var(--border);
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+}
+.login-guest p {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+.login-guest a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary);
+  font-weight: 600;
+  margin-top: 0.75rem;
+}
+@media (max-width: 1100px) {
+  .header-actions .header-cta {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .header-inner {
+    gap: 0.75rem;
+  }
+  .header-login {
+    padding-inline: 0.75rem;
+    font-size: 0.75rem;
+  }
+  .login-main {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding-block: 1.75rem;
+  }
+  .login-intro h1 {
+    font-size: 2rem;
+  }
+}
+
+.exchange-validation {
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  background: color-mix(in oklch, var(--destructive) 8%, var(--background));
+  color: var(--destructive);
+  border: 1px solid color-mix(in oklch, var(--destructive) 30%, var(--border));
+  font-size: 0.85rem;
+  line-height: 1.5;
+}

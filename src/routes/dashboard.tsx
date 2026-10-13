@@ -31,7 +31,12 @@ import plan from "../../MASTER_PLAN.json";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
-  head: () => ({ meta: [{ title: "Centro de operaciones | Brasper" }] }),
+  head: () => ({
+    meta: [
+      { title: "Centro de operaciones | Brasper" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
 });
 type Summary = {
   statuses: Record<string, number>;

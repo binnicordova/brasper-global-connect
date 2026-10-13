@@ -27,7 +27,7 @@ export function exitDemo() {
 export function resetDemo() {
   localStorage.removeItem(STORE);
   indexedDB.deleteDatabase("brasper-demo-files");
-  window.location.assign("/dashboard?demo=1");
+  window.location.assign(window.location.pathname + "?demo=1");
 }
 
 function read(): State {
@@ -168,7 +168,13 @@ export function createDemoClient(): SupabaseClient {
         authChanged();
         return success({ session: session(), user: user() });
       },
-      signUp: async () => success({ session: session(), user: user() }),
+      signUp: async () => {
+        registered = true;
+        sessionStorage.setItem("brasper-demo-registered", "1");
+        signedIn = true;
+        authChanged();
+        return success({ session: session(), user: user() });
+      },
       updateUser: async () => success({ user: user() }),
       signInWithOtp: async () => success(),
       signOut: async () => {
