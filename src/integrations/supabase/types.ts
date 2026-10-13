@@ -94,6 +94,16 @@ export type Database = {
           delivered_at: string | null
           document_type: string
           email_attempted_at: string | null
+          email_attempts: number
+          email_checked_at: string | null
+          email_error: string | null
+          email_next_attempt_at: string | null
+          email_processing_at: string | null
+          email_provider_id: string | null
+          email_recipient: string | null
+          email_request_started_at: string | null
+          email_sent_at: string | null
+          email_status: string
           environment: string
           error: string | null
           external_id: string | null
@@ -117,6 +127,16 @@ export type Database = {
           delivered_at?: string | null
           document_type?: string
           email_attempted_at?: string | null
+          email_attempts?: number
+          email_checked_at?: string | null
+          email_error?: string | null
+          email_next_attempt_at?: string | null
+          email_processing_at?: string | null
+          email_provider_id?: string | null
+          email_recipient?: string | null
+          email_request_started_at?: string | null
+          email_sent_at?: string | null
+          email_status?: string
           environment?: string
           error?: string | null
           external_id?: string | null
@@ -140,6 +160,16 @@ export type Database = {
           delivered_at?: string | null
           document_type?: string
           email_attempted_at?: string | null
+          email_attempts?: number
+          email_checked_at?: string | null
+          email_error?: string | null
+          email_next_attempt_at?: string | null
+          email_processing_at?: string | null
+          email_provider_id?: string | null
+          email_recipient?: string | null
+          email_request_started_at?: string | null
+          email_sent_at?: string | null
+          email_status?: string
           environment?: string
           error?: string | null
           external_id?: string | null
@@ -405,6 +435,16 @@ export type Database = {
           delivered_at: string | null
           document_type: string
           email_attempted_at: string | null
+          email_attempts: number
+          email_checked_at: string | null
+          email_error: string | null
+          email_next_attempt_at: string | null
+          email_processing_at: string | null
+          email_provider_id: string | null
+          email_recipient: string | null
+          email_request_started_at: string | null
+          email_sent_at: string | null
+          email_status: string
           environment: string
           error: string | null
           external_id: string | null
@@ -441,6 +481,16 @@ export type Database = {
           delivered_at: string | null
           document_type: string
           email_attempted_at: string | null
+          email_attempts: number
+          email_checked_at: string | null
+          email_error: string | null
+          email_next_attempt_at: string | null
+          email_processing_at: string | null
+          email_provider_id: string | null
+          email_recipient: string | null
+          email_request_started_at: string | null
+          email_sent_at: string | null
+          email_status: string
           environment: string
           error: string | null
           external_id: string | null
@@ -473,6 +523,16 @@ export type Database = {
           delivered_at: string | null
           document_type: string
           email_attempted_at: string | null
+          email_attempts: number
+          email_checked_at: string | null
+          email_error: string | null
+          email_next_attempt_at: string | null
+          email_processing_at: string | null
+          email_provider_id: string | null
+          email_recipient: string | null
+          email_request_started_at: string | null
+          email_sent_at: string | null
+          email_status: string
           environment: string
           error: string | null
           external_id: string | null
@@ -505,6 +565,16 @@ export type Database = {
           delivered_at: string | null
           document_type: string
           email_attempted_at: string | null
+          email_attempts: number
+          email_checked_at: string | null
+          email_error: string | null
+          email_next_attempt_at: string | null
+          email_processing_at: string | null
+          email_provider_id: string | null
+          email_recipient: string | null
+          email_request_started_at: string | null
+          email_sent_at: string | null
+          email_status: string
           environment: string
           error: string | null
           external_id: string | null
@@ -537,6 +607,100 @@ export type Database = {
           delivered_at: string | null
           document_type: string
           email_attempted_at: string | null
+          email_attempts: number
+          email_checked_at: string | null
+          email_error: string | null
+          email_next_attempt_at: string | null
+          email_processing_at: string | null
+          email_provider_id: string | null
+          email_recipient: string | null
+          email_request_started_at: string | null
+          email_sent_at: string | null
+          email_status: string
+          environment: string
+          error: string | null
+          external_id: string | null
+          id: string
+          issuer_country: string
+          next_attempt_at: string | null
+          number: string | null
+          pdf_path: string | null
+          processing_at: string | null
+          status: string
+          transfer_id: string
+          xml_path: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_mailersend_delivery: {
+        Args: { p_environment: string }
+        Returns: {
+          beta_attempts: number
+          beta_prepared: Json | null
+          beta_result: Json | null
+          beta_sent_at: string | null
+          cdr_path: string | null
+          created_at: string
+          delivered_at: string | null
+          document_type: string
+          email_attempted_at: string | null
+          email_attempts: number
+          email_checked_at: string | null
+          email_error: string | null
+          email_next_attempt_at: string | null
+          email_processing_at: string | null
+          email_provider_id: string | null
+          email_recipient: string | null
+          email_request_started_at: string | null
+          email_sent_at: string | null
+          email_status: string
+          environment: string
+          error: string | null
+          external_id: string | null
+          id: string
+          issuer_country: string
+          next_attempt_at: string | null
+          number: string | null
+          pdf_path: string | null
+          processing_at: string | null
+          status: string
+          transfer_id: string
+          xml_path: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_mailersend_status: {
+        Args: never
+        Returns: {
+          beta_attempts: number
+          beta_prepared: Json | null
+          beta_result: Json | null
+          beta_sent_at: string | null
+          cdr_path: string | null
+          created_at: string
+          delivered_at: string | null
+          document_type: string
+          email_attempted_at: string | null
+          email_attempts: number
+          email_checked_at: string | null
+          email_error: string | null
+          email_next_attempt_at: string | null
+          email_processing_at: string | null
+          email_provider_id: string | null
+          email_recipient: string | null
+          email_request_started_at: string | null
+          email_sent_at: string | null
+          email_status: string
           environment: string
           error: string | null
           external_id: string | null
@@ -560,6 +724,15 @@ export type Database = {
       complete_invoice_delivery: {
         Args: { p_invoice_id: string }
         Returns: undefined
+      }
+      confirm_mailersend_status: {
+        Args: {
+          p_error?: string
+          p_invoice_id: string
+          p_message_id: string
+          p_state: string
+        }
+        Returns: boolean
       }
       create_guest_transfer_base: {
         Args: {
@@ -693,6 +866,17 @@ export type Database = {
         Args: { p_invoice_id: string; p_result: Json }
         Returns: undefined
       }
+      record_mailersend_result: {
+        Args: {
+          p_attempt: number
+          p_delay?: number
+          p_error?: string
+          p_invoice_id: string
+          p_message_id?: string
+          p_state: string
+        }
+        Returns: boolean
+      }
       restore_verified_transfer: {
         Args: { p_note: string; p_transfer_id: string }
         Returns: undefined
@@ -709,6 +893,10 @@ export type Database = {
       }
       schedule_beta_retry: { Args: { p_invoice_id: string }; Returns: boolean }
       staff_dashboard_summary: { Args: never; Returns: Json }
+      start_mailersend_request: {
+        Args: { p_attempt: number; p_invoice_id: string; p_recipient: string }
+        Returns: boolean
+      }
       submit_proof: {
         Args: { p_path: string; p_transfer_id: string }
         Returns: undefined
