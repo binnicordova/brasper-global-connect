@@ -8,27 +8,27 @@
       "data": {
         "quote_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Cotiza tu cambio para consultar la tasa y el monto neto."
         },
         "customer_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa tu nombre y documento."
         },
         "recipient_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el destinatario y su cuenta receptora."
         },
         "billing_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el correo y los datos del comprobante."
         },
         "payment_instructions": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Las cuentas de ingreso se mostrarán con la cotización vigente."
         },
         "error_message": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Revisa los datos antes de continuar."
         },
         "has_error": {
           "type": "boolean",
@@ -148,7 +148,7 @@
           },
           {
             "type": "TextBody",
-            "text": "${data.error_message}",
+            "text": "Revisa los datos de este paso. Si acabas de abrir el formulario, solicita un nuevo acceso desde el chat.",
             "visible": "${data.has_error}"
           },
           {
@@ -246,27 +246,27 @@
       "data": {
         "quote_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Cotiza tu cambio para consultar la tasa y el monto neto."
         },
         "customer_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa tu nombre y documento."
         },
         "recipient_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el destinatario y su cuenta receptora."
         },
         "billing_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el correo y los datos del comprobante."
         },
         "payment_instructions": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Las cuentas de ingreso se mostrarán con la cotización vigente."
         },
         "error_message": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Revisa los datos antes de continuar."
         },
         "has_error": {
           "type": "boolean",
@@ -394,7 +394,7 @@
           },
           {
             "type": "TextBody",
-            "text": "${data.error_message}",
+            "text": "Revisa los datos de este paso. Si acabas de abrir el formulario, solicita un nuevo acceso desde el chat.",
             "visible": "${data.has_error}"
           },
           {
@@ -433,7 +433,7 @@
               {
                 "type": "TextInput",
                 "name": "billing_email",
-                "label": "Correo del comprobante",
+                "label": "Correo de envío",
                 "required": true,
                 "input-type": "email"
               },
@@ -498,27 +498,27 @@
       "data": {
         "quote_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Cotiza tu cambio para consultar la tasa y el monto neto."
         },
         "customer_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa tu nombre y documento."
         },
         "recipient_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el destinatario y su cuenta receptora."
         },
         "billing_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el correo y los datos del comprobante."
         },
         "payment_instructions": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Las cuentas de ingreso se mostrarán con la cotización vigente."
         },
         "error_message": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Revisa los datos antes de continuar."
         },
         "has_error": {
           "type": "boolean",
@@ -650,7 +650,7 @@
           },
           {
             "type": "TextBody",
-            "text": "${data.error_message}",
+            "text": "Revisa los datos de este paso. Si acabas de abrir el formulario, solicita un nuevo acceso desde el chat.",
             "visible": "${data.has_error}"
           },
           {
@@ -731,7 +731,7 @@
               {
                 "type": "TextInput",
                 "name": "recipient_relationship",
-                "label": "Relación con destinatario",
+                "label": "Relación con destino",
                 "required": true
               },
               {
@@ -799,27 +799,27 @@
       "data": {
         "quote_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Cotiza tu cambio para consultar la tasa y el monto neto."
         },
         "customer_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa tu nombre y documento."
         },
         "recipient_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el destinatario y su cuenta receptora."
         },
         "billing_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el correo y los datos del comprobante."
         },
         "payment_instructions": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Las cuentas de ingreso se mostrarán con la cotización vigente."
         },
         "error_message": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Revisa los datos antes de continuar."
         },
         "has_error": {
           "type": "boolean",
@@ -967,7 +967,7 @@
           },
           {
             "type": "TextBody",
-            "text": "${data.error_message}",
+            "text": "Revisa los datos de este paso. Si acabas de abrir el formulario, solicita un nuevo acceso desde el chat.",
             "visible": "${data.has_error}"
           },
           {
@@ -992,13 +992,13 @@
               {
                 "type": "TextInput",
                 "name": "recipient_name",
-                "label": "Nombre del destinatario",
+                "label": "Destinatario",
                 "required": true
               },
               {
                 "type": "TextInput",
                 "name": "recipient_document",
-                "label": "Documento destinatario",
+                "label": "Documento destino",
                 "required": true
               },
               {
@@ -1029,7 +1029,7 @@
               {
                 "type": "TextInput",
                 "name": "recipient_account_holder_document",
-                "label": "Documento del titular",
+                "label": "Documento titular",
                 "required": true
               },
               {
@@ -1041,7 +1041,7 @@
               {
                 "type": "TextInput",
                 "name": "recipient_phone",
-                "label": "Teléfono del destinatario",
+                "label": "Teléfono destino",
                 "required": false,
                 "input-type": "phone"
               },
@@ -1105,27 +1105,27 @@
       "data": {
         "quote_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Cotiza tu cambio para consultar la tasa y el monto neto."
         },
         "customer_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa tu nombre y documento."
         },
         "recipient_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el destinatario y su cuenta receptora."
         },
         "billing_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el correo y los datos del comprobante."
         },
         "payment_instructions": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Las cuentas de ingreso se mostrarán con la cotización vigente."
         },
         "error_message": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Revisa los datos antes de continuar."
         },
         "has_error": {
           "type": "boolean",
@@ -1253,7 +1253,7 @@
           },
           {
             "type": "TextBody",
-            "text": "${data.error_message}",
+            "text": "Revisa los datos de este paso. Si acabas de abrir el formulario, solicita un nuevo acceso desde el chat.",
             "visible": "${data.has_error}"
           },
           {
@@ -1284,7 +1284,7 @@
               {
                 "type": "TextInput",
                 "name": "billing_legal_name",
-                "label": "Nombre o razón social",
+                "label": "Nombre o empresa",
                 "required": false
               },
               {
@@ -1356,27 +1356,27 @@
       "data": {
         "quote_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Cotiza tu cambio para consultar la tasa y el monto neto."
         },
         "customer_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa tu nombre y documento."
         },
         "recipient_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el destinatario y su cuenta receptora."
         },
         "billing_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el correo y los datos del comprobante."
         },
         "payment_instructions": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Las cuentas de ingreso se mostrarán con la cotización vigente."
         },
         "error_message": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Revisa los datos antes de continuar."
         },
         "has_error": {
           "type": "boolean",
@@ -1488,7 +1488,7 @@
           },
           {
             "type": "TextBody",
-            "text": "${data.error_message}",
+            "text": "Revisa los datos de este paso. Si acabas de abrir el formulario, solicita un nuevo acceso desde el chat.",
             "visible": "${data.has_error}"
           },
           {
@@ -1581,27 +1581,27 @@
       "data": {
         "quote_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Cotiza tu cambio para consultar la tasa y el monto neto."
         },
         "customer_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa tu nombre y documento."
         },
         "recipient_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el destinatario y su cuenta receptora."
         },
         "billing_summary": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Completa el correo y los datos del comprobante."
         },
         "payment_instructions": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Las cuentas de ingreso se mostrarán con la cotización vigente."
         },
         "error_message": {
           "type": "string",
-          "__example__": ""
+          "__example__": "Revisa los datos antes de continuar."
         },
         "has_error": {
           "type": "boolean",
@@ -1717,7 +1717,7 @@
           },
           {
             "type": "TextBody",
-            "text": "${data.error_message}",
+            "text": "Revisa los datos de este paso. Si acabas de abrir el formulario, solicita un nuevo acceso desde el chat.",
             "visible": "${data.has_error}"
           },
           {

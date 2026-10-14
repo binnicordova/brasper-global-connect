@@ -227,6 +227,13 @@ describe("Native Flow financial adapter", () => {
     expect(flow.screens[0].data.amount.type).toBe("number");
     for (const screen of flow.screens) {
       const children = screen.layout.children;
+      for (const c of children.filter((c: { type: string }) => c.type === "TextBody")) {
+        expect(c.text).toBeTruthy();
+        expect(c.text).not.toBe("${data.error_message}");
+        if (c.text.startsWith("${data.")) {
+          expect(screen.data[c.text.slice(7, -1)].__example__.trim()).not.toBe("");
+        }
+      }
       expect(children[0].type).toBe("Image");
       expect(from64(children[0].src).subarray(0, 8)).toEqual(
         new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]),
@@ -239,7 +246,7 @@ describe("Native Flow financial adapter", () => {
         ).length,
       ).toBeLessThanOrEqual(1);
       for (const c of form.children.filter(
-        (c: { type: string; label?: string }) => c.type === "Dropdown",
+        (c: { type: string; label?: string }) => ["Dropdown", "TextInput"].includes(c.type),
       ))
         expect(c.label!.length).toBeLessThanOrEqual(20);
     }

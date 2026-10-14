@@ -26,6 +26,8 @@ const fail = (s: number) => new Response("Flow unavailable", { status: s, header
 const next = (s: FlowStep) => flowSteps[flowSteps.indexOf(s) + 1] || "PAYMENT";
 function userError(e: unknown) {
   const err = e as { issues?: { message: string }[]; message?: string };
+  if (["Invalid link", "Invalid Flow session"].includes(err.message || ""))
+    return "Tu sesión no es válida o ha vencido. Escribe empezar cambio en el chat para obtener un nuevo formulario.";
   return (
     err.issues?.[0]?.message ||
     (/^(Ingresa|Revisa|Adjunta|Completa|Indica|El monto|La cotización|Tipo de cuenta|Solicitud en curso)/.test(
