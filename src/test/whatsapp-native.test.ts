@@ -245,8 +245,8 @@ describe("Native Flow financial adapter", () => {
           ["DocumentPicker", "PhotoPicker"].includes(c.type),
         ).length,
       ).toBeLessThanOrEqual(1);
-      for (const c of form.children.filter(
-        (c: { type: string; label?: string }) => ["Dropdown", "TextInput"].includes(c.type),
+      for (const c of form.children.filter((c: { type: string; label?: string }) =>
+        ["Dropdown", "TextInput"].includes(c.type),
       ))
         expect(c.label!.length).toBeLessThanOrEqual(20);
     }
