@@ -1,54 +1,96 @@
-# Brasper × 5.5: omnicanal para vender
+# Brasper × 5.5: ventas omnicanal, 24/7 y recurrencia
 
-## Abrir
+## Qué cambia en esta versión
 
-- `01 - V1 comercial/index.html`: pitch comercial, 13 diapositivas principales y 6 anexos.
-- `02 - V2 con producto/index.html`: el mismo argumento ampliado con 9 diapositivas de producto (8 móviles y 1 escritorio), dentro de diapositivas16:9. 22diapositivas principales y6anexos. Puedes usar el video o el recorrido ampliado según el tiempo disponible.
-- Los originales anteriores no se modificaron.
-- Navegar con flechas. F: pantalla completa. S: notas del presentador. O o Escape: vista general. El botón Anexos salta al respaldo.
-- `03 - Capturas/index.html`: galería de los dos recorridos, escritorio y móvil.
-- `modelo-economico.html`: calculadora con supuestos editables. No modifica las cifras estáticas de los decks.
+La propuesta complementa la operación transaccional que ya funciona. El centro del pitch es atraer clientes, acompañarlos hasta la operación y facilitar que vuelvan. La automatización administrativa y la capacidad liberada refuerzan el caso, sin convertirse en el único motivo de rentabilidad.
 
-## Video de 1:30
+La historia del problema incorpora el hallazgo de consultoría: el encargo inicial pedía facturación y automatización. Según el equipo, TI ya había desarrollado esa parte, pero la dirección no tenía visibilidad completa de su avance y alcance. El equipo contrastó necesidades, proceso, información y capacidades existentes, atendió rápidamente el frente inicial y encontró mayor potencial en ventas y experiencia omnicanal. No atribuirnos como nuevo lo que ya existía en TI.
 
-La diapositiva VIDEO reserva el recorrido. No se ha generado ni recibido el video final.
-Colocar `proceso.mp4` en la subcarpeta `video` de cada presentación. La diapositiva lo detecta y usa el reproductor.
-Pulsa V en esa diapositiva o Pantalla limpia para esconder todo el contenido y proyectar negro. Escape recupera la vista.
-Si necesitas más de una pausa, duplica esa sección HTML y cambia sus ids y controles antes de usarla. El espacio actual dura lo que decida el presentador, no avanza automáticamente.
-Guion sugerido: WhatsApp IA y cotización (0–20s), registro web/app y destinatario (20–45s), prueba y validación (45–65s), envío registrado y comprobante (65–85s), continuidad del cliente (85–90s).
+El diagnóstico tiene dos diapositivas propias y se apoya en el relato del usuario. No inventar cantidades de entrevistas, clientes consultados ni una duración exacta. Se habla de respuesta rápida, sin afirmar un récord cronometrado ni una implementación tributaria productiva.
 
-## Equipo
+La rúbrica del jurado se retiró de ambas presentaciones. Solo queda como referencia de preparación en `04 - Fuentes/RUBRICA_INTERNA.md`.
 
-Conservar identidad 5.5. En `config.js` de cada versión completar `team` con objetos `{name: 'Nombre', role: 'Rol'}`. No se inventaron integrantes.
+## Abrir y presentar
 
-## Economía: qué se puede defender
+- V 1 comercial: 14 diapositivas principales y 8 anexos.
+- V 2 con producto: 23 principales y 8 anexos. Añade 8 pantallas móviles y 1 de escritorio. Elegir video o ampliación de pantallas según el tiempo.
+- Mantener el equipo en `config.js` de cada versión. La identidad 5.5 permanece, sin inventar nombres.
+- Flechas para navegar. F para pantalla completa. S para notas. Anexos salta al respaldo.
+- Video: colocar `proceso.mp4` en `video/` de cada versión. La diapositiva reserva 90 segundos. V activa pantalla negra. El video final sigue pendiente.
+- Los PDF sirven como respaldo estático. Las capturas anteriores se mantienen en `03 - Capturas`.
 
-Ventas 6 a 3 con sueldo base S/1.700: S/5.100 por mes, S/61.200 por año de capacidad salarial potencial. Si las personas se reasignan, es capacidad liberada y no ahorro de caja. Si se reducen costos de forma efectiva, sí puede convertirse en ahorro, sujeto a transición y obligaciones aplicables.
-Contabilidad 3 a 1: sumar 2 × C mensuales, donde C es el sueldo contable real, aún no proporcionado.
-Tecnología incremental T: IA, WhatsApp, nube, correo, soporte. No se dispone de cotización real. El anexo ilustra C=1.700 y T=600: 5.100+3.400−600=7.900 al mes, 94.800 al año antes de transición y marketing adicional. No es una cifra empresarial observada.
-Recuperación: 64 cotizaciones/día × 10% × 30 días activos =192 transferencias adicionales, suponiendo una por chat recuperado y efecto incremental. Con margen de contribución M=15, son S/2.880 antes de costo incremental de recuperación. La remesa no es ingreso de Brasper. Los 30 días y M son supuestos.
-Conversión del escenario: (67+6,4)/131=56,03%, frente a 51,15%, +4,89 puntos porcentuales. Misma inversión: costo por chat convertido cae 1−67/73,4=8,72%. Esto no es CAC: falta identificar clientes nuevos y costo real de adquisición. No confundir una transferencia recurrente con un cliente nuevo.
-S/2.550 para marketing ilustra reinvertir 50% del potencial bruto de ventas. Aprobarlo desde ahorro neto real. No sumar como ahorro el valor equivalente de cobertura 24h. No sumar escenarios de retargeting y horario nocturno si recuperan a los mismos clientes.
-ROI: (beneficio incremental total−costos totales)/costos totales para el mismo período. Recuperación simple del costo inicial I: I/beneficio neto mensual positivo. No hay ROI numérico real sin I, costos y margen verificados.
+## Idea central para el jurado
 
-## Cómo leer las dos fuentes
+«Brasper ya mueve dinero. Nuestra propuesta conecta la conversación con la venta y con el próximo envío. El cliente empieza en WhatsApp, sigue en la web o en la app y retoma la misma operación. La atención 24/7 permite captar intención cuando el equipo no está conectado. El equipo conserva el control del dinero y puede dedicar más tiempo a crecer.»
 
-SQL: 3.723 registradas, 3.601 no eliminadas, 3.463 completadas no eliminadas. Septiembre completo: 1.355 registradas, 1.347 no eliminadas. Intervalo 21/07–14/10/2026 a las11:56Lima. Agosto1.371 y septiembre1.355: −1,2% en registros totales. Meses julio/octubre parciales.
-Tiempo SQL: promedio39h41, mediana23h29, p90 101h31, medido con updated_at−created_at. Puede incluir cambios posteriores. No prueba cuánto tardó el cliente ni cuánto costó el trabajo. No afirmar reducción porcentual a15min usando este proxy. La meta15min es propuesta operativa en casos completos con confirmación bancaria y pago disponibles. El relato2–3días hasta facturación es del equipo, no hallazgo de ese SQL.
-WhatsApp: 131chats,67terminanentransferencia,64quedanencotización, promedios declarados sin período ni exportación. Facebookalmenos20%=26,2chats diarios en promedio. No se conoce su conversión propia.
-No mezclar67chatsconvertidos/día con43,3registrosSQL/día. Son fuentes con definiciones y períodos distintos. Para conciliarlas: chatId,customerId,operationId,origen/campaña y fechas comunes.
-La imagen adjunta es una rúbrica del jurado, no un listado de objetivos funcionales web. Se cubren sus seis criterios en anexo.
+## Evidencia y big numbers
 
-## Alcance que conviene explicar en preguntas
+- 131 chats diarios, 67 que terminan en transferencia y 64 que quedan en cotización. Son promedios informados en el PDF de WhatsApp, sin período ni vinculación individual con SQL.
+- 3.723 registros SQL, 3.601 no eliminados y 3.463 completados no eliminados. Septiembre completo: 1.355 registros, incluidos eliminados. Corte 14/10/2026 a 11:56 Lima.
+- El speech final informa aproximadamente +60% en monto, +31% en clientes nuevos y +25% en envíos, segundo trimestre 2026 frente a 2025. Son contexto del negocio, no resultados de esta solución, y deben contrastarse con su exportación.
+- El mismo speech informa retención 90,5%a 87%: −3,5 puntos porcentuales. Falta confirmar definición y base. No atribuir el cambio a un canal sin evidencia.
+- Plantilla confirmada por el usuario después del brainstorm: 6 personas en ventas y 3 en contabilidad. El speech histórico menciona 4 y se conserva como documento de trabajo, no como fuente vigente de plantilla.
 
-El pitch vende la solución omnicanal objetivo. La web y su recorrido existen. WhatsApp IA/Flow se han trabajado en beta, con condiciones externas de Meta pendientes de validar para cada número. App Expo es el canal iOS/Android en consolidación, no prueba de disponibilidad en tiendas. Los canales deben compartir identidad e historial para poder llamarlos omnicanal desplegado.
-Las capturas usan el modo local aislado y datos sintéticos. Facturación y correo del recorrido son simulados. No acreditan emisión tributaria ni entrega de correo real. No se transfirió dinero. No se tocaron credenciales ni configuración fiscal.
-El cliente deposita y el equipo confirma ingreso, después registra envío. La IA no aprueba fondos por imagen. Conciliación bancaria, pago autónomo, CRM, retargeting y riesgo avanzado son siguientes fases.
-El sistema permite recibir solicitudes24/7. No prometer desembolsos24/7 hasta integrar banco/fintech, autorización, idempotencia y manejo de errores.
+## Economía: crecimiento antes que recorte
 
-## Datos que faltan para cerrar el caso de negocio
+Recuperación:64 cotizaciones/día ×10%×30 días=192 transferencias adicionales. Con margen de contribución supuestoS/15, generaS/2.880 mensuales antes de costos adicionales de recuperación.
 
-Sueldo contable real, costo laboral total, minutos activos por etapa, horario y demanda nocturna, margen por operación, costo de captación por origen, clientes nuevos deduplicados, costos de IA/Meta/nube/soporte y costo inicial de implantación. La dotación3+1 requiere prueba de carga y calidad, especialmente cuando crezca el volumen.
+24/7:10 intenciones NUEVAS/día fuera de horario ×20%deconversión ×30 días=60 operaciones adicionales. A margenS/15, generaS/900 mensuales antes del costo incremental de esa cobertura. No existe una medición actual de horario o demanda nocturna: es un escenario editable.
+
+Ambos:192+60=252 operaciones yS/3.780 decontribución mensual, oS/45.360 anual si se sostiene. Solo sumar si son operaciones diferentes y verdaderamente incrementales. No contar en la noche las mismas 64 cotizaciones que ya se recuperan. No sumar recurrencia como otro ingreso sin medir su cohorte.
+
+La contribución no es el monto de la remesa, ni es beneficio neto o ROI. Descontar IA, Meta/canal, captación incremental, soporte, infraestructura y transición que no estén ya incluidos en el margen.
+
+La calculadora compara recuperación con recuperación+24/7 y no incluye ahorro salarial por defecto. Ejemplo ilustrativo: tecnología baseS/600, costo adicional 24/7 S/150, sin nueva campaña ni recorte salarial. Neto recurrente base:S/2.280. Con 24/7:S/3.030. Diferencia:S/750 mensuales. No son costos aprobados ni resultados medidos.
+
+Con inversión inicial supuesta deS/5.000, el ROI del primer año del ejemplo es 183%enbase y 224%con 24/7. No usar esos porcentajes como ROI real de Brasper. Se muestran solo al introducir inversión en la calculadora. Si el canal nocturno cuesta más de lo que aporta, puede reducir el retorno.
+
+ROI del período=(beneficios incrementales−costos totales)/costos totales. En el primer año: beneficios de 12 meses frente a inversión inicial más costos de 12 meses. Recuperación simple= inversión inicial/neto mensual positivo. Comparar los mismos períodos.
+
+## Eficiencia como beneficio adicional
+
+Escenario comercial 6 a 3, sueldo base supuestoS/1.700: S/5.100 mes yS/61.200 año de capacidad salarial. Contabilidad 3 a 1: sumar 2×sueldo real contable, aún pendiente. Reasignar personal libera capacidad, pero no reduce automáticamente caja. Estos big numbers pasan a anexos para que el crecimiento sea el argumento principal.
+
+## CAC y atribución
+
+Facebook aporta al menos 20%dechats, no necesariamente 20%deventas. Al mismo gasto, pasar de 67 a 73,4 chats convertidos reduce 8,7%el costo por chat convertido. Eso no es CAC real. CAC requiere gasto de adquisición y clientes nuevos únicos con primera operación completada. Unificar campaña, intención, cliente y operación. La recurrencia se mide aparte por cohortes.
+
+## Tiempos en lenguaje común
+
+Mensaje visible: «Menos ‘¿cómo va?’. Más claridad. El cliente ve cada paso y el equipo sabe qué falta». La meta es 15 minen casos completos, sujeta a revisión y banca.
+
+El promedio 39 h 41 mide creación a última modificación. No es tiempo de espera confirmado del cliente ni duración de atención. Se retiró ese número del titular y el términoSLA. No afirmar una reducción porcentual contra 15 min. Guardar eventos de solicitud, ingreso, pago, comprobante y entrega para medir el recorrido real.
+
+## Información centralizada y papel de la IA
+
+La nueva diapositiva «La información junta vende mejor» une cuatro canales con un cliente contextualizado y una operación trazable. La centralización habilita acciones: pedir menos datos repetidos, responder con el estado correcto, pasar al humano un resumen, recuperar una intención pendiente y atribuir una venta a su origen. El crecimiento se prueba por conversión, recurrencia y margen. Centralizar por sí solo no lo garantiza.
+
+La IA orienta a partir de información autorizada y usa herramientas para consultar tasas o ejecutar pasos definidos. No inventa cifras, no confirma dinero a partir de una imagen y no autoriza desembolsos. Flow organiza datos. El CRM propuesto une intención, siguiente acción y resultado. La app/web/WhatsApp utilizan las mismas reglas en el diseño objetivo.
+
+## Omnicanalidad que se puede vender
+
+Una consulta puede empezar en WhatsApp, continuar con datos estructurados en Flow o web y consultarse desde la app. La propuesta conserva identidad, destinatario, intención, cotización y estado. El agente y el humano reciben contexto, evitando pedir todo otra vez. No son cuatro bases de clientes separadas.
+
+La web existe y se capturó. WhatsAppIA/Flow se ha trabajado en beta. La appExpo ofrece el canal iOS/Android y la integración completa está en consolidación. No afirmar publicación en tiendas ni continuidad de extremo a extremo desplegada hasta comprobarla. El Flow nativo no es un iframe.
+
+Captar solicitudes 24/7 no equivale a pagar 24/7. La confirmación del ingreso y el envío conservan revisión y responsabilidad. Banco/fintech conAPIyconciliación se mantiene como fase futura. Facturación y correo del recorrido capturado son simulados.
+
+## Mejoras propuestas, por orden de valor
+
+1. Ficha comercial compartida: última intención, duda, moneda, monto y paso pendiente. El humano retoma con resumen en español o portugués.
+2. Atribución de Facebook y otros orígenes: campaña, conversación, cotización y primera operación completada. Optimizar margen, no solo chats.
+3. Recuperación autorizada: recordatorio de cotización y mejora del monto neto. Frecuencia limitada, baja sencilla y grupo control.
+4. Recurrencia: cuentas guardadas, repetición de destinatario y recordatorios que el cliente acepte. Medir segunda operación a 30/60/90 días.
+5. Referidos después de una operación exitosa. Medir contribución después del incentivo y evitar atribuir compras orgánicas al referido.
+6. Operación preparada para escalar: bandeja de excepciones, liquidez por corredor y señales de duplicados. Integración bancaria y control avanzado después de validar la experiencia.
+
+## Video 90 segundos
+
+0–20:consulta enWhatsApp, dudas y cotización con herramientas.20–45:datos enFlow/web y destinatario.45–65:comprobante y revisión humana.65–85:estado, envío registrado y comprobante.85–90:cliente vuelve por el canal que prefiera. No simular como real un pago bancario externo.
+
+## Datos pendientes para cerrar el caso
+
+Horario real, demanda adicional fuera de horario, costo de adquisición, nuevos clientes deduplicados, margen por operación, sueldo contable, costos de canal/IA/nube/soporte, inversión inicial y horas activas por etapa. Validar los crecimientos del speech contra su fuente y la definición de retención.
 
 ## Guion por diapositiva
 
@@ -56,29 +98,41 @@ Sueldo contable real, costo laboral total, minutos activos por etapa, horario y 
 
 20 s. Presentar integrantes. Identidad del equipo 5.5 preservada. Brasper es la empresa beneficiaria. La nueva propuesta une automatización operativa y ventas omnicanal. Los nombres se completan en config.js.
 
+### diagnostico
+
+25 s. Como grupo de consultoría, usamos nuestra experiencia para ir más allá de la solicitud inicial. Contrastamos el problema percibido de facturación con los avances de TI y la operación. Según el equipo, existía una brecha de visibilidad entre el alcance técnico y lo que conocía la dirección. No culpamos a ninguna área. Hicimos visible lo que ya funcionaba y buscamos dónde una nueva intervención produciría más valor. No afirmar métricas de entrevistas o plazos que no fueron medidos.
+
+### hallazgo
+
+25 s. El equipo relata que resolvió con rapidez el frente inicial, pero el valor de la consultoría estuvo en no detenerse ahí. El análisis del proceso, las capacidades existentes, las métricas y la experiencia llevó a priorizar ventas. Respetamos el trabajo de TI y proponemos conectarlo con una experiencia comercial más fuerte. El apoyo a facturación mostrado en el prototipo no acredita una emisión fiscal productiva. No presentar la transacción actual como un proceso completamente manual.
+
 ### oportunidad
 
 25 s. Estos 64 chats sí llegaron a cotización. No llamarlos consultas sin cotizar ni dinero perdido. Son promedios declarados por el equipo, no exportación auditada. No se pueden reconciliar directamente con SQL.
 
 ### operacion
 
-25 s. 3723 incluye 122 eliminadas. No eliminadas 3601, completadas 3463. Septiembre 1355 total,1347 no eliminadas. No combinar el promedio de 67 chats convertidos con 43,3 registrosSQL por día. La carga manual proviene del proceso aportado.
+20 s. El brainstorm final cambia el foco: la transacción ya estaba prácticamente automatizada. La solución complementa lo que funciona con atención comercial, experiencia y coordinación. Los porcentajes del segundo trimestre proceden del speech adjunto, no del informe SQL ni del piloto de nuestra solución. No atribuirnos ese crecimiento.
+
+### retencion
+
+20 s. Brasper crece en captación y envíos, mientras la retención reportada pasa de 90,5%a 87%, una caída de 3,5 puntos porcentuales. No es una caída relativa de 3,5%. No atribuirla a WhatsApp sin evidencia. Nuestra propuesta incorpora seguimiento, destinatarios guardados y retorno sencillo. Medir recurrencia por cohortes de clientes únicos.
 
 ### omni
 
-25 s. Presentamos cuatro canales dentro de una sola operación. Omnicanal significa compartir identidad, intención e historial, y no sumar varias veces al mismo cliente. iOS y Android corresponden al canal de la app Expo en consolidación. No afirmamos publicación en tiendas ni sincronización integral desplegada. Firebase almacenará operaciones y Supabase conservará servicios seleccionados. La integración está preparada en el PR 6, aún pendiente de merge y activación.
+La omnicanalidad es la promesa comercial central. El cliente empieza una consulta en WhatsApp, completa datos desde Flow o la web, consulta el estado y vuelve desde la app sin repetir toda la información. Una identidad y una operación conectan el recorrido. Los cuatro canales comparten reglas y estados en el diseño objetivo, no cuatro silos. La web existe, WhatsApp está en pruebas y la app Expo e integración integral se consolidan. No afirmar disponibilidad en tiendas ni continuidad desplegada en todos los canales antes de comprobarla.
+
+### datos
+
+25 s. Centralizar no es acumular chats. Es unir identidad, origen de campaña, intención de cambio, cotización, destinatario, paso pendiente y resultado. Con esa base, la IA puede orientar sin repetir preguntas, el humano recibe un resumen y el negocio puede priorizar seguimiento y gasto. El crecimiento llega si esas acciones mejoran conversión y recurrencia. Medirlo por cohortes, sin duplicar personas entre canales. No afirmar que centralizar por sí solo garantiza más ventas.
 
 ### ia
 
-30 s. La IA responde preguntas y entiende la intención. Las herramientas aplican esquemas y reglas para calcular y operar. El modelo no inventa tasas, no confirma fondos por una imagen y no autoriza pagos. Flow recoge los datos dentro de WhatsApp mediante componentes nativos, no un iframe. El bot se ha probado en beta. El funcionamiento del Flow debe comprobarse para el número real y su configuración de Meta. Retargeting y CRM son siguientes fases.
+30 s. La IA entra donde hay conversaciones repetidas, dudas e intención comercial. Con información autorizada y el estado del cliente puede orientar mejor y pedir solo lo que falta. Las cotizaciones y las instrucciones proceden de herramientas del sistema, no de cifras generadas. Flow recoge datos estructurados. El humano decide cuando hay excepciones y conserva la autorización sobre fondos. Con la información centralizada se habilitan CRM, recuperación autorizada y medición de retorno. Distinguir el bot probado de esas ampliaciones futuras.
 
-### capacidad
+### continuidad
 
-25 s. No prometer despidos automáticos ni que toda contabilidad desaparezca. Se automatiza emisión y seguimiento, permanecen revisión, conciliación y cierre. La meta 15 min aplica a casos completos con ingreso confirmado y disponibilidad bancaria. La demora narrada 2–3 días no se valida con updated_at.
-
-### ahorro
-
-30 s. Base comercial 1700 por usuario. 6 a 3 libera 3 puestos,5100 mes,61200 año. No sumar contabilidad con sueldo inventado. Ahorro de caja requiere reducción efectiva de costo. Reasignar equipo libera capacidad, no garantiza ahorro salarial.
+25 s. Una persona puede consultar por WhatsApp, completar datos en Flow o web y volver a su operación sin repetir toda la conversación. El CRM conservaría la intención y el siguiente paso. Con autorización, retomar cotizaciones abandonadas, avisar mejoras del monto neto y facilitar recurrencia. Separar clientes nuevos de recurrentes. Son capacidades propuestas, no todas están conectadas en producción.
 
 ### crecimiento
 
@@ -86,15 +140,19 @@ Sueldo contable real, costo laboral total, minutos activos por etapa, horario y 
 
 ### marketing
 
-25 s. Si el gasto y la cohorte son comparables, pasar de 67 a 73,4 chats convertidos reduce su costo unitario 8,72%. Eso no es CAC real. El CAC requiere costo total de adquisición y clientes nuevos únicos con primera operación completada. Facebook aporta al menos 20% de chats, pero no conocemos su propia conversión. S/2.550 representa reinvertir 50% del potencial bruto de ventas, siempre sujeto al ahorro neto disponible.
+25 s. No afirmar CAC real sin gasto y clientes nuevos deduplicados. El costo por chat convertido baja 8,72%si 67 pasan a 73,4 con el mismo gasto. La conversión nocturna puede aportar más, pero debe medirse en otra cohorte. El CRM vincula fuente, intención, primera compra y repetición. No sumar el porcentaje al beneficio monetario como un retorno adicional.
 
 ### 24h
 
-20 s. No se ha proporcionado horario real ni porcentaje nocturno, no monetizarlo como dato observado. Valorar mediante leads fuera de horario×conversión incremental×margen. Banco/fintechAPI, conciliación y pago autorizado 24 h son futuro. No usar supuesto 40 horassemanales como horario real.
+30 s. La mejora económica puede superar el ahorro de personal si se convierten solicitudes que antes no avanzaban. No se conoce el horario real ni la demanda nocturna. Este ejemplo supone 10 intenciones nuevas por día,20%deconversión,30 días activos y margenS/15. Genera 60 operaciones yS/900 decontribución antes de costos incrementales. No contar aquí cotizaciones recuperadas del grupo de 64. Recepción 24/7 no implica liquidación bancaria 24/7.
+
+### valor
+
+30 s. El ejemplo combina 192 operaciones recuperadas y 60 nuevas fuera de horario, siempre que no se solapen.252 porS/15=S/3.780 mes, oS/45.360 año si se mantiene. Esta contribución no es ROI ni beneficio neto. Restar tecnología, adquisición, canales y transición. El piloto valida qué parte es verdaderamente incremental. La reducción de carga se modela aparte para que la rentabilidad no dependa de recortar personal.
 
 ### video
 
-90 s reservados al video. Escena 1:agenteWhatsApp entiende y cotiza 0–20. Escena 2:web oapp retoma, datos y cuenta 20–45. Escena 3:comprobante y validación 45–65. Escena 4:envío registrado, comprobante y seguimiento 65–85. Cierreomnicanal 85–90. Usar grabación existente y no simular envío bancario real. PulsaV para pantalla totalmente negra. Si colocas video/proceso.mp 4 se reproduce aquí.
+90 s reservados al video. Escena 1:agenteWhatsApp entiende y cotiza 0–20. Escena 2:web oapp retoma, datos y cuenta 20–45. Escena 3:comprobante y validación 45–65. Escena 4:envío registrado, comprobante y seguimiento 65–85. Cierreomnicanal 85–90. Usar grabación existente y no simular envío bancario real. PulsaV para pantalla totalmente negra. Si colocas video/proceso.mp4 se reproduce aquí.
 
 ### piloto
 
@@ -102,11 +160,11 @@ Sueldo contable real, costo laboral total, minutos activos por etapa, horario y 
 
 ### cierre
 
-15 s. Cierre comercial. Pedir piloto y datos de costos reales. Beneficio potencial sujeto a capacidad, ejecución y costos. No vender ahorro garantizado. Mostrar equipo y pasar a preguntas.
+20 s. Cerramos con la experiencia completa: atraer al cliente, ayudarlo a avanzar y darle una razón para volver. La rentabilidad se apoya en conversión y recurrencia, además de eficiencia operativa. Proponemos un piloto medido sobre la base que ya funciona.
 
 ### modelo
 
-El sueldo contable y el costo tecnológico reales están pendientes. El ejemplo usaC=S/1.700 yT=S/600. Así,5.100+3.400−600=S/7.900 por mes, oS/94.800 al año. No es un resultado observado. Si el personal se reasigna, se libera capacidad y no necesariamente caja. Restar transición y marketing adicional. No sumar el valor equivalente de cobertura ni duplicar el costo de recuperación. El retorno requiere una inversión inicial verificada.
+ROI por período: (beneficios incrementales menos todos los costos de implantación y operación)/todos esos costos. No hay ROI real calculable sin inversión, costos y margen confirmados. Comparar en el mismo plazo. La diferencia del canal 24/7 puede aumentar el retorno si su contribución supera su costo incremental y no sustituye ventas que igual iban a ocurrir.
 
 ### sensibilidad
 
@@ -114,16 +172,24 @@ Cada escenario multiplica 64 cotizaciones por la recuperación y los días activ
 
 ### tiempos
 
-El indicador SQL mide última actualización menos creación. Una modificación posterior puede alargarlo. La mediana de septiembre 64 h 01 y la de agosto 6 min pueden reflejar diferencias de registro. No concluyen por sí solas que cambió la demora operativa. No calcular una reducción porcentual contra la meta 15 min. Registrar los primeros eventos de confirmación, pago y comprobante para construir una línea base comparable.
+En términos técnicos, el informe presenta 39 h 41 promedio,23 h 29 mediana yp 90 de 101 h 31 sobre 3.463 completadas noeliminadas. updated_at puede cambiar después del cierre. Esos datos no prueban una espera del cliente. Evitar el términoSLAanteeljurado generalista. No comparar 39 h 41 contra 15 minparaasegurar una reducción. La meta de 15 min requiere datos completos, revisión y disponibilidad bancaria.
 
 ### futuro
 
-El crecimiento necesita una operación preparada para riesgo y excepciones. OCR y duplicados ayudan a priorizar revisión, pero una foto no confirma fondos. CRM, conciliación bancaria y pago mediante API son un roadmap. Brasil puede integrarse con Omie o un proveedor fiscal autorizado según sus requisitos. La facturación del recorrido mostrado permanece simulada.
+Orden propuesto: primero unificar la ficha y el estado, después medir conversión por origen y franja, luego probar recuperación autorizada con grupo de control. Añadir cuentas guardadas, resumen bilingüe para el humano, alertas por monto neto y recordatorios de recurrencia. Medir utilidad después del canal. Referidos se activan tras operación exitosa, sin prometer crecimiento gratuito. Banco y antifraude avanzado son otra fase.
 
-### rubrica
+### capacidad
 
-La imagen es una rúbrica de evaluación del pitch, no objetivos funcionales de una web. Se usa para asegurar cobertura.
+El usuario confirma seis personas en ventas y tres en contabilidad. El escenario es pasar a tres comerciales y un contable. La automatización libera tiempo de registro y emisión. Las personas pueden reasignarse para acompañar crecimiento. Eso no equivale automáticamente a ahorro en caja. La meta de quince minutos se valida en casos completos con revisión y disponibilidad bancaria.
+
+### ahorro
+
+Base confirmada por el usuario: seis personas en ventas y tres contables. Con tres puestos menos de ventas aS/1.700, el potencial esS/5.100mes yS/61.200año. El sueldo se mantiene como supuesto del modelo. El ahorro de caja requiere reducir costos efectivos. El argumento principal de rentabilidad combina mejor conversión, nueva demanda fuera de horario y recurrencia. El ahorro es un plus.
+
+### volumen
+
+El volumenSQLes evidencia observada del negocio. No demuestra por sí solo que el proceso sea manual, ni se puede conciliar con 67 chats diarios convertidos sin período e identificadores comunes. Septiembre 1355 incluyefilaseliminadas;1347 sineliminar.
 
 ### fuentes
 
-Los informes adjuntos viajan con la presentación. El SQL contiene conteos observados. WhatsApp tiene promedios informados sin período común. Los sueldos, dotación y metas se distinguen de resultados. No afirmar publicación de apps en tiendas, aprobación general de Meta ni validación tributaria. Los nombres del equipo siguen editables.
+La plantilla confirmada por el usuario es seis personas en ventas y tres en contabilidad. Los informes SQL y de chats describen fuentes distintas. El speech final informa crecimiento y retención que se deben contrastar. No atribuirnos ese crecimiento histórico. Los escenarios de recuperación, demanda fuera de horario y margen no son resultados medidos.
