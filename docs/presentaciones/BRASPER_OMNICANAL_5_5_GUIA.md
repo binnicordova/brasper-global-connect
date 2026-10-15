@@ -57,7 +57,7 @@ ROI del período=(beneficios incrementales−costos totales)/costos totales. En 
 
 ## Eficiencia como beneficio adicional
 
-Escenario comercial 6 a 3, sueldo base supuestoS/1.700: S/5.100 mes yS/61.200 año de capacidad salarial. Contabilidad 3 a 1: sumar 2×sueldo real contable, aún pendiente. Reasignar personal libera capacidad, pero no reduce automáticamente caja. Estos big numbers pasan a anexos para que el crecimiento sea el argumento principal.
+Escenario: ventas de 6 a 3 y contabilidad de 3 a 1. Se liberan cinco puestos: 3 comerciales a S/1.700 estimados = S/5.100/mes y 2 contables a S/2.000 estimados = S/4.000/mes. Total: S/9.100 mensuales y S/109.200 anuales de potencial salarial bruto. Reasignar personal libera capacidad, pero no reduce caja automáticamente. Sueldos por validar, antes de cargas, tecnología y transición.
 
 ## CAC y atribución
 
@@ -117,6 +117,11 @@ Cada anexo muestra su letra y, al costado, la sección del pitch que respalda. E
 |I|IMPACTO / EFICIENCIA OPERATIVA|Escenario salarial condicionado|Costo efectivo evitado; distinguirlo de capacidad reasignada.|
 |J|PROBLEMA / CONTEXTO DEL NEGOCIO|Volumen observado del negocio|Operaciones por período, estado y eliminación según la definición SQL.|
 |K|RESPALDO / DATOS DEL PITCH|Fuentes, supuestos y alcance|Trazabilidad de cada cifra y distinción entre dato, meta e hipótesis.|
+
+
+## Escenario salarial actualizado
+
+Se consideran 5 puestos: 3 en ventas a S/1.700 y 2 en contabilidad a S/2.000 mensuales. Ventas aporta S/5.100 y contabilidad S/4.000: S/9.100 por mes, S/109.200 por año. Son sueldos estimados, no una referencia de mercado ni nómina verificada. Excluye cargas, tecnología y transición. La calculadora mantiene el ahorro salarial desactivado por defecto para separar el retorno por crecimiento.
 
 ## Guion por diapositiva
 
@@ -210,7 +215,7 @@ El usuario confirma seis personas en ventas y tres en contabilidad. El escenario
 
 ### ahorro
 
-Base confirmada por el usuario: seis personas en ventas y tres contables. Con tres puestos menos de ventas aS/1.700, el potencial esS/5.100mes yS/61.200año. El sueldo se mantiene como supuesto del modelo. El ahorro de caja requiere reducir costos efectivos. El argumento principal de rentabilidad combina mejor conversión, nueva demanda fuera de horario y recurrencia. El ahorro es un plus.
+Anexo I. Base confirmada: seis personas en ventas y tres en contabilidad. Escenario objetivo: tres comerciales y un contable. Se liberan tres puestos de ventas y dos contables: cinco en total. Se usan sueldos estimados deS/1.700ventas yS/2.000contabilidad, no una encuesta de mercado ni nómina validada. Ventas:3×1.700=5.100mensuales. Contabilidad:2×2.000=4.000. Total:S/9.100mes yS/109.200año. No incluye cargas, tecnología, transición ni costos de reorganización. Ahorro en caja solo si el costo efectivo se reduce; reasignación significa capacidad liberada.
 
 ### volumen
 
