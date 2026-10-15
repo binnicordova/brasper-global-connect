@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import type { ComponentType, ReactNode } from "react";
@@ -48,15 +49,19 @@ beforeEach(() => {
   window.history.replaceState(null, "", "/login");
 });
 afterEach(cleanup);
-it("offers public login without revealing an operations dashboard, even in presentation tools", () => {
+it("keeps the landing on the self-service flow, with no login or dashboard entry points", () => {
   window.history.replaceState(null, "", "/?demo=1");
   render(
-    <>
+    <QueryClientProvider client={new QueryClient()}>
       <DemoNotice />
       <Index />
-    </>,
+    </QueryClientProvider>,
   );
-  expect(screen.getByRole("link", { name: "Iniciar sesión" })).toHaveAttribute("href", "/login");
+  expect(screen.getByRole("link", { name: /Iniciar mi transferencia/ })).toHaveAttribute(
+    "href",
+    "/transferencias",
+  );
+  expect(document.querySelector('a[href*="login"]')).toBeNull();
   expect(document.querySelector('a[href*="dashboard"]')).toBeNull();
 });
 it("takes a password login to customer transfers instead of the staff dashboard", async () => {

@@ -15,3 +15,7 @@
 - [ ] Aprobar política de privacidad y procedimientos de devoluciones/retención.
 - [x] WhatsApp Flow nativo (draft): redesplegar whatsapp-flow y whatsapp-webhook, WHATSAPP_FLOW_MODE=native; «Empezar cambio» envía flow, «abrir web» el enlace.
 - [ ] Probar el Flow desde el teléfono autorizado (requiere cuenta Meta Business habilitada).
+- [x] Portal de cliente sobre las Cloud Functions de BRASPER (cotizar, ordenar, pagar, comprobante, seguimiento); sin Supabase en el navegador.
+- [ ] Retirar `/login`, `/dashboard` y los componentes del portal anterior en Supabase (siguen en el repo, sin enlaces).
+- [ ] Permitir recuperar operaciones desde otro dispositivo (hoy el acceso anónimo vive en el navegador).
+- [ ] Confirmar con negocio/contabilidad tasas, comisión e impuesto (valores de ejemplo del backend) y cuentas de pago reales (hoy `demo`).

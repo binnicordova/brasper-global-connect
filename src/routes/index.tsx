@@ -22,6 +22,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { currencies, convertCurrency, type Currency } from "@/lib/currency";
+import { useRates } from "@/hooks/use-brasper-data";
+import { estimateQuote } from "@/lib/pricing";
 import heroImage from "@/assets/brasper-hero.jpg";
 
 export const Route = createFileRoute("/")({
@@ -57,7 +59,7 @@ const features = [
   {
     icon: Send,
     title: "Sigue tu envío",
-    text: "Consulta tu solicitud, la revisión del pago y la constancia de envío desde tu cuenta.",
+    text: "Consulta tu solicitud, la revisión del pago y tu comprobante desde este navegador.",
   },
   {
     icon: ShieldCheck,
@@ -87,7 +89,19 @@ function Index() {
   const [draft, setDraft] = useState("");
   const [copied, setCopied] = useState(false);
   const [privacy, setPrivacy] = useState(false);
-  const received = convertCurrency(Number(amount), from, to);
+  const rates = useRates();
+  const value = Number(amount);
+  // Live market estimate when the backend answers; the static illustrative rate otherwise.
+  const live =
+    rates.data && value > 0
+      ? estimateQuote(rates.data.market, rates.data.pricing, {
+          sendCurrency: from,
+          receiveCurrency: to,
+          sendAmount: value,
+        })
+      : null;
+  const received = live ? live.receiveAmount : convertCurrency(value, from, to);
+  const unitRate = live ? live.rate : convertCurrency(1, from, to);
   const openContact = (
     message = "Hola, Brasper. Me gustaría recibir información sobre sus transferencias internacionales.",
   ) => {
@@ -130,9 +144,6 @@ function Index() {
             </a>
           </nav>
           <div className="header-actions">
-            <Button variant="outline" className="header-login" asChild>
-              <Link to="/login">Iniciar sesión</Link>
-            </Button>
             <span className="language">
               <Globe2 size={14} /> ES
             </span>
@@ -259,14 +270,18 @@ function Index() {
               </div>
               <div className="rate-details">
                 <div>
-                  <span>Tasa de referencia</span>
+                  <span>{live ? "Tasa Brasper estimada" : "Tasa de referencia"}</span>
                   <strong className="rate-value">
-                    1 {from} = {convertCurrency(1, from, to).toFixed(4)} {to}
+                    1 {from} = {unitRate.toFixed(4)} {to}
                   </strong>
                 </div>
                 <div>
                   <span>Comisión de envío</span>
-                  <strong>A confirmar al cotizar</strong>
+                  <strong>
+                    {live
+                      ? `≈ ${money(live.commission + live.tax)} ${from} (con impuesto)`
+                      : "A confirmar al cotizar"}
+                  </strong>
                 </div>
                 <div>
                   <span>Atención personalizada</span>
@@ -284,8 +299,9 @@ function Index() {
                 Prefiero atención por WhatsApp <MessageCircle size={14} />
               </button>
               <p className="estimate-note">
-                Cálculo ilustrativo, no es una cotización. La tasa y el tiempo de entrega se
-                confirman antes de enviar.
+                {live
+                  ? "Estimado con la tasa de mercado de referencia, no es una cotización. Al continuar fijamos tu tasa, comisión y total por unos minutos."
+                  : "Cálculo ilustrativo, no es una cotización. La tasa y el tiempo de entrega se confirman antes de enviar."}
               </p>
               <div className="safe-note">
                 <LockKeyhole size={12} /> Tu seguridad está en cada paso.
@@ -333,8 +349,8 @@ function Index() {
               <span className="section-kicker">Cada paso, a tu alcance</span>
               <h2>Tu envío tiene una historia. Puedes seguirla.</h2>
               <p>
-                Tu cuenta reúne la cotización, la prueba de pago, el estado del envío y tu
-                comprobante cuando esté disponible.
+                Desde este navegador ves la cotización, el estado de tu pago y tu comprobante cuando
+                esté disponible.
               </p>
               <Button variant="brand" asChild>
                 <Link to="/transferencias">
@@ -368,7 +384,7 @@ function Index() {
                 <span>04</span>
                 <div>
                   <strong>Comprobante disponible</strong>
-                  <p>Recíbelo por correo y descárgalo desde tu cuenta.</p>
+                  <p>Descárgalo desde esta misma página.</p>
                 </div>
               </li>
             </ol>
@@ -384,7 +400,7 @@ function Index() {
               [
                 "01",
                 "Cotiza y registra",
-                "Entra a tu cuenta, elige una cotización vigente y registra los datos de tu destinatario.",
+                "Ingresa el monto, obtén una cotización con la tasa fijada unos minutos y registra los datos de tu destinatario. No necesitas crear una cuenta.",
               ],
               [
                 "02",
@@ -394,7 +410,7 @@ function Index() {
               [
                 "03",
                 "Sigue tu envío",
-                "Consulta el avance desde tu cuenta y recibe el comprobante después del envío y la emisión.",
+                "Consulta el avance desde este navegador y descarga tu comprobante cuando esté listo.",
               ],
             ].map(([n, title, text]) => (
               <article key={n}>
@@ -416,7 +432,7 @@ function Index() {
           {[
             [
               "¿La calculadora muestra la tasa de mi operación?",
-              "La calculadora de esta página es ilustrativa. En tu cuenta verás las cotizaciones habilitadas con su tasa, comisión y vencimiento antes de registrar la operación.",
+              "La calculadora de esta página es un estimado con la tasa de mercado. Al continuar, Brasper genera tu cotización con su tasa, comisión y vencimiento antes de registrar la operación.",
             ],
             [
               "¿Subir mi prueba confirma que ya pagué?",
@@ -424,11 +440,11 @@ function Index() {
             ],
             [
               "¿Qué archivo puedo adjuntar?",
-              "Una imagen JPG o PNG, o un PDF de hasta 5 MB. Tus archivos se guardan de forma privada y se consultan desde tu operación.",
+              "Una imagen (JPG, PNG…) o un PDF de hasta 8 MB. Tus archivos se guardan de forma privada y solo los ven tú y el equipo que revisa tu pago.",
             ],
             [
               "¿Cuándo recibo mi comprobante?",
-              "Después de registrar el envío y completar la emisión fiscal. Podrás descargarlo desde tu cuenta y recibirlo por correo cuando el servicio esté habilitado.",
+              "Después de confirmar el pago, enviar el dinero y emitir el comprobante. Podrás descargarlo desde esta misma página. Por ahora los comprobantes son de prueba y no tienen validez tributaria.",
             ],
           ].map(([question, answer]) => (
             <details key={question}>
