@@ -31,6 +31,14 @@ La rúbrica del jurado se retiró de ambas presentaciones. Solo queda como refer
 - El mismo speech informa retención 90,5%a 87%: −3,5 puntos porcentuales. Falta confirmar definición y base. No atribuir el cambio a un canal sin evidencia.
 - Plantilla confirmada por el usuario después del brainstorm: 6 personas en ventas y 3 en contabilidad. El speech histórico menciona 4 y se conserva como documento de trabajo, no como fuente vigente de plantilla.
 
+## Recuperación: alcance y ubicación en el pitch
+
+No existe todavía un circuito implementado de recuperación de cotizaciones. El48,9%es una proporción que no termina en transferencia según el promedio informado, no una proporción demostrada como recuperable. Los motivos no están medidos.
+
+La secuencia es: diagnóstico, contexto de crecimiento y retención, dato de las64cotizaciones, solución omnicanal, información compartida, IA y propuesta de siguiente fase. Esa propuesta es un MVP: retomar el cambio, bandeja comercial y seguimiento asistido por IA con revisión del asesor. La automatización de mensajes y alertas por mejor cotización vendrá después.
+
+Las diapositivas+192,S/3.780y−8,7%pasan a los primeros anexos, identificadas como hipótesis para un piloto. No se presentan como resultados ni como capacidades entregadas. La recepción24/7y su escenario separado permanecen en el argumento comercial.
+
 ## Economía: crecimiento antes que recorte
 
 Recuperación:64 cotizaciones/día ×10%×30 días=192 transferencias adicionales. Con margen de contribución supuestoS/15, generaS/2.880 mensuales antes de costos adicionales de recuperación.
@@ -100,15 +108,11 @@ Horario real, demanda adicional fuera de horario, costo de adquisición, nuevos 
 
 ### diagnostico
 
-25 s. Como equipo de consultoría, contrastamos el problema percibido de facturación con los planes y avances de TI. Esa área ya tenía una solución encaminada y su implementación prevista, aunque todavía no estaba completada. El diagnóstico permitió entender ese trabajo en curso y buscar una oportunidad adicional de mayor alcance en ventas y experiencia. No presentar facturación como una necesidad ya resuelta antes del proyecto.
+25 s. Como equipo de consultoría, contrastamos el problema percibido de facturación con los planes y avances de TI. Esa área ya tenía una solución encaminada y su implementación prevista, aunque todavía no estaba completada. El diagnóstico permitió entender ese trabajo en curso y buscar una oportunidad adicional de mayor alcance en ventas y experiencia. No presentar facturación como una necesidad ya resuelta antes del proyecto ni afirmar una brecha con la dirección como hecho de esta diapositiva.
 
 ### hallazgo
 
 25 s. El equipo relata que resolvió con rapidez el frente inicial, pero el valor de la consultoría estuvo en no detenerse ahí. El análisis del proceso, las capacidades existentes, las métricas y la experiencia llevó a priorizar ventas. Respetamos el trabajo de TI y proponemos conectarlo con una experiencia comercial más fuerte. El apoyo a facturación mostrado en el prototipo no acredita una emisión fiscal productiva. No presentar la transacción actual como un proceso completamente manual.
-
-### oportunidad
-
-25 s. Estos 64 chats sí llegaron a cotización. No llamarlos consultas sin cotizar ni dinero perdido. Son promedios declarados por el equipo, no exportación auditada. No se pueden reconciliar directamente con SQL.
 
 ### operacion
 
@@ -117,6 +121,10 @@ Horario real, demanda adicional fuera de horario, costo de adquisición, nuevos 
 ### retencion
 
 20 s. Brasper crece en captación y envíos, mientras la retención reportada pasa de 90,5%a 87%, una caída de 3,5 puntos porcentuales. No es una caída relativa de 3,5%. No atribuirla a WhatsApp sin evidencia. Nuestra propuesta incorpora seguimiento, destinatarios guardados y retorno sencillo. Medir recurrencia por cohortes de clientes únicos.
+
+### oportunidad
+
+Dato informado: de131chats diarios,67terminan en transferencia y64quedan en cotización. No sabemos por qué no avanzan ni qué parte puede recuperarse. No equivalen a64ventas perdidas o recuperables. Primero registrar motivo y último paso, después probar acompañamiento. La recuperación aún no está implementada. Los porcentajes y proyecciones de recuperación aparecen solo como hipótesis del piloto en anexos.
 
 ### omni
 
@@ -132,23 +140,11 @@ La omnicanalidad es la promesa comercial central. El cliente empieza una consult
 
 ### continuidad
 
-25 s. Una persona puede consultar por WhatsApp, completar datos en Flow o web y volver a su operación sin repetir toda la conversación. El CRM conservaría la intención y el siguiente paso. Con autorización, retomar cotizaciones abandonadas, avisar mejoras del monto neto y facilitar recurrencia. Separar clientes nuevos de recurrentes. Son capacidades propuestas, no todas están conectadas en producción.
-
-### crecimiento
-
-30 s. Recuperar el 10% de 64 cotizaciones equivale a 6,4 chats diarios, o 192 en 30 días activos. Suponemos una transferencia adicional por cada chat recuperado. Con margen de contribución deS/15, seríanS/2.880 antes del costo incremental de recuperación. El monto de la remesa no es ingreso de Brasper. La conversión pasaría de 51,15% a 56,03%, una diferencia de 4,89 puntos. Validar el incremento atribuible con un grupo de control.
-
-### marketing
-
-25 s. No afirmar CAC real sin gasto y clientes nuevos deduplicados. El costo por chat convertido baja 8,72%si 67 pasan a 73,4 con el mismo gasto. La conversión nocturna puede aportar más, pero debe medirse en otra cohorte. El CRM vincula fuente, intención, primera compra y repetición. No sumar el porcentaje al beneficio monetario como un retorno adicional.
+Esta es una propuesta de siguiente fase, no una función entregada. El MVP guardaría la intención, datos mínimos y paso pendiente, con cotización recalculada si vence. Una bandeja permitiría al asesor registrar motivos y hacer seguimiento. La IA resumiría y sugeriría el mensaje; el humano lo revisaría. Registrar autorización, evitar contactos repetidos y detener el seguimiento al completar, responder o solicitar baja. Solo después evaluar automatización y alertas por mejor monto neto. Medir operaciones incrementales frente a un grupo comparable.
 
 ### 24h
 
 30 s. La mejora económica puede superar el ahorro de personal si se convierten solicitudes que antes no avanzaban. No se conoce el horario real ni la demanda nocturna. Este ejemplo supone 10 intenciones nuevas por día,20%deconversión,30 días activos y margenS/15. Genera 60 operaciones yS/900 decontribución antes de costos incrementales. No contar aquí cotizaciones recuperadas del grupo de 64. Recepción 24/7 no implica liquidación bancaria 24/7.
-
-### valor
-
-30 s. El ejemplo combina 192 operaciones recuperadas y 60 nuevas fuera de horario, siempre que no se solapen.252 porS/15=S/3.780 mes, oS/45.360 año si se mantiene. Esta contribución no es ROI ni beneficio neto. Restar tecnología, adquisición, canales y transición. El piloto valida qué parte es verdaderamente incremental. La reducción de carga se modela aparte para que la rentabilidad no dependa de recortar personal.
 
 ### video
 
@@ -161,6 +157,18 @@ La omnicanalidad es la promesa comercial central. El cliente empieza una consult
 ### cierre
 
 20 s. Cerramos con la experiencia completa: atraer al cliente, ayudarlo a avanzar y darle una razón para volver. La rentabilidad se apoya en conversión y recurrencia, además de eficiencia operativa. Proponemos un piloto medido sobre la base que ya funciona.
+
+### crecimiento
+
+Recuperación aún no implementada. Hipótesis para evaluar después de construir y probar el seguimiento. 30 s. Recuperar el 10% de 64 cotizaciones equivale a 6,4 chats diarios, o 192 en 30 días activos. Suponemos una transferencia adicional por cada chat recuperado. Con margen de contribución deS/15, seríanS/2.880 antes del costo incremental de recuperación. El monto de la remesa no es ingreso de Brasper. La conversión pasaría de 51,15% a 56,03%, una diferencia de 4,89 puntos. Validar el incremento atribuible con un grupo de control.
+
+### marketing
+
+Recuperación aún no implementada. Hipótesis para evaluar después de construir y probar el seguimiento. 25 s. No afirmar CAC real sin gasto y clientes nuevos deduplicados. El costo por chat convertido baja 8,72%si 67 pasan a 73,4 con el mismo gasto. La conversión nocturna puede aportar más, pero debe medirse en otra cohorte. El CRM vincula fuente, intención, primera compra y repetición. No sumar el porcentaje al beneficio monetario como un retorno adicional.
+
+### valor
+
+Recuperación aún no implementada. Hipótesis para evaluar después de construir y probar el seguimiento. 30 s. El ejemplo combina 192 operaciones recuperadas y 60 nuevas fuera de horario, siempre que no se solapen.252 porS/15=S/3.780 mes, oS/45.360 año si se mantiene. Esta contribución no es ROI ni beneficio neto. Restar tecnología, adquisición, canales y transición. El piloto valida qué parte es verdaderamente incremental. La reducción de carga se modela aparte para que la rentabilidad no dependa de recortar personal.
 
 ### modelo
 
