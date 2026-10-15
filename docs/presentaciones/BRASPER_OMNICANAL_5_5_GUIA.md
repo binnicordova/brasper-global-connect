@@ -73,13 +73,13 @@ El promedio 39 h 41 mide creación a última modificación. No es tiempo de espe
 
 La nueva diapositiva «La información junta vende mejor» une cuatro canales con un cliente contextualizado y una operación trazable. La centralización habilita acciones: pedir menos datos repetidos, responder con el estado correcto, pasar al humano un resumen, recuperar una intención pendiente y atribuir una venta a su origen. El crecimiento se prueba por conversión, recurrencia y margen. Centralizar por sí solo no lo garantiza.
 
-La IA orienta a partir de información autorizada y usa herramientas para consultar tasas o ejecutar pasos definidos. No inventa cifras, no confirma dinero a partir de una imagen y no autoriza desembolsos. Flow organiza datos. El CRM propuesto une intención, siguiente acción y resultado. La app/web/WhatsApp utilizan las mismas reglas en el diseño objetivo.
+La IA orienta a partir de información autorizada y usa herramientas para consultar tasas o ejecutar pasos definidos. No inventa cifras, no confirma dinero a partir de una imagen y no autoriza desembolsos. El formulario web organiza los datos. Flow nativo es un deseable pendiente de habilitación en Meta. El CRM propuesto une intención, siguiente acción y resultado. La app/web/WhatsApp utilizan las mismas reglas en el diseño objetivo.
 
 ## Omnicanalidad que se puede vender
 
-Una consulta puede empezar en WhatsApp, continuar con datos estructurados en Flow o web y consultarse desde la app. La propuesta conserva identidad, destinatario, intención, cotización y estado. El agente y el humano reciben contexto, evitando pedir todo otra vez. No son cuatro bases de clientes separadas.
+Una consulta puede empezar en WhatsApp, continuar al formulario web para completar los datos y consultarse desde la app. La propuesta conserva identidad, destinatario, intención, cotización y estado. El agente y el humano reciben contexto, evitando pedir todo otra vez. No son cuatro bases de clientes separadas.
 
-La web existe y se capturó. WhatsAppIA/Flow se ha trabajado en beta. La appExpo ofrece el canal iOS/Android y la integración completa está en consolidación. No afirmar publicación en tiendas ni continuidad de extremo a extremo desplegada hasta comprobarla. El Flow nativo no es un iframe.
+La web existe y se capturó. El agente de WhatsApp se ha trabajado en beta. Flow nativo no se implementó como canal operativo y se mantiene como deseable, pendiente de verificaciones y habilitación en Meta. La appExpo ofrece el canal iOS/Android y la integración completa está en consolidación. No afirmar publicación en tiendas ni continuidad de extremo a extremo desplegada hasta comprobarla. El Flow nativo no es un iframe.
 
 Captar solicitudes 24/7 no equivale a pagar 24/7. La confirmación del ingreso y el envío conservan revisión y responsabilidad. Banco/fintech conAPIyconciliación se mantiene como fase futura. Facturación y correo del recorrido capturado son simulados.
 
@@ -94,7 +94,7 @@ Captar solicitudes 24/7 no equivale a pagar 24/7. La confirmación del ingreso y
 
 ## Video 90 segundos
 
-0–20:consulta enWhatsApp, dudas y cotización con herramientas.20–45:datos enFlow/web y destinatario.45–65:comprobante y revisión humana.65–85:estado, envío registrado y comprobante.85–90:cliente vuelve por el canal que prefiera. No simular como real un pago bancario externo.
+0–20:consulta enWhatsApp, dudas y cotización con herramientas.20–45:datos en el formulario web y destinatario.45–65:comprobante y revisión humana.65–85:estado, envío registrado y comprobante.85–90:cliente vuelve por el canal que prefiera. No simular como real un pago bancario externo.
 
 ## Datos pendientes para cerrar el caso
 
@@ -146,7 +146,7 @@ Dato informado: de131chats diarios,67terminan en transferencia y64quedan en coti
 
 ### omni
 
-La omnicanalidad es la promesa comercial central. El cliente empieza una consulta en WhatsApp, completa datos desde Flow o la web, consulta el estado y vuelve desde la app sin repetir toda la información. Una identidad y una operación conectan el recorrido. Los cuatro canales comparten reglas y estados en el diseño objetivo, no cuatro silos. La web existe, WhatsApp está en pruebas y la app Expo e integración integral se consolidan. No afirmar disponibilidad en tiendas ni continuidad desplegada en todos los canales antes de comprobarla.
+La omnicanalidad es la promesa comercial central. El cliente empieza una consulta en WhatsApp, continúa al formulario web para completar los datos, consulta el estado y vuelve desde la app sin repetir toda la información. Una identidad y una operación conectan el recorrido. Los cuatro canales comparten reglas y estados en el diseño objetivo, no cuatro silos. La web existe, WhatsApp está en pruebas y la app Expo e integración integral se consolidan. No afirmar disponibilidad en tiendas ni continuidad desplegada en todos los canales antes de comprobarla. Flow nativo no está implementado como canal operativo; es un deseable pendiente de verificaciones y habilitación en Meta.
 
 ### datos
 
@@ -154,7 +154,7 @@ La omnicanalidad es la promesa comercial central. El cliente empieza una consult
 
 ### ia
 
-30 s. La IA entra donde hay conversaciones repetidas, dudas e intención comercial. Con información autorizada y el estado del cliente puede orientar mejor y pedir solo lo que falta. Las cotizaciones y las instrucciones proceden de herramientas del sistema, no de cifras generadas. Flow recoge datos estructurados. El humano decide cuando hay excepciones y conserva la autorización sobre fondos. Con la información centralizada se habilitan CRM, recuperación autorizada y medición de retorno. Distinguir el bot probado de esas ampliaciones futuras.
+30 s. La IA entra donde hay conversaciones repetidas, dudas e intención comercial. Con información autorizada y el estado del cliente puede orientar mejor y pedir solo lo que falta. Las cotizaciones y las instrucciones proceden de herramientas del sistema, no de cifras generadas. El formulario web recoge los datos estructurados. Flow nativo queda como mejora futura, pendiente de verificaciones y habilitación en Meta. El humano decide cuando hay excepciones y conserva la autorización sobre fondos. Con la información centralizada se habilitan CRM, recuperación autorizada y medición de retorno. Distinguir el bot probado de esas ampliaciones futuras.
 
 ### continuidad
 
@@ -202,7 +202,7 @@ En términos técnicos, el informe presenta 39 h 41 promedio,23 h 29 mediana yp 
 
 ### futuro
 
-Orden propuesto: primero unificar la ficha y el estado, después medir conversión por origen y franja, luego probar recuperación autorizada con grupo de control. Añadir cuentas guardadas, resumen bilingüe para el humano, alertas por monto neto y recordatorios de recurrencia. Medir utilidad después del canal. Referidos se activan tras operación exitosa, sin prometer crecimiento gratuito. Banco y antifraude avanzado son otra fase.
+Orden propuesto: primero unificar la ficha y el estado, después medir conversión por origen y franja, luego probar recuperación autorizada con grupo de control. Añadir cuentas guardadas, resumen bilingüe para el humano, alertas por monto neto y recordatorios de recurrencia. Medir utilidad después del canal. Referidos se activan tras operación exitosa, sin prometer crecimiento gratuito. Banco y antifraude avanzado son otra fase. Flow nativo no se muestra como implementado: actualmente el bot deriva al formulario web. Su habilitación depende de completar la configuración y verificaciones pendientes de Meta; no afirmar que existe un formulario operativo dentro de WhatsApp.
 
 ### capacidad
 
