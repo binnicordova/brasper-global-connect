@@ -2896,3 +2896,177 @@ footer {
   font-size: 0.85rem;
   line-height: 1.5;
 }
+
+/* Transfer flow backed by the Brasper Cloud Functions: quote, payment, tracking. */
+.field-error {
+  color: var(--color-destructive);
+  font-size: 12px;
+  font-weight: 500;
+}
+.portal-form [aria-invalid="true"] {
+  border-color: var(--color-destructive);
+}
+.quote-countdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-success);
+}
+.quote-countdown.expired {
+  color: var(--color-destructive);
+}
+.exchange-review + .portal-form,
+.exchange-review + .portal-notice,
+.portal-card > .exchange-review {
+  margin-top: 20px;
+}
+.pay-box {
+  padding: 20px;
+  margin: 20px 0 4px;
+  border-radius: 14px;
+  background: var(--color-muted);
+}
+.pay-box dl {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+}
+.pay-box dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 14px;
+}
+.pay-box dt {
+  color: var(--color-muted-foreground);
+}
+.pay-box dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.copy-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-background);
+}
+.order-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--color-accent);
+  color: var(--color-primary);
+}
+.status-badge[data-status="approved"],
+.status-badge[data-status="exported"] {
+  background: color-mix(in oklab, var(--color-success) 14%, var(--color-background));
+  color: var(--color-success);
+}
+.status-badge[data-status="rejected"],
+.status-badge[data-status="cancelled"] {
+  background: color-mix(in oklab, var(--color-destructive) 12%, var(--color-background));
+  color: var(--color-destructive);
+}
+.order-timeline {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 20px 0;
+  padding: 0;
+  list-style: none;
+}
+.order-timeline li {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 3px solid var(--color-border);
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+}
+.order-timeline li > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+}
+.order-timeline li[data-state="done"] {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+.order-timeline li[data-state="active"] {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.order-timeline li[data-state="failed"] {
+  border-color: var(--color-destructive);
+  color: var(--color-destructive);
+}
+.order-list {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.order-list li {
+  display: grid;
+  grid-template-columns: 1.2fr 2fr auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  font-size: 14px;
+}
+.order-list li > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.order-list li > div:first-child span {
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+}
+.receipt-box {
+  margin-top: 18px;
+}
+@media (max-width: 640px) {
+  .order-timeline {
+    grid-template-columns: 1fr 1fr;
+  }
+  .order-list li {
+    grid-template-columns: 1fr auto;
+  }
+  .pay-box dl > div {
+    flex-direction: column;
+    gap: 3px;
+  }
+  .pay-box dd {
+    text-align: left;
+  }
+}
