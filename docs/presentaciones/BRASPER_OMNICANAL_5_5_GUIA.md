@@ -4,7 +4,7 @@
 
 La propuesta complementa la operación transaccional que ya funciona. El centro del pitch es atraer clientes, acompañarlos hasta la operación y facilitar que vuelvan. La automatización administrativa y la capacidad liberada refuerzan el caso, sin convertirse en el único motivo de rentabilidad.
 
-La historia del problema incorpora el hallazgo de consultoría: el encargo inicial pedía facturación y automatización. Según el equipo, TI ya había desarrollado esa parte, pero la dirección no tenía visibilidad completa de su avance y alcance. El equipo contrastó necesidades, proceso, información y capacidades existentes, atendió rápidamente el frente inicial y encontró mayor potencial en ventas y experiencia omnicanal. No atribuirnos como nuevo lo que ya existía en TI.
+La historia del problema incorpora el hallazgo de consultoría: el encargo inicial pedía facturación y automatización. Según el equipo, TI ya tenía la solución encaminada y su implementación prevista, aunque todavía estaba pendiente de completar. El equipo contrastó necesidades, proceso, información y capacidades existentes, atendió rápidamente el frente inicial y encontró mayor potencial en ventas y experiencia omnicanal. Reconocer el trabajo que TI ya tenía en curso, sin presentarlo como una solución terminada.
 
 El diagnóstico tiene dos diapositivas propias y se apoya en el relato del usuario. No inventar cantidades de entrevistas, clientes consultados ni una duración exacta. Se habla de respuesta rápida, sin afirmar un récord cronometrado ni una implementación tributaria productiva.
 
@@ -100,7 +100,7 @@ Horario real, demanda adicional fuera de horario, costo de adquisición, nuevos 
 
 ### diagnostico
 
-25 s. Como grupo de consultoría, usamos nuestra experiencia para ir más allá de la solicitud inicial. Contrastamos el problema percibido de facturación con los avances de TI y la operación. Según el equipo, existía una brecha de visibilidad entre el alcance técnico y lo que conocía la dirección. No culpamos a ninguna área. Hicimos visible lo que ya funcionaba y buscamos dónde una nueva intervención produciría más valor. No afirmar métricas de entrevistas o plazos que no fueron medidos.
+25 s. Como equipo de consultoría, contrastamos el problema percibido de facturación con los planes y avances de TI. Esa área ya tenía una solución encaminada y su implementación prevista, aunque todavía no estaba completada. El diagnóstico permitió entender ese trabajo en curso y buscar una oportunidad adicional de mayor alcance en ventas y experiencia. No presentar facturación como una necesidad ya resuelta antes del proyecto.
 
 ### hallazgo
 
