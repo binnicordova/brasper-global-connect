@@ -1,4 +1,8 @@
-# Brasper × 5.5: ventas omnicanal, 24/7 y recurrencia
+# OMNI by 5.5 · Propuesta para Brasper
+
+Nombre de trabajo de la solución: **OMNI by 5.5**. Brasper conserva su identidad como empresa. Mencionarlo una sola vez al presentar la solución, sin sustituir Brasper en todo el relato. Frase sugerida: «A esta propuesta la llamamos OMNI by 5.5: una experiencia conectada para que Brasper acompañe a sus clientes desde cualquier canal».
+
+Ventas omnicanal, 24/7 y recurrencia.
 
 ## Qué cambia en esta versión
 
