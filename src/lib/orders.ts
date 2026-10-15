@@ -44,7 +44,11 @@ export function timelineFor(order: Pick<Order, "status" | "invoiceStatus">): Tim
       key: "verifying",
       state: failed ? "failed" : status === "validating" ? "active" : confirmed ? "done" : "todo",
     },
-    { key: "sent", state: confirmed ? "done" : "todo" },
+    // Money only counts as sent once the back office exports the order.
+    {
+      key: "sent",
+      state: status === "exported" ? "done" : status === "approved" ? "active" : "todo",
+    },
     {
       key: "received",
       state: isReceiptReady(invoiceStatus) ? "done" : status === "exported" ? "active" : "todo",

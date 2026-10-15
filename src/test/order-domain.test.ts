@@ -73,7 +73,7 @@ describe("Order progress shown to the client", () => {
   it("follows pending → validating → approved → exported → receipt", () => {
     expect(steps("pending")).toEqual(["done", "todo", "todo", "todo"]);
     expect(steps("validating")).toEqual(["done", "active", "todo", "todo"]);
-    expect(steps("approved")).toEqual(["done", "done", "done", "todo"]);
+    expect(steps("approved")).toEqual(["done", "done", "active", "todo"]);
     expect(steps("exported")).toEqual(["done", "done", "done", "active"]);
     expect(steps("exported", "accepted")).toEqual(["done", "done", "done", "done"]);
   });
